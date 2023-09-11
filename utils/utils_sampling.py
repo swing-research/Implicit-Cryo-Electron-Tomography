@@ -433,9 +433,9 @@ def generate_rays_batch(projectionSet,angleSet,nRays,rayLength,validLocations,ra
 
               
     
-
+# idx_loader is needed if choosenLocations_all is not None
 def generate_rays_batch_bilinear(projectionSet,angleSet,nRays,rayLength,randomZ = 0,type=1,zmax=1.5,
-                                 choosenLocations_all=None,density_sampling=None):
+                                 choosenLocations_all=None,density_sampling=None,idx_loader=None):
     # Projection set of the form [Nbatch,n,n]
     # Angle set of the form [Nbatch]
     # nRays is the number of rays per projection
@@ -473,7 +473,7 @@ def generate_rays_batch_bilinear(projectionSet,angleSet,nRays,rayLength,randomZ 
             choosenLocations = torch.rand(nRays,2).to(projectionSet.device)*2-1
 
         if choosenLocations_all is not None:
-            choosenLocations_all[angleSet[i].item()].append(choosenLocations.detach().cpu().numpy())
+            choosenLocations_all[idx_loader[i].item()].append(choosenLocations.detach().cpu().numpy())
 
         if(type==1):
             pixelValues[i] = torch.nn.functional.grid_sample(projectionSet[i].T.unsqueeze(0).unsqueeze(0),

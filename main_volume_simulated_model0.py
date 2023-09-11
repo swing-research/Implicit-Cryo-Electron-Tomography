@@ -528,7 +528,7 @@ for ep in range(config.epochs):
         ## TODO: add an option for density_sampling
         raysSet,raysRot, isOutsideSet, pixelValues = generate_rays_batch_bilinear(proj,angle,config.nRays,config.ray_length,
                                                                                             randomZ=2,zmax=config.z_max,
-                                                                                            choosenLocations_all=choosenLocations_all,density_sampling=None)
+                                                                                            choosenLocations_all=choosenLocations_all,density_sampling=None,idx_loader=idx_loader)
 
         if config.sigma_PSF!=0:
             raysSet_ = raysSet.reshape(config.batch_size,config.nRays,1,config.ray_length,3).repeat(1,1,supp_PSF**2,1,1)
