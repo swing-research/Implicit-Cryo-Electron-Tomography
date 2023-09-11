@@ -473,7 +473,7 @@ def generate_rays_batch_bilinear(projectionSet,angleSet,nRays,rayLength,randomZ 
             choosenLocations = torch.rand(nRays,2).to(projectionSet.device)*2-1
 
         if choosenLocations_all is not None:
-            choosenLocations_all[angleSet[i].detach().cpu().numpy().item()].append(choosenLocations.detach().cpu().numpy())
+            choosenLocations_all[angleSet[i].item()].append(choosenLocations.detach().cpu().numpy())
 
         if(type==1):
             pixelValues[i] = torch.nn.functional.grid_sample(projectionSet[i].T.unsqueeze(0).unsqueeze(0),
