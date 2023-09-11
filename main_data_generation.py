@@ -288,12 +288,13 @@ out = mrcfile.new(config.path_save_data+"projections.mrc",projections_noisy.deta
 out.close() 
 
 
-
-projections_noisy_reversed = projections_noisy.max() - projections_noisy + 0.0001
-projections_noisy_no_deformed_reversed = projections_noisy_no_deformed.max() - projections_noisy_no_deformed + 0.0001
-out = mrcfile.new(config.path_save_data+"projections_reversed.mrc",projections_noisy_reversed.detach().cpu().numpy(),overwrite=True)
+projections_noisy_ = projections_noisy.detach().cpu().numpy()*1
+projections_noisy_no_deformed_ = projections_noisy_no_deformed.detach().cpu().numpy()*1
+projections_noisy_reversed = projections_noisy_.max() - projections_noisy_ + 0.0001
+projections_noisy_no_deformed_reversed = projections_noisy_no_deformed_.max() - projections_noisy_no_deformed_ + 0.0001
+out = mrcfile.new(config.path_save_data+"projections_reversed.mrc",projections_noisy_reversed,overwrite=True)
 out.close()
-out = mrcfile.new(config.path_save_data+"projections_noisy_no_deformed.mrc",projections_noisy_no_deformed.detach().cpu().numpy(),overwrite=True)
+out = mrcfile.new(config.path_save_data+"projections_noisy_no_deformed.mrc",projections_noisy_no_deformed_,overwrite=True)
 out.close()
-out = mrcfile.new(config.path_save_data+"projections_noisy_no_deformed_reversed.mrc",projections_noisy_no_deformed_reversed.detach().cpu().numpy(),overwrite=True)
+out = mrcfile.new(config.path_save_data+"projections_noisy_no_deformed_reversed.mrc",projections_noisy_no_deformed_reversed,overwrite=True)
 out.close()
