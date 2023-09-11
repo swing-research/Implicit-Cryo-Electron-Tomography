@@ -39,8 +39,8 @@ def get_default_configs():
 
 
     # # Parameters for the data generation
-    config.path_load = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_no_PSF/"
-    config.path_save = "./results/model0_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_no_PSF/"
+    config.path_save_data = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_no_PSF/"
+    config.path_save = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_no_PSF/"
 
     config.seed = 42
     config.device_num = 0

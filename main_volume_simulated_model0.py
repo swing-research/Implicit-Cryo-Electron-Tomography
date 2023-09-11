@@ -78,11 +78,11 @@ torch.manual_seed(config.seed)
 
 
 # # Parameters for the data generation
-# config.path_load = "./results/"+str(config.volume_name)+"_SNR_"+str(SNR_value)+"_size_"+str(config.n1)+"_no_PSF/"
+# config.path_save_data = "./results/"+str(config.volume_name)+"_SNR_"+str(SNR_value)+"_size_"+str(config.n1)+"_no_PSF/"
 # config.path_save = "./results/model0_SNR_"+str(10)+"_size_"+str(512)+"_no_PSF/"
 
 ## TODO: use folloying to check that the load data are consistent with the current parameters
-# params = np.load(config.path_load+"parameters.npz")
+# params = np.load(config.path_save_data+"parameters.npz")
 # config.n1 = params['config.n1'].item()
 # config.n2 = params['config.n2'].item()
 # n3 = params['n3'].item()
@@ -101,12 +101,8 @@ if not os.path.exists("results/"):
     os.makedirs("results/")
 if not os.path.exists(config.path_save):
     os.makedirs(config.path_save)
-if not os.path.exists(config.path_save+"projections/"):
-    os.makedirs(config.path_save+"projections/")
 if not os.path.exists(config.path_save+"grid/"):
     os.makedirs(config.path_save+"grid/")
-if not os.path.exists(config.path_save+"deformations/"):
-    os.makedirs(config.path_save+"deformations/")
 if not os.path.exists(config.path_save+"deformations/training/"):
     os.makedirs(config.path_save+"deformations/training/")
 if not os.path.exists(config.path_save+"projections/training/"):
@@ -117,7 +113,7 @@ if not os.path.exists(config.path_save+"training/"):
     os.makedirs(config.path_save+"training/")
 
 ## TODO: do we need all the following for training?
-data = np.load(config.path_load+"volume_and_projections.npz")
+data = np.load(config.path_save_data+"volume_and_projections.npz")
 projections_noisy = torch.tensor(data['projections_noisy']).type(config.torch_type).to(device)
 projections_deformed = torch.tensor(data['projections_deformed']).type(config.torch_type).to(device)
 projections_deformed_global = torch.tensor(data['projections_deformed_global']).type(config.torch_type).to(device)
@@ -137,12 +133,12 @@ else:
 
 
 
-affine_tr = np.load(config.path_load+"global_deformations.npy",allow_pickle=True)
-local_tr = np.load(config.path_load+"local_deformations.npy", allow_pickle=True)
+affine_tr = np.load(config.path_save_data+"global_deformations.npy",allow_pickle=True)
+local_tr = np.load(config.path_save_data+"local_deformations.npy", allow_pickle=True)
 
-V_t = torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_load+"V.mrc").data),0,2)).type(config.torch_type).to(device)
-V_FBP_no_deformed_t = torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_load+"V_FBP_no_deformed.mrc").data),0,2)).type(config.torch_type).to(device)
-V_FBP =  torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_load+"V_FBP.mrc").data),0,2)).type(config.torch_type).to(device)
+V_t = torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V.mrc").data),0,2)).type(config.torch_type).to(device)
+V_FBP_no_deformed_t = torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_FBP_no_deformed.mrc").data),0,2)).type(config.torch_type).to(device)
+V_FBP =  torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_FBP.mrc").data),0,2)).type(config.torch_type).to(device)
 
 V_ = V_t.detach().cpu().numpy()
 V_FBP_ = V_FBP.detach().cpu().numpy()
@@ -370,6 +366,7 @@ print('---> Number of trainable parameters in volume net: {}'.format(num_param))
 ######################################################################################################
 ## Define the implicit deformations
 if config.local_model=='implicit':
+    from models.fourier_net import FourierNet,FourierNet_Features
     # Define Implicit representation of local deformations
     implicit_deformation_list = []
     for k in range(config.Nangles):

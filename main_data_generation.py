@@ -103,20 +103,12 @@ torch.manual_seed(config.seed)
 
 if not os.path.exists("results/"):
     os.makedirs("results/")
-if not os.path.exists(config.path_save):
-    os.makedirs(config.path_save)
-if not os.path.exists(config.path_save+"projections/"):
-    os.makedirs(config.path_save+"projections/")
-if not os.path.exists(config.path_save+"grid/"):
-    os.makedirs(config.path_save+"grid/")
-if not os.path.exists(config.path_save+"deformations/"):
-    os.makedirs(config.path_save+"deformations/")
-if not os.path.exists(config.path_save+"deformations/training/"):
-    os.makedirs(config.path_save+"deformations/training/")
-if not os.path.exists(config.path_save+"projections/training/"):
-    os.makedirs(config.path_save+"projections/training/")
-if not os.path.exists(config.path_save+"training/"):
-    os.makedirs(config.path_save+"training/")
+if not os.path.exists(config.path_save_data):
+    os.makedirs(config.path_save_data)
+if not os.path.exists(config.path_save_data+"projections/"):
+    os.makedirs(config.path_save_data+"projections/")
+if not os.path.exists(config.path_save_data+"deformations/"):
+    os.makedirs(config.path_save_data+"deformations/")
 
 
 #######################################################################################
@@ -209,7 +201,7 @@ for i in range(config.Nangles*config.number_sub_projections):
         supp = config.n1//70
 
         # Display local deformations
-        utils_display.display_local(field,field_true=None,Npts=Nsp,img_path=config.path_save+"deformations/local_quiver_"+str(i),
+        utils_display.display_local(field,field_true=None,Npts=Nsp,img_path=config.path_save_data+"deformations/local_quiver_"+str(i),
                                     img_type='.png',scale=1,alpha=0.8,width=0.0015,wx=config.n1//2,wy=config.n2//2)
 
         # Display global deformations
@@ -236,7 +228,7 @@ for i in range(config.Nangles*config.number_sub_projections):
         tmp = img_deform_global.detach().cpu().numpy()[0].reshape(nsr)
         tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(config.path_save+"deformations/global_deformation_indiviudal_"+str(i)+".png",tmp)
+        imageio.imwrite(config.path_save_data+"deformations/global_deformation_indiviudal_"+str(i)+".png",tmp)
     
 
 projections_clean = operator_ET(V_t)
@@ -253,15 +245,15 @@ if config.sigma_PSF!=0:
     projections_deformed = torch.fft.fftshift(torch.fft.ifft2(PSF_ext_fft_t * torch.fft.fft2(projections_deformed,dim=(1,2))),(1,2)).real
     
 # add noise
-sigma_noise = data_generation.find_sigma_noise_t(SNR_value,projections_deformed)
+sigma_noise = data_generation.find_sigma_noise_t(config.SNR_value,projections_deformed)
 projections_noisy = projections_deformed.clone() + torch.randn_like(projections_deformed)*sigma_noise
 projections_noisy_no_deformed = projections_clean.clone() + torch.randn_like(projections_clean)*sigma_noise
 
 
-np.save(config.path_save+"global_deformations.npy",affine_tr)
-np.save(config.path_save+"local_deformations.npy",local_tr)
-np.savez(config.path_save+"volume_and_projections.npz",projections_noisy=projections_noisy.detach().cpu().numpy(),projections_deformed=projections_deformed.detach().cpu().numpy(),projections_deformed_global=projections_deformed_global.detach().cpu().numpy(),projections_clean=projections_clean.detach().cpu().numpy(),PSF=PSF)
-# np.savez(config.path_save+"parameters.npz",Nangles=config.Nangles,angle_min=config.angle_min,angle_max=config.angle_max,
+np.save(config.path_save_data+"global_deformations.npy",affine_tr)
+np.save(config.path_save_data+"local_deformations.npy",local_tr)
+np.savez(config.path_save_data+"volume_and_projections.npz",projections_noisy=projections_noisy.detach().cpu().numpy(),projections_deformed=projections_deformed.detach().cpu().numpy(),projections_deformed_global=projections_deformed_global.detach().cpu().numpy(),projections_clean=projections_clean.detach().cpu().numpy(),PSF=PSF)
+# np.savez(config.path_save_data+"parameters.npz",Nangles=config.Nangles,angle_min=config.angle_min,angle_max=config.angle_max,
 #          n1=config.n1,n2=config.n2,n3=config.n3,SNR_value=config.SNR_value,sigma_PSF=config.sigma_PSF)
 
 # save projections
@@ -269,40 +261,39 @@ for k in range(config.Nangles):
     tmp = projections_clean[k].detach().cpu().numpy()
     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
     tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(config.path_save+"projections/clean_"+str(k)+".png",tmp)
+    imageio.imwrite(config.path_save_data+"projections/clean_"+str(k)+".png",tmp)
 
     tmp = projections_deformed[k].detach().cpu().numpy()
     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
     tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(config.path_save+"projections/deformed_"+str(k)+".png",tmp)
+    imageio.imwrite(config.path_save_data+"projections/deformed_"+str(k)+".png",tmp)
 
     tmp = projections_noisy[k].detach().cpu().numpy()
     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
     tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(config.path_save+"projections/noisy_"+str(k)+".png",tmp)
+    imageio.imwrite(config.path_save_data+"projections/noisy_"+str(k)+".png",tmp)
 
 
 projections_noisy_avg = projections_noisy.reshape(config.Nangles,-1,config.n1,config.n2).mean(1)
 projections_noisy_no_deformed_avg =  projections_noisy_no_deformed.reshape(config.Nangles,-1,config.n1,config.n2).mean(1)
 V_FBP = operator_ET.pinv(projections_noisy_avg).detach().requires_grad_(False)
 V_FBP_no_deformed = operator_ET.pinv(projections_noisy_no_deformed_avg).detach().requires_grad_(False)
-out = mrcfile.new(config.path_save+"V_FBP.mrc",np.moveaxis(V_FBP.detach().cpu().numpy().reshape(config.n1,config.n2,config.n3),2,0),overwrite=True)
+out = mrcfile.new(config.path_save_data+"V_FBP.mrc",np.moveaxis(V_FBP.detach().cpu().numpy().reshape(config.n1,config.n2,config.n3),2,0),overwrite=True)
 out.close() 
-out = mrcfile.new(config.path_save+"V_FBP_no_deformed.mrc",np.moveaxis(V_FBP_no_deformed.detach().cpu().numpy().reshape(config.n1,config.n2,config.n3),2,0),overwrite=True)
+out = mrcfile.new(config.path_save_data+"V_FBP_no_deformed.mrc",np.moveaxis(V_FBP_no_deformed.detach().cpu().numpy().reshape(config.n1,config.n2,config.n3),2,0),overwrite=True)
 out.close() 
-out = mrcfile.new(config.path_save+"V.mrc",np.moveaxis(V_t.detach().cpu().numpy().reshape(config.n1,config.n2,config.n3),2,0),overwrite=True)
+out = mrcfile.new(config.path_save_data+"V.mrc",np.moveaxis(V_t.detach().cpu().numpy().reshape(config.n1,config.n2,config.n3),2,0),overwrite=True)
 out.close() 
-
-out = mrcfile.new(config.path_save+"projections.mrc",projections_noisy.detach().cpu().numpy(),overwrite=True)
+out = mrcfile.new(config.path_save_data+"projections.mrc",projections_noisy.detach().cpu().numpy(),overwrite=True)
 out.close() 
 
 
 
 projections_noisy_reversed = projections_noisy.max() - projections_noisy + 0.0001
 projections_noisy_no_deformed_reversed = projections_noisy_no_deformed.max() - projections_noisy_no_deformed + 0.0001
-out = mrcfile.new(config.path_save+"projections_reversed.mrc",projections_noisy_reversed.detach().cpu().numpy(),overwrite=True)
+out = mrcfile.new(config.path_save_data+"projections_reversed.mrc",projections_noisy_reversed.detach().cpu().numpy(),overwrite=True)
 out.close()
-out = mrcfile.new(config.path_save+"projections_noisy_no_deformed.mrc",projections_noisy_no_deformed.detach().cpu().numpy(),overwrite=True)
+out = mrcfile.new(config.path_save_data+"projections_noisy_no_deformed.mrc",projections_noisy_no_deformed.detach().cpu().numpy(),overwrite=True)
 out.close()
-out = mrcfile.new(config.path_save+"projections_noisy_no_deformed_reversed.mrc",projections_noisy_no_deformed_reversed.detach().cpu().numpy(),overwrite=True)
+out = mrcfile.new(config.path_save_data+"projections_noisy_no_deformed_reversed.mrc",projections_noisy_no_deformed_reversed.detach().cpu().numpy(),overwrite=True)
 out.close()
