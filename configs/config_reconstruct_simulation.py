@@ -44,6 +44,7 @@ def get_default_configs():
 
     config.seed = 42
     config.device_num = 0
+    config.torch_type = torch.float
 
 
   # training

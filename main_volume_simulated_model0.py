@@ -41,6 +41,9 @@ use_cuda=torch.cuda.is_available()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
 if torch.cuda.device_count()>1:
     torch.cuda.set_device(config.device_num)
+np.random.seed(config.seed)
+torch.manual_seed(config.seed)
+
 
 # ## TODO: load data from config file
 # config.volume_name = 'model_0'
@@ -77,9 +80,6 @@ if torch.cuda.device_count()>1:
 # # Parameters for the data generation
 # config.path_load = "./results/"+str(config.volume_name)+"_SNR_"+str(SNR_value)+"_size_"+str(config.n1)+"_no_PSF/"
 # config.path_save = "./results/model0_SNR_"+str(10)+"_size_"+str(512)+"_no_PSF/"
-
-np.random.seed(config.seed)
-torch.manual_seed(config.seed)
 
 ## TODO: use folloying to check that the load data are consistent with the current parameters
 # params = np.load(config.path_load+"parameters.npz")
