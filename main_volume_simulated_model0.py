@@ -272,7 +272,7 @@ if config.sigma_PSF!=0:
     psf_shift_x,psf_shift_y = torch.meshgrid(xx_,yy_)
     psf_shift_x = psf_shift_x.reshape(1,1,-1,1)
     psf_shift_y = psf_shift_y.reshape(1,1,-1,1)
-config.rays_scaling = torch.tensor(config.rays_scaling)[None,None,None]
+rays_scaling = torch.tensor(np.array(config.rays_scaling))[None,None,None]
 
 
 ## Volume Network
@@ -338,7 +338,7 @@ if(config.volume_model=="MLP"):
 
 if(config.volume_model=="multi-resolution"):  
     import tinycudann as tcnn
-    config = {"encoding": {
+    config_network = {"encoding": {
             'otype': 'Grid',
             'type': 'Hash',
             'n_levels': 9,
@@ -356,7 +356,7 @@ if(config.volume_model=="multi-resolution"):
             "n_hidden_layers": config.num_layers_volume,       
         }       
         }
-    impl_volume = tcnn.NetworkWithInputEncoding(n_input_dims=3, n_output_dims=1, encoding_config=config["encoding"], network_config=config["network"]).to(device)
+    impl_volume = tcnn.NetworkWithInputEncoding(n_input_dims=3, n_output_dims=1, encoding_config=config_network["encoding"], network_config=config_network["network"]).to(device)
 
 num_param = sum(p.numel() for p in impl_volume.parameters() if p.requires_grad) 
 print('---> Number of trainable parameters in volume net: {}'.format(num_param))
@@ -381,7 +381,7 @@ if config.local_model=='implicit':
     num_param = sum(p.numel() for p in implicit_deformation_list[0].parameters() if p.requires_grad) 
     print('---> Number of trainable parameters in implicit net: {}'.format(num_param))
 if config.local_model=='interp':
-    depl_ctr_pts_net = torch.zeros((2,config.N_ctrl_pts_net,config.N_ctrl_pts_net)).to(device).type(config.torch_type)/max([config.n1,config.n2,n3])/10
+    depl_ctr_pts_net = torch.zeros((2,config.N_ctrl_pts_net,config.N_ctrl_pts_net)).to(device).type(config.torch_type)/max([config.n1,config.n2,config.n3])/10
     implicit_deformation_list = []
     for k in range(config.Nangles):
         # depl_ctr_pts_net = local_tr[k].depl_ctr_pts.clone().detach()[0].cuda()/deformationScale
@@ -472,6 +472,7 @@ loss_regul_rot = []
 SNR_tot = []
 t_test = []
 
+learn_deformations = False
 use_local_def = True if train_local_def else False
 use_global_def = True if train_global_def else False
 t0 = time.time()
@@ -535,7 +536,7 @@ for ep in range(config.epochs):
             raysSet_[:,:,:,:,1] = raysSet_[:,:,:,:,1]+psf_shift_y
             raysSet = raysSet_.reshape(config.batch_size,config.nRays*supp_PSF**2,config.ray_length,3)
 
-        raysSet = raysSet*config.rays_scaling 
+        raysSet = raysSet*rays_scaling
         outputValues,support = sample_implicit_batch_lowComp(impl_volume,raysSet,angle,
             rot_deformSet=rot_deformSet,shift_deformSet=shift_deformSet,local_deformSet=local_deformSet,
             scale=config.deformationScale,range=config.inputRange,zlimit=config.n3/max(config.n1,config.n2))
