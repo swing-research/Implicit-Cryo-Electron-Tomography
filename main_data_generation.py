@@ -136,7 +136,7 @@ V = resize(V,(config.n3,config.n1,config.n2))
 V = np.swapaxes(V,0,1)
 V = np.swapaxes(V,1,2)
 V = (V - V.min())/(V.max()-V.min())
-V /= V.max()
+V *= config.n3
 
 # # define molifier to ensure support and avoid padding artifacts
 # mollifier = utils_sampling.mollifier_class(-1,config.torch_type,device)

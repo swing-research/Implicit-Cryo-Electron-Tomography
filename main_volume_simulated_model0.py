@@ -9,7 +9,7 @@ import time
 # from torchsummary import summary
 # from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles, ParallelBeamGeometry3DOpAngles_rectangular
 import os
-# import imageio
+import imageio
 import torch.nn.functional as F
 import torch.nn as nn
 
@@ -128,6 +128,7 @@ if config.sigma_PSF!=0:
     supp = int(np.round(4*config.sigma_PSF))
     PSF = G[config.n1//2-supp//2:config.n1//2+supp//2,config.n2//2-supp//2:config.n2//2+supp//2]
     PSF /= PSF.sum()
+    PSF_t = torch.tensor(PSF.reshape(1,1,-1,1)).type(config.torch_type).to(device)
 else: 
     PSF = 0
 
@@ -150,6 +151,23 @@ V_FBP_no_deformed /= V_FBP_no_deformed.sum()
 fsc_FBP = utils_ricardo.FSC(V_,V_FBP_)
 fsc_FBP_no_deformed = utils_ricardo.FSC(V_,V_FBP_no_deformed)
 x_fsc = np.arange(fsc_FBP.shape[0])
+
+
+
+## Some save
+for k in range(projections_noisy.shape[0]):
+    tmp = projections_noisy[k].detach().cpu().numpy()
+    tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+    tmp = np.floor(255*tmp).astype(np.uint8)
+    imageio.imwrite(os.path.join(config.path_save,'projections','training','obs_{}.png'.format(k)),tmp)
+
+for k in range(V_t.shape[2]):
+    tmp = V_t[:,:,k].detach().cpu().numpy()
+    tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+    tmp = np.floor(255*tmp).astype(np.uint8)
+    imageio.imwrite(os.path.join(config.path_save,'projections','volume','obs_{}.png'.format(k)),tmp)
+
+
 
 
 ######################################################################################################
@@ -272,7 +290,7 @@ if config.sigma_PSF!=0:
     psf_shift_x,psf_shift_y = torch.meshgrid(xx_,yy_)
     psf_shift_x = psf_shift_x.reshape(1,1,-1,1)
     psf_shift_y = psf_shift_y.reshape(1,1,-1,1)
-rays_scaling = torch.tensor(np.array(config.rays_scaling))[None,None,None]
+rays_scaling = torch.tensor(np.array(config.rays_scaling))[None,None,None].type(config.torch_type).to(device)
 
 
 ## Volume Network
@@ -436,7 +454,7 @@ if train_local_def:
 index = torch.arange(0, config.Nangles, dtype=torch.long) # index for the dataloader
 
 # Define dataset
-angles = np.linspace(config.angle_min,config.angle_max,config.Nangles)
+angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
 angles_t = torch.tensor(angles).type(config.torch_type).to(device)
 dataset = TensorDataset(angles_t,projections_noisy.detach(),index)
 trainLoader = DataLoader(dataset, batch_size=config.batch_size, shuffle=True, drop_last=True)
@@ -446,8 +464,8 @@ trainLoader = DataLoader(dataset, batch_size=config.batch_size, shuffle=True, dr
 ######################################################################################################
 ## Track sampling
 choosenLocations_all = {}
-for a in angles:
-    choosenLocations_all[a] = []
+for ii, a in enumerate(angles):
+    choosenLocations_all[ii] = []
 
 current_sampling = np.ones_like(projections_noisy.detach().cpu().numpy())
 
@@ -472,6 +490,7 @@ loss_regul_rot = []
 SNR_tot = []
 t_test = []
 
+train_volume = config.train_volume
 learn_deformations = False
 use_local_def = True if train_local_def else False
 use_global_def = True if train_global_def else False
@@ -543,9 +562,9 @@ for ep in range(config.epochs):
         outputValues = outputValues.type(config.torch_type)
 
         if config.sigma_PSF!=0:
-            outputValues = (outputValues.reshape(config.batch_size,config.nRays,supp_PSF**2,config.ray_length)*PSF).sum(2)
+            outputValues = (outputValues.reshape(config.batch_size,config.nRays,supp_PSF**2,config.ray_length)*PSF_t).sum(2)
             support = support.reshape(outputValues.shape[0],outputValues.shape[1],supp_PSF**2,-1)
-            support = support[:,:,supp_PSF**2//2,:] # take only the central elements
+            support = support[:,:,supp_PSF//2+supp_PSF//2,:] # take only the central elements
         else:
             support = support.reshape(outputValues.shape[0],outputValues.shape[1],-1)
             
@@ -560,7 +579,7 @@ for ep in range(config.epochs):
         with torch.no_grad():
             for jj, ii_ in enumerate(idx_loader):
                 ii = ii_.item()
-                idx = np.floor((choosenLocations_all[angles[ii]][-1]+1)/2*max(config.n1,config.n2)).astype(np.int)
+                idx = np.floor((choosenLocations_all[ii][-1]+1)/2*max(config.n1,config.n2)).astype(np.int)
                 current_sampling[ii,idx[:,0],idx[:,1]] += 1
 
         ## Add regularizations
@@ -575,7 +594,7 @@ for ep in range(config.epochs):
                 loss_regul_shifts.append((config.lamb_shifts*torch.abs(shift_est[ii]()).sum()).item())
                 loss_regul_rot.append((config.lamb_rot*torch.abs(rot_est[ii]()).sum()).item())
         
-        if train_volume and config.lamb_volume!=0:
+        if config.train_volume and config.lamb_volume!=0:
             V_est = impl_volume(raysSet)
             loss += torch.linalg.norm(outputValues[outputValues<0])*config.lamb_volume
             loss_regul_volume.append((torch.linalg.norm(outputValues[outputValues<0])*config.lamb_volume).item())
@@ -603,12 +622,12 @@ for ep in range(config.epochs):
         ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
 
     if ep%config.Ntest==0 :#and ep!=0:
-        x_lin1 = np.linspace(-1,1,config.n1)*config.rays_scaling[0,0,0,0].item()/2+0.5
-        x_lin2 = np.linspace(-1,1,config.n2)*config.rays_scaling[0,0,0,1].item()/2+0.5
+        x_lin1 = np.linspace(-1,1,config.n1)*rays_scaling[0,0,0,0].item()/2+0.5
+        x_lin2 = np.linspace(-1,1,config.n2)*rays_scaling[0,0,0,1].item()/2+0.5
         XX, YY = np.meshgrid(x_lin1,x_lin2,indexing='ij')
         grid2d = np.concatenate([XX.reshape(-1,1),YY.reshape(-1,1)],1)
         grid2d_t = torch.tensor(grid2d).type(config.torch_type)
-        z_range = np.linspace(-1,1,15)*config.rays_scaling[0,0,0,2].item()*(config.n3/config.n1)/2+0.5
+        z_range = np.linspace(-1,1,15)*rays_scaling[0,0,0,2].item()*(config.n3/config.n1)/2+0.5
         for zz, zval in enumerate(z_range):
             grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
             grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
@@ -618,6 +637,17 @@ for ep in range(config.epochs):
             plt.clf()
             plt.imshow(pp,cmap='gray')
             plt.savefig(os.path.join(config.path_save+"/training/volume_slice_{}.png".format(zz)))
+
+
+        loss_current_epoch = np.mean(loss_tot[-len(trainLoader)*config.Ntest:])
+        l_fid = np.mean(loss_data_fidelity[-len(trainLoader)*config.Ntest:])
+        l_v = np.mean(loss_regul_volume[-len(trainLoader)*config.Ntest:])
+        l_sh = np.mean(loss_regul_shifts[-len(trainLoader)*config.Ntest:])
+        l_rot = np.mean(loss_regul_rot[-len(trainLoader)*config.Ntest:])
+        l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader)*config.Ntest:])
+        print("###### Epoch: {}, loss_avg: {:2.3} || Loss data fidelity: {:2.3}, regul volume: {:2.3}, regul shifts: {:2.3}, regul inplane: {:2.3}, regul local: {:2.3}, time: {:2.3}".format(
+            ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
+
 
     # TODO: save other info? Local def?
         # t_test_ = time.time()
