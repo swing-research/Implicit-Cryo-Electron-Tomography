@@ -65,6 +65,14 @@ else:
 affine_tr = np.load(config.path_save_data+"global_deformations.npy",allow_pickle=True)
 local_tr = np.load(config.path_save_data+"local_deformations.npy", allow_pickle=True)
 
+
+shift_true = np.zeros((len(affine_tr),2))
+angle_true = np.zeros((len(affine_tr)))
+for k in range(len(affine_tr)):
+    shift_true[k,0] = affine_tr[k].shiftX.item()
+    shift_true[k,1] = affine_tr[k].shiftY.item()
+    angle_true[k] = affine_tr[k].angle.item()
+
 V_t = torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V.mrc").data),0,2)).type(config.torch_type).to(device)
 V_FBP_no_deformed_t = torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_FBP_no_deformed.mrc").data),0,2)).type(config.torch_type).to(device)
 V_FBP =  torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_FBP.mrc").data),0,2)).type(config.torch_type).to(device)
@@ -346,10 +354,10 @@ for ep in range(config.epochs):
             loss_regul_local_ampl.append(config.lamb_local_ampl*depl.mean().item())
         if train_global_def and (config.lamb_rot!=0 or config.lamb_shifts!=0):
             for ii in idx_loader:
-                loss += config.lamb_shifts*torch.abs(shift_est[ii]()).sum()
-                loss += config.lamb_rot*torch.abs(rot_est[ii]()).sum()
-                loss_regul_shifts.append((config.lamb_shifts*torch.abs(shift_est[ii]()).sum()).item())
-                loss_regul_rot.append((config.lamb_rot*torch.abs(rot_est[ii]()).sum()).item())
+                loss += config.lamb_shifts*torch.abs(shift_est[ii]()*config.n1).sum()
+                loss += config.lamb_rot*torch.abs(rot_est[ii]()*180/np.pi).sum()
+                loss_regul_shifts.append((config.lamb_shifts*torch.abs(shift_est[ii]()*config.n1).sum()).item())
+                loss_regul_rot.append((config.lamb_rot*torch.abs(rot_est[ii]()*180/np.pi).sum()).item())
         
         if config.train_volume and config.lamb_volume!=0:
             V_est = impl_volume(raysSet)
@@ -413,15 +421,19 @@ for ep in range(config.epochs):
                                     scale=1/10,alpha=0.8,width=0.002)
             
 
-        # TODO: save histogram of error in angles and in-plane rotations
         shiftEstimate, rotEstimate = globalDeformationValues(shift_est,rot_est)
-        plt.hist(shiftEstimate[:]*config.n1,alpha=0.5)
-        # Display the histogram of true shift in top
-        plt.legend(['xshift','yshift'])
+        plt.figure(1)
+        plt.clf()
+        plt.hist(shiftEstimate.reshape(-1)*config.n1,alpha=1)
+        plt.hist(shift_true.reshape(-1)*config.n1,alpha=0.5)
+        plt.legend(['est.','true'])
         plt.savefig(os.path.join(config.path_save+"/training/deformations/shitfs.png"))
 
+        plt.figure(1)
+        plt.clf()
         plt.hist(rotEstimate*180/np.pi,15)
-        # Display the histogram of true angles in top
+        plt.hist(angle_true*180/np.pi,15,alpha=0.5)
+        plt.legend(['est.','true'])
         plt.title('Angles in degrees')
         plt.savefig(os.path.join(config.path_save+"/training/deformations/rotations.png"))
 

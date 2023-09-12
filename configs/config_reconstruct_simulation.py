@@ -87,15 +87,15 @@ def get_default_configs():
 
     config.lamb_volume = 0*1e-5 # regul parameters on volume regularization
     config.lamb_local_ampl = 1e2 # regul on amplitude of local def.
-    config.lamb_rot = 1e-6 # regul parameters on inplane rotations
-    config.lamb_shifts = 1e-6 # regul parameters on shifts
+    config.lamb_rot = 1e-4 # regul parameters on inplane rotations
+    config.lamb_shifts = 1e-4 # regul parameters on shifts
     config.wd = 5e-6 # weights decay
     config.scheduler_step_size = 200
     config.scheduler_gamma = 0.6
     config.delay_deformations = 25 # Delay before learning deformations
 
     # Params of implicit deformation
-    config.deformationScale = 1
+    config.deformationScale = 0.1
     config.inputRange = 1
 
     # if implicit model
