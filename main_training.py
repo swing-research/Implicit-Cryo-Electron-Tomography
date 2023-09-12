@@ -368,7 +368,7 @@ for ep in range(config.epochs):
                 loss_regul_rot.append((config.lamb_rot*torch.abs(rot_est[ii]()*180/np.pi).sum()).item())
         
         if config.train_volume and config.lamb_volume!=0:
-            V_est = impl_volume(raysSet)
+            V_est = impl_volume(raysSet.reshape(-1,3))
             loss += torch.linalg.norm(outputValues[outputValues<0])*config.lamb_volume
             loss_regul_volume.append((torch.linalg.norm(outputValues[outputValues<0])*config.lamb_volume).item())
 
