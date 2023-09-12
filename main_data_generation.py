@@ -289,10 +289,10 @@ for k in range(V_t.shape[2]):
     tmp = V_t[:,:,k].detach().cpu().numpy()
     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
     tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(os.path.join(config.path_save,'projections','volume','clean','obs_{}.png'.format(k)),tmp)
+    imageio.imwrite(os.path.join(config.path_save,'volumes','clean','obs_{}.png'.format(k)),tmp)
 
 
-projections_noisy_avg = projections_noisy.reshape(config.Nangles,-1,config.n1,config.n2).mean(1)
+projections_noisy_avg = projections_noisy.reshape(config.Nangles,-1,config.n1,config.n2).mean(1).contiguous().type(torch.float32)
 projections_noisy_no_deformed_avg =  projections_noisy_no_deformed.reshape(config.Nangles,-1,config.n1,config.n2).mean(1)
 V_FBP = operator_ET.pinv(projections_noisy_avg).detach().requires_grad_(False)
 V_FBP_no_deformed = operator_ET.pinv(projections_noisy_no_deformed_avg).detach().requires_grad_(False)
