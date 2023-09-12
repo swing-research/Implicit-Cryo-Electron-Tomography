@@ -262,12 +262,20 @@ t_test = []
 
 train_volume = config.train_volume
 learn_deformations = False
-use_local_def = True if train_local_def else False
-use_global_def = True if train_global_def else False
 t0 = time.time()
 for ep in range(config.epochs):
-    if(ep>config.delay_deformations):
+    if(ep>=config.delay_deformations):
         learn_deformations = True
+        use_local_def = True if train_local_def else False
+        use_global_def = True if train_global_def else False        
+        train_global_def = config.train_global_def
+        train_local_def = config.train_local_def
+    else:
+        use_local_def = False
+        use_global_def = False
+        train_local_def = False
+        train_global_def = False
+        
     for   angle,proj, idx_loader  in trainLoader:
         optimizer_volume.zero_grad()
         if learn_deformations:
@@ -289,11 +297,11 @@ for ep in range(config.epochs):
                     train_global_def = True
                 if use_global_def is False:
                     use_global_def = True
-            if ep in config.schedule_volume:
-                if train_volume:
-                    train_volume = False
-                else:
-                    train_volume = True
+        if ep in config.schedule_volume:
+            if train_volume:
+                train_volume = False
+            else:
+                train_volume = True
 
         # Choosing the subset of the parameters
         if(use_local_def):
