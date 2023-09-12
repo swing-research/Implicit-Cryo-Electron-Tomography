@@ -107,6 +107,16 @@ if not os.path.exists(config.path_save_data):
     os.makedirs(config.path_save_data)
 if not os.path.exists(config.path_save_data+"projections/"):
     os.makedirs(config.path_save_data+"projections/")
+if not os.path.exists(config.path_save_data+"projections/noisy/"):
+    os.makedirs(config.path_save_data+"projections/noisy/")
+if not os.path.exists(config.path_save_data+"projections/clean/"):
+    os.makedirs(config.path_save_data+"projections/clean/")
+if not os.path.exists(config.path_save_data+"projections/deformed/"):
+    os.makedirs(config.path_save_data+"projections/deformed/")
+if not os.path.exists(config.path_save_data+"volumes/"):
+    os.makedirs(config.path_save_data+"volumes/")
+if not os.path.exists(config.path_save_data+"volumes/clean/"):
+    os.makedirs(config.path_save_data+"volumes/clean/")
 if not os.path.exists(config.path_save_data+"deformations/"):
     os.makedirs(config.path_save_data+"deformations/")
 
@@ -261,17 +271,25 @@ for k in range(config.Nangles):
     tmp = projections_clean[k].detach().cpu().numpy()
     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
     tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(config.path_save_data+"projections/clean_"+str(k)+".png",tmp)
+    imageio.imwrite(config.path_save_data+"projections/clean/clean_"+str(k)+".png",tmp)
 
     tmp = projections_deformed[k].detach().cpu().numpy()
     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
     tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(config.path_save_data+"projections/deformed_"+str(k)+".png",tmp)
+    imageio.imwrite(config.path_save_data+"projections/deformed/deformed_"+str(k)+".png",tmp)
 
     tmp = projections_noisy[k].detach().cpu().numpy()
     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
     tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(config.path_save_data+"projections/noisy_"+str(k)+".png",tmp)
+    imageio.imwrite(config.path_save_data+"projections/noisy/noisy_"+str(k)+".png",tmp)
+
+
+## Save volume
+for k in range(V_t.shape[2]):
+    tmp = V_t[:,:,k].detach().cpu().numpy()
+    tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+    tmp = np.floor(255*tmp).astype(np.uint8)
+    imageio.imwrite(os.path.join(config.path_save,'projections','volume','clean','obs_{}.png'.format(k)),tmp)
 
 
 projections_noisy_avg = projections_noisy.reshape(config.Nangles,-1,config.n1,config.n2).mean(1)
