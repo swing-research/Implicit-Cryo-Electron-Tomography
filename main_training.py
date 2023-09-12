@@ -116,15 +116,16 @@ if(config.volume_model=="MLP"):
                           hidden_features=config.hidden_size_volume, hidden_blocks= config.num_layers_volume, out_features=config.output_size_volume).to(device)
 
 if(config.volume_model=="multi-resolution"):  
+# TODO: make these parameters in the config files
     import tinycudann as tcnn
     config_network = {"encoding": {
             'otype': 'Grid',
             'type': 'Hash',
-            'n_levels': 9,
-            'n_features_per_level': 2,
+            'n_levels': 16,
+            'n_features_per_level': 4,
             'log2_hashmap_size': 20,
             'base_resolution': 8,
-            'per_level_scale': 2,
+            'per_level_scale': 1.3,
             'interpolation': 'Smoothstep'
         },
         "network": {
@@ -224,6 +225,19 @@ choosenLocations_all = {}
 for ii, a in enumerate(angles):
     choosenLocations_all[ii] = []
 current_sampling = np.ones_like(projections_noisy.detach().cpu().numpy())
+
+def  globalDeformationValues(shift,rot):
+    shiftValueList = []
+    rotValueList = []
+    for si, ri in  zip(shift,rot):
+        shiftValue = si().clone().detach().cpu().numpy()
+        rotValue = ri.thetas.clone().detach().cpu().numpy()
+        shiftValueList.append(shiftValue)
+        rotValueList.append(rotValue)
+    shiftValueList = np.array(shiftValueList)
+    rotValueList = np.array(rotValueList)
+    return shiftValueList, rotValueList
+
 
 
 ######################################################################################################
@@ -400,6 +414,18 @@ for ep in range(config.epochs):
             
 
         # TODO: save histogram of error in angles and in-plane rotations
+        shiftEstimate, rotEstimate = globalDeformationValues(shift_est,rot_est)
+        plt.hist(shiftEstimate[:]*config.n1,alpha=0.5)
+        # Display the histogram of true shift in top
+        plt.legend(['xshift','yshift'])
+        plt.savefig(os.path.join(config.path_save+"/training/deformations/shitfs.png"))
+
+        plt.hist(rotEstimate*180/np.pi,15)
+        # Display the histogram of true angles in top
+        plt.title('Angles in degrees')
+        plt.savefig(os.path.join(config.path_save+"/training/deformations/rotations.png"))
+
+        # TODO: display the sampling
 
         
     if ep%config.NsaveNet ==0 and ep!=0:                    

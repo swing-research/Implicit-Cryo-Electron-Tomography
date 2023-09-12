@@ -67,12 +67,12 @@ def get_default_configs():
     config.schedule_global = []
     config.schedule_volume = []
 
-    config.batch_size = 10 # number of viewing direction per iteration
+    config.batch_size = 4 # number of viewing direction per iteration
     config.nRays =  1500 # number of sampling rays per viewing direction
     # ray_length = 512 # number of points along one ray
     # TODO: try to change that
     config.z_max = 2*config.n3/max(config.n1,config.n2)/np.cos((90-np.max([config.view_angle_min,config.view_angle_max]))*np.pi/180)
-    config.ray_length = 500#int(np.floor(n1*z_max))
+    config.ray_length = 500 #int(np.floor(n1*z_max))
     # TODO: try to chnage that with z_max
     config.rays_scaling = [1.,1.,1.] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
 
@@ -110,8 +110,8 @@ def get_default_configs():
     # params of implicit volume
     config.input_size_volume = 3
     config.output_size_volume = 1
-    config.num_layers_volume = 4
-    config.hidden_size_volume = 128
+    config.num_layers_volume = 3
+    config.hidden_size_volume = 64
     config.L_volume = 3
 
     config.loss_data = torch.nn.L1Loss()
