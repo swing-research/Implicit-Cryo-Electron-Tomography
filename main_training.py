@@ -1,32 +1,30 @@
-import numpy as np
-import torch
-import torch.nn as nn
-import matplotlib.pyplot as plt
-plt.ion()
-import mrcfile
-import time
-import os
-import imageio
-import torch.nn.functional as F
-import torch.nn as nn
-
-from utils import utils_deformation, utils_ricardo, utils_display
-
-from torch.utils.data import DataLoader, TensorDataset
-from utils.utils_sampling import sample_implicit_batch_lowComp, generate_rays_batch_bilinear
-
-from configs.config_reconstruct_simulation import get_default_configs
-config = get_default_configs()
-
+"""Module to train the reconstruction network on the simulated data."""
+from skimage.transform import resize
 
 import warnings
+import os
+import time
+import mrcfile
+import numpy as np
+import torch
+from torch.utils.data import DataLoader, TensorDataset
+from utils.utils_sampling import sample_implicit_batch_lowComp, generate_rays_batch_bilinear
+from utils import utils_deformation, utils_ricardo, utils_display
+from configs.config_reconstruct_simulation import get_default_configs
+
+
+
+
+#import torch.nn as nn
+import matplotlib.pyplot as plt
+plt.ion()
+# import torch.nn.functional as F
+# import torch.nn as nn
+
+
+
+config = get_default_configs()
 warnings.filterwarnings('ignore') 
-
-# Introduction
-'''
-This script...
-'''
-
 use_cuda=torch.cuda.is_available()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
 if torch.cuda.device_count()>1:
@@ -41,12 +39,8 @@ if not os.path.exists(config.path_save+"training/volume/"):
 if not os.path.exists(config.path_save+"training/deformations/"):
     os.makedirs(config.path_save+"training/deformations/")
 
-## TODO: do we need all the following for training?
 data = np.load(config.path_save_data+"volume_and_projections.npz")
-projections_noisy = torch.tensor(data['projections_noisy']).type(config.torch_type).to(device)
-projections_deformed = torch.tensor(data['projections_deformed']).type(config.torch_type).to(device)
-projections_deformed_global = torch.tensor(data['projections_deformed_global']).type(config.torch_type).to(device)
-projections_clean = torch.tensor(data['projections_clean']).type(config.torch_type).to(device)
+projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
 # PSF = torch.tensor(data['PSF']).type(config.torch_type).to(device)
 if config.sigma_PSF!=0:
     supp_PSF = max(PSF.shape)
@@ -68,12 +62,12 @@ local_tr = np.load(config.path_save_data+"local_deformations.npy", allow_pickle=
 
 shift_true = np.zeros((len(affine_tr),2))
 angle_true = np.zeros((len(affine_tr)))
-for k in range(len(affine_tr)):
-    shift_true[k,0] = affine_tr[k].shiftX.item()
-    shift_true[k,1] = affine_tr[k].shiftY.item()
-    angle_true[k] = affine_tr[k].angle.item()
+for k, affine_transformation in enumerate(affine_tr):
+    shift_true[k,0] = affine_transformation.shiftX.item()
+    shift_true[k,1] = affine_transformation.shiftY.item()
+    angle_true[k] = affine_transformation.angle.item()
 
-V_t = torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V.mrc").data),0,2)).type(config.torch_type).to(device)
+V_t = torch.Tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V.mrc").data),0,2)).type(config.torch_type).to(device)
 V_FBP_no_deformed_t = torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_FBP_no_deformed.mrc").data),0,2)).type(config.torch_type).to(device)
 V_FBP =  torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_FBP.mrc").data),0,2)).type(config.torch_type).to(device)
 
@@ -124,22 +118,21 @@ if(config.volume_model=="MLP"):
                           hidden_features=config.hidden_size_volume, hidden_blocks= config.num_layers_volume, out_features=config.output_size_volume).to(device)
 
 if(config.volume_model=="multi-resolution"):  
-# TODO: make these parameters in the config files
     import tinycudann as tcnn
     config_network = {"encoding": {
-            'otype': 'Grid',
-            'type': 'Hash',
-            'n_levels': 16,
-            'n_features_per_level': 4,
-            'log2_hashmap_size': 20,
-            'base_resolution': 8,
-            'per_level_scale': 1.3,
-            'interpolation': 'Smoothstep'
+            'otype': config.encoding.otype,
+            'type': config.encoding.type,
+            'n_levels': config.encoding.n_levels,
+            'n_features_per_level': config.encoding.n_features_per_level,
+            'log2_hashmap_size': config.encoding.log2_hashmap_size,
+            'base_resolution': config.encoding.base_resolution,
+            'per_level_scale': config.encoding.per_level_scale,
+            'interpolation': config.encoding.interpolation
         },
         "network": {
-            "otype": "FullyFusedMLP",   
-            "activation": "ReLU",       
-            "output_activation": "None",
+            "otype": config.network.otype,   
+            "activation": config.network.activation,       
+            "output_activation": config.network.output_activation,
             "n_neurons": config.hidden_size_volume,           
             "n_hidden_layers": config.num_layers_volume,       
         }       

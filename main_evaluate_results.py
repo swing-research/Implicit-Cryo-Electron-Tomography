@@ -1,3 +1,5 @@
+from skimage.transform import resize
+
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -113,21 +115,21 @@ if(config.volume_model=="MLP"):
 if(config.volume_model=="multi-resolution"):  
     import tinycudann as tcnn
     config_network = {"encoding": {
-            'otype': 'Grid',
-            'type': 'Hash',
-            'n_levels': 9,
-            'n_features_per_level': 2,
-            'log2_hashmap_size': 20,
-            'base_resolution': 8,
-            'per_level_scale': 2,
-            'interpolation': 'Smoothstep'
+            'otype': config.encoding.otype,
+            'type': config.encoding.type,
+            'n_levels': config.encoding.n_levels,
+            'n_features_per_level': config.encoding.n_features_per_level,
+            'log2_hashmap_size': config.encoding.log2_hashmap_size,
+            'base_resolution': config.encoding.base_resolution,
+            'per_level_scale': config.encoding.per_level_scale,
+            'interpolation': config.encoding.interpolation,
         },
         "network": {
-            "otype": "FullyFusedMLP",   
-            "activation": "ReLU",       
-            "output_activation": "None",
+            "otype": config.network.otype,   
+            "activation": config.network.activation,       
+            "output_activation": config.network.output_activation,
             "n_neurons": config.hidden_size_volume,           
-            "n_hidden_layers": config.num_layers_volume,       
+            "n_hidden_layers": config.num_layers_volume    
         }       
         }
     impl_volume = tcnn.NetworkWithInputEncoding(n_input_dims=3, n_output_dims=1, encoding_config=config_network["encoding"], network_config=config_network["network"]).to(device)
@@ -222,7 +224,7 @@ for k in range(config.Nangles):
     tmp = projections_ours[k]
     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
     tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","ours","snapshot_{}.mrc".format(k)),tmp)
+    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","ours","snapshot_{}.png".format(k)),tmp)
     # tmp = projections_AreTomo[k]
     # tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
     # tmp = np.floor(255*tmp).astype(np.uint8)
@@ -230,11 +232,11 @@ for k in range(config.Nangles):
     tmp = projections_FBP[k]
     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
     tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","FBP","snapshot_{}.mrc".format(k)),tmp)
+    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","FBP","snapshot_{}.png".format(k)),tmp)
     tmp = projections_FBP_no_deformed[k]
     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
     tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","FBP_no_deformed","snapshot_{}.mrc".format(k)),tmp)
+    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","FBP_no_deformed","snapshot_{}.png".format(k)),tmp)
 
 out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes","ours","projections.mrc"),np.moveaxis(V_ours,2,0),overwrite=True)
 out.close()

@@ -77,7 +77,7 @@ def get_default_configs():
     config.rays_scaling = [1.,1.,1.] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
 
     ## Parameters
-    config.epochs = 400
+    config.epochs = 100
     config.Ntest = 25 # number of epoch before display
     config.NsaveNet = 100 # number of epoch before saving again the nets
     config.lr_volume = 1e-2
@@ -106,7 +106,7 @@ def get_default_configs():
     config.L = 10
     # if interpolation model
     config.N_ctrl_pts_net = 20
-
+    # params for the network
     # params of implicit volume
     config.input_size_volume = 3
     config.output_size_volume = 1
@@ -115,7 +115,22 @@ def get_default_configs():
     config.L_volume = 3
 
     config.loss_data = torch.nn.L1Loss()
-
+    # FIXME: This might need a redisign with tree like structure 
+    # params for the multi-resolution grids
+    config.encoding = ml_collections.ConfigDict()
+    config.encoding.otype = 'Grid'
+    config.encoding.type = 'Hash'
+    config.encoding.n_levels = 16
+    config.encoding.n_features_per_level = 4
+    config.encoding.log2_hashmap_size = 20
+    config.encoding.base_resolution = 8
+    config.encoding.per_level_scale = 1.3
+    config.encoding.interpolation = 'Smoothstep'
+    config.network = ml_collections.ConfigDict()
+    # params specific to Tiny cuda network
+    config.network.otype = 'FullyFusedMLP'
+    config.network.activation = 'ReLU'
+    config.network.output_activation = 'None'
 
 
     return config
