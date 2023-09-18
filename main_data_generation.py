@@ -1,105 +1,29 @@
-import numpy as np
-import torch
-# import torch.nn as nn
-import matplotlib.pyplot as plt
-plt.ion()
-from skimage.transform import resize
-import mrcfile
-# import time
-# from torchsummary import summary
-# from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles, ParallelBeamGeometry3DOpAngles_rectangular
-from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
-import os
-import imageio
-# import torch.nn.functional as F
-import torch.nn as nn
-
-# from utils import data_generation, reconstruction, utils_deformation, utils_sampling, utils_interpolation, utils_display
-from utils import data_generation, utils_deformation, utils_display
-# from utils.reconstruction import getfsc
-
-# from torch.utils.data import DataLoader, TensorDataset
-# from utils.utils_sampling import sample_implicit_batch,sample_rays, sample_implicit, sample_implicit_batch_v2
-
-import warnings
-warnings.filterwarnings('ignore') 
-
-# Introduction
 '''
 This script is used to generate data from a clean tomogram. 
 The goal is to compare different approach on this dataset that is suppose to mimic the CryoET image formation model.
 '''
-
-"""
-## TODO: parameters to put inot args
-- device
-- config.torch_type
-- seed
-- config.volume_name
-- config.n1, config.n2, config.n3
-- config.Nangles
-- angle_min, angle_max
-- SNR_value
-- config.sigma_PSF
-- scale_min
-- scale_max
-- shift_min
-- shift_max
-- shear_min
-- shear_max
-- angle_min
-- angle_max
-- sigma_local_def
-- N_ctrl_pts_local_def
-"""
-from configs.config_reconstruct_simulation import get_default_configs
+from skimage.transform import resize
+import os
+import warnings
+import numpy as np
+import torch
+import matplotlib.pyplot as plt
+import mrcfile
+import imageio
+from utils import data_generation, utils_deformation, utils_display
+warnings.filterwarnings('ignore') 
+from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
+plt.ion()
+from configs.config_reconstruct_simulation import get_default_configs,get_areTomoValidation_configs
 config = get_default_configs()
 
-
+# Choosing the seed and the device
 use_cuda=torch.cuda.is_available()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
 if torch.cuda.device_count()>1:
     torch.cuda.set_device(config.device_num)
 np.random.seed(config.seed)
 torch.manual_seed(config.seed)
-
-# config.volume_name = 'model_0'
-
-# # Parameters for the data generation
-# # size of the volume to use to generate the tilt-series
-# config.n1 = 512
-# config.n2 = 512
-# config.n3 = 180 # size of the effective volume
-# # size of the patch to crop in the raw volume
-# config.n1_patch = 512
-# config.n2_patch = 512
-# config.n3_patch = 180 # size of the effective volume
-# # nZ = 512 # size of the extended volume
-# config.Nangles = 61
-# view_angle_min = -60
-# view_angle_max = 60
-# SNR_value = 10
-# config.sigma_PSF = 3.
-# config.number_sub_projections = 1
-
-# scale_min = 1.0
-# scale_max = 1.0
-# shift_min = -0.04
-# shift_max = 0.04
-# shear_min = -0.0
-# shear_max = 0.0
-# angle_min = -4/180*np.pi
-# angle_max = 4/180*np.pi
-# sigma_local_def = 4
-# N_ctrl_pts_local_def = (12,12)
-
-
-# grid_class = utils_sampling.grid_class(config.n1,config.n2,config.n3,config.torch_type,device)
-
-# # define undersampling grid
-# us = 4 # under sample factor
-# grid_class_us = utils_sampling.grid_class(config.n1//us,config.n2//us,config.n3//us,config.torch_type,device)
-
 
 if not os.path.exists("results/"):
     os.makedirs("results/")
@@ -127,18 +51,11 @@ if not os.path.exists(config.path_save_data+"deformations/"):
 # Parameters
 name_volume="grandmodel.mrc" # here: https://www.shrec.net/cryo-et/
 
-# make sure it works on different computers, add your path bellow
-if os.path.exists("/raid/Valentin/"+str(config.volume_name)+"/"+name_volume):
-    path_volume = "/raid/Valentin/"+str(config.volume_name)+"/"+name_volume
-elif os.path.exists("/users/staff/dmi-dmi/debarn0000/data_nobackup/"+str(config.volume_name)+"/"+name_volume):
-    path_volume = "/users/staff/dmi-dmi/debarn0000/data_nobackup/"+str(config.volume_name)+"/"+name_volume
-elif os.path.exists("/home/debarn0000/Documents/Data/shrec2021_full_dataset/"+str(config.volume_name)+"/"+name_volume):
-    path_volume = "/home/debarn0000/Documents/Data/shrec2021_full_dataset/"+str(config.volume_name)+"/"+name_volume
-else:
-    path_volume = " " # "./datasets/volume_reconstruction.mrc" # download here: https://drive.google.com/file/d/1o9w5EX8YgSlW78nfaKaT9ZN8UnfxZ6Be/view?usp=sharing
+
+path_volume = "./datasets/"+str(config.volume_name)+"/"+name_volume #TODO: maybe requires a redisign
+
 
 # Loading and shaping the volume
-# TODO: save full middle slice and the one taken, just to validate what we are doing
 V = np.double(mrcfile.open(path_volume).data)
 nv = V.shape # size of the loaded volume 
 V = V[nv[0]//2-config.n3_patch//2:nv[0]//2+config.n3_patch//2,nv[1]//2-config.n1_patch//2:nv[1]//2+config.n1_patch//2,nv[2]//2-config.n2_patch//2:nv[2]//2+config.n2_patch//2]
@@ -148,6 +65,8 @@ V = np.swapaxes(V,1,2)
 V = (V - V.min())/(V.max()-V.min())
 V *= config.n3
 
+out = mrcfile.new(config.path_save_data+"V_central_slice.mrc",V[:,:,config.n3//2].astype(np.float32),overwrite=True)
+out.close() 
 # # define molifier to ensure support and avoid padding artifacts
 # mollifier = utils_sampling.mollifier_class(-1,config.torch_type,device)
 
@@ -197,7 +116,7 @@ for i in range(config.Nangles*config.number_sub_projections):
     scaleX, scaleY, shiftX, shiftY, shearX, shearY, angle  = utils_deformation.generate_params_deformation(config.scale_min,
                 config.scale_max,config.shift_min,config.shift_max,config.shear_min,config.shear_max,config.angle_min,config.angle_max)
     affine_tr.append(utils_deformation.AffineTransform(scaleX, scaleY, shiftX, shiftY, shearX, shearY, angle ).cuda())
-
+    #print(angle)
     depl_ctr_pts = torch.randn(2,config.N_ctrl_pts_local_def[0],config.N_ctrl_pts_local_def[1]).to(device).type(config.torch_type)
     depl_ctr_pts[0] = depl_ctr_pts[0]/config.n1*config.sigma_local_def
     depl_ctr_pts[1] = depl_ctr_pts[1]/config.n2*config.sigma_local_def
@@ -261,6 +180,7 @@ projections_noisy_no_deformed = projections_clean.clone() + torch.randn_like(pro
 
 
 np.save(config.path_save_data+"global_deformations.npy",affine_tr)
+#np.savetxt(config.path_save_data+"global_deformations.txt",affine_tr)
 np.save(config.path_save_data+"local_deformations.npy",local_tr)
 np.savez(config.path_save_data+"volume_and_projections.npz",projections_noisy=projections_noisy.detach().cpu().numpy(),projections_deformed=projections_deformed.detach().cpu().numpy(),projections_deformed_global=projections_deformed_global.detach().cpu().numpy(),projections_clean=projections_clean.detach().cpu().numpy(),PSF=PSF)
 # np.savez(config.path_save_data+"parameters.npz",Nangles=config.Nangles,angle_min=config.angle_min,angle_max=config.angle_max,
@@ -316,3 +236,8 @@ out = mrcfile.new(config.path_save_data+"projections_noisy_no_deformed.mrc",proj
 out.close()
 out = mrcfile.new(config.path_save_data+"projections_noisy_no_deformed_reversed.mrc",projections_noisy_no_deformed_reversed,overwrite=True)
 out.close()
+
+
+# Save angle files
+np.save(config.path_save_data+"angles.npy",angles)
+np.savetxt(config.path_save_data+"angles.txt",angles)
