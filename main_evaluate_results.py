@@ -8,11 +8,14 @@ import mrcfile
 from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
 import os
 import imageio
-from utils import utils_deformation, utils_display, utils_ricardo
+from utils import utils_deformation, utils_display, utils_ricardo,utils_sampling
 import shutil
 import pandas as pd
-from configs.config_reconstruct_simulation import get_default_configs
-config = get_default_configs()
+from configs.config_reconstruct_simulation import get_default_configs, get_areTomoValidation_configs
+config = get_areTomoValidation_configs()
+from matplotlib import gridspec
+from utils import utils_deformation, utils_display
+from scipy.interpolate import griddata
 
 import warnings
 warnings.filterwarnings('ignore') 
@@ -38,39 +41,66 @@ if not os.path.exists(config.path_save+"/evaluation/"):
     os.makedirs(config.path_save+"/evaluation/")
 if not os.path.exists(config.path_save+"/evaluation/projections/"):
     os.makedirs(config.path_save+"/evaluation/projections/")
-if not os.path.exists(config.path_save+"/evaluation/projections/ours/"):
-    os.makedirs(config.path_save+"/evaluation/projections/ours/")
-if not os.path.exists(config.path_save+"/evaluation/projections/AreTomo/"):
-    os.makedirs(config.path_save+"/evaluation/projections/AreTomo/")
-if not os.path.exists(config.path_save+"/evaluation/projections/Etomo/"):
-    os.makedirs(config.path_save+"/evaluation/projections/Etomo/")   
-if not os.path.exists(config.path_save+"/evaluation/projections/FBP_no_deformed/"):
-    os.makedirs(config.path_save+"/evaluation/projections/FBP_no_deformed/")
-if not os.path.exists(config.path_save+"/evaluation/projections/FBP/"):
-    os.makedirs(config.path_save+"/evaluation/projections/FBP/")
 if not os.path.exists(config.path_save+"/evaluation/volumes/"):
     os.makedirs(config.path_save+"/evaluation/volumes/")
-if not os.path.exists(config.path_save+"/evaluation/volumes/ours/"):
-    os.makedirs(config.path_save+"/evaluation/volumes/ours/")
-if not os.path.exists(config.path_save+"/evaluation/volumes/AreTomo/"):
-    os.makedirs(config.path_save+"/evaluation/volumes/AreTomo/")
-if not os.path.exists(config.path_save+"/evaluation/volumes/Etomo/"):
-    os.makedirs(config.path_save+"/evaluation/volumes/Etomo/")
-if not os.path.exists(config.path_save+"/evaluation/volumes/FBP_no_deformed/"):
-    os.makedirs(config.path_save+"/evaluation/volumes/FBP_no_deformed/")
-if not os.path.exists(config.path_save+"/evaluation/volumes/FBP/"):
-    os.makedirs(config.path_save+"/evaluation/volumes/FBP/")
 if not os.path.exists(config.path_save+"/evaluation/deformations/"):
     os.makedirs(config.path_save+"/evaluation/deformations/")
+if not os.path.exists(config.path_save+"/evaluation/volume_slices/"):
+    os.makedirs(config.path_save+"/evaluation/volume_slices/")
+
+if not os.path.exists(config.path_save+"/evaluation/projections/ours/"):
+    os.makedirs(config.path_save+"/evaluation/projections/ours/")
+if not os.path.exists(config.path_save+"/evaluation/volumes/ours/"):
+    os.makedirs(config.path_save+"/evaluation/volumes/ours/")
 if not os.path.exists(config.path_save+"/evaluation/deformations/ours/"):
     os.makedirs(config.path_save+"/evaluation/deformations/ours/")
+if not os.path.exists(config.path_save+"/evaluation/volume_slices/ours/"):
+    os.makedirs(config.path_save+"/evaluation/volume_slices/ours/")
+
+if not os.path.exists(config.path_save+"/evaluation/projections/AreTomo/"):
+    os.makedirs(config.path_save+"/evaluation/projections/AreTomo/")
+if not os.path.exists(config.path_save+"/evaluation/volumes/AreTomo/"):
+    os.makedirs(config.path_save+"/evaluation/volumes/AreTomo/")
 if not os.path.exists(config.path_save+"/evaluation/deformations/AreTomo/"):
     os.makedirs(config.path_save+"/evaluation/deformations/AreTomo/")
+if not os.path.exists(config.path_save+"/evaluation/volume_slices/AreTomo/"):
+    os.makedirs(config.path_save+"/evaluation/volume_slices/AreTomo/")
+
+if not os.path.exists(config.path_save+"/evaluation/projections/Etomo/"):
+    os.makedirs(config.path_save+"/evaluation/projections/Etomo/")   
+if not os.path.exists(config.path_save+"/evaluation/volumes/Etomo/"):
+    os.makedirs(config.path_save+"/evaluation/volumes/Etomo/")
 if not os.path.exists(config.path_save+"/evaluation/deformations/Etomo/"):
     os.makedirs(config.path_save+"/evaluation/deformations/Etomo/")
+if not os.path.exists(config.path_save+"/evaluation/volume_slices/Etomo/"):
+    os.makedirs(config.path_save+"/evaluation/volume_slices/Etomo/")
+
+
+
 
 if not os.path.exists(config.path_save+"/evaluation/deformations/true/"):
     os.makedirs(config.path_save+"/evaluation/deformations/true/")
+if not os.path.exists(config.path_save+"/evaluation/volume_slices/true/"):
+    os.makedirs(config.path_save+"/evaluation/volume_slices/true/")
+
+if not os.path.exists(config.path_save+"/evaluation/projections/FBP_no_deformed/"):
+    os.makedirs(config.path_save+"/evaluation/projections/FBP_no_deformed/")
+if not os.path.exists(config.path_save+"/evaluation/volumes/FBP_no_deformed/"):
+    os.makedirs(config.path_save+"/evaluation/volumes/FBP_no_deformed/")
+if not os.path.exists(config.path_save+"/evaluation/volume_slices/FBP_no_deformed/"):
+    os.makedirs(config.path_save+"/evaluation/volume_slices/FBP_no_deformed/")
+
+
+
+if not os.path.exists(config.path_save+"/evaluation/projections/FBP/"):
+    os.makedirs(config.path_save+"/evaluation/projections/FBP/")
+if not os.path.exists(config.path_save+"/evaluation/volumes/FBP/"):
+    os.makedirs(config.path_save+"/evaluation/volumes/FBP/")
+if not os.path.exists(config.path_save+"/evaluation/volume_slices/FBP/"):
+    os.makedirs(config.path_save+"/evaluation/volume_slices/FBP/")
+
+
+
 
 
 ######################################################################################################
@@ -100,14 +130,19 @@ if os.path.exists(config.path_save_data+"areTomo_reconstruction.mrc"):
 if(os.path.exists(config.path_save_data+"etomo_reconstruction.mrc")):
     eval_ETOMO = True
 
+# if(eval_AreTomo):
+#     V_AreTomo = np.flip(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"areTomo_reconstruction.mrc").data),1,2),2).copy()
+#     V_AreTomo_t = torch.tensor(V_AreTomo).type(config.torch_type).to(device)
+
+# if(eval_ETOMO):
+#     V_Etomo = np.flip(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"etomo_reconstruction.mrc").data),1,2),2).copy()
+#     V_Etomo_t = torch.tensor(V_Etomo).type(config.torch_type).to(device)
+
+
 if(eval_AreTomo):
-    V_AreTomo = np.flip(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"areTomo_reconstruction.mrc").data),1,2),2).copy()
-    V_AreTomo_t = torch.tensor(V_AreTomo).type(config.torch_type).to(device)
-
+    V_AreTomo_t =  torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_aretomo.mrc").data),0,2)).type(config.torch_type).to(device)
 if(eval_ETOMO):
-    V_Etomo = np.flip(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"etomo_reconstruction.mrc").data),1,2),2).copy()
-    V_Etomo_t = torch.tensor(V_Etomo).type(config.torch_type).to(device)
-
+    V_Etomo_t  = torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_etomo.mrc").data),0,2)).type(config.torch_type).to(device)
 # V_ours_isonet = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_ours+Isonet.mrc").data),0,2)
 # V_AreTomo_isonet = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_AreTomo+Isonet.mrc").data),0,2)
 
@@ -261,11 +296,14 @@ if eval_AreTomo:
     local_transforms_aretomo = []
 
     affine_flag = True
+    num_patches = 0
     for line in lines:
         if line.startswith('#'):
             comments.append(line.strip())  # Strip removes leading/trailing whitespace
             if line.startswith('# Local Alignment'):
                 affine_flag = False
+            if line.startswith('# NumPatches'):
+                num_patches = int(line.split('=')[-1])
         else:
             if affine_flag:
                 affine_transforms_aretomo.append(line.strip().split())
@@ -289,10 +327,49 @@ if eval_AreTomo:
     
     error_arr.loc[3] = ['AreTomo',error_x_shifts_aretomo,error_y_shifts_aretomo,
                         error_inplane_rotation_aretomo]
+    
+    local_AreTomo = np.zeros((config.Nangles,num_patches,4))
+
+    for local_est in local_transforms_aretomo:
+        angle_index =int(local_est[0])
+        patch_index = int(local_est[1])
+
+        local_AreTomo[angle_index,patch_index,0] = float(local_est[2])
+        local_AreTomo[angle_index,patch_index,1] = float(local_est[3])
+        local_AreTomo[angle_index,patch_index,2] = float(local_est[4])
+        local_AreTomo[angle_index,patch_index,3] = float(local_est[5])
+        
+
+
+    x_deformation = np.linspace(-config.n1//2,config.n1//2,config.N_ctrl_pts_local_def[0])
+    y_deformation = np.linspace(-config.n2//2,config.n2//2,config.N_ctrl_pts_local_def[1])
+    xx_deformation, yy_deformation = np.meshgrid(x_deformation,y_deformation,indexing='ij')
+    xx_deformation =xx_deformation[:,:,None]
+    yy_deformation = yy_deformation[:,:,None]
+    grid_interp = np.concatenate([xx_deformation,yy_deformation],2).reshape(-1,2)
+
+    implicit_deformation_AreTomo = []
+    for k in range(config.Nangles):
+        values_x = griddata(local_AreTomo[k][:,:2],local_AreTomo[k][:,2],grid_interp,method='cubic',fill_value=0,rescale=True)
+        values_y = griddata(local_AreTomo[k][:,:2],local_AreTomo[k][:,3],grid_interp,method='cubic',fill_value=0,rescale=True)
+        depl_ctr_pts_net = np.concatenate([values_x[None],values_y[None]],0).reshape(2,config.N_ctrl_pts_local_def[0],config.N_ctrl_pts_local_def[1])
+        depl_ctr_pts_net = torch.tensor(depl_ctr_pts_net/config.n1).to(device).type(config.torch_type)
+        field = utils_deformation.deformation_field(depl_ctr_pts_net.clone())
+        implicit_deformation_AreTomo.append(field)
 
 
 # save the error in a csv file
 error_arr.to_csv(os.path.join(config.path_save,'evaluation'+'/affine_error.csv'),index=False)
+
+
+
+
+
+
+
+
+
+
 
 x_lin1 = np.linspace(-1,1,n1_eval)*rays_scaling[0,0,0,0].item()/2+0.5
 x_lin2 = np.linspace(-1,1,n2_eval)*rays_scaling[0,0,0,1].item()/2+0.5
@@ -351,6 +428,106 @@ if(eval_ETOMO):
 # fsc_arr[:,6] = fsc_ours_isonet[:,0]
 header ='x,ours,FBP,FBP_no_deformed,AreTomo,ETOMO,ours_isonet'
 np.savetxt(os.path.join(config.path_save,'evaluation','FSC.csv'),fsc_arr,header=header,delimiter=",",comments='')
+
+
+####Saving the Central slices
+
+def generateCentralSlice(volume, save_path):
+    """
+    The function to create the central slice plot 
+    Volume of the form N x N X M
+    M <N
+    """
+    n1,n2,m = volume.shape
+    fig = plt.figure()
+    fig.set_figheight(8)
+    fig.set_figwidth(8)
+    spec = gridspec.GridSpec(ncols=2, nrows=2,
+                            width_ratios=[1, 180/512], wspace=0.1,
+                            hspace=0.1, height_ratios=[180/512, 1])
+
+    a0 = fig.add_subplot(spec[0])
+    a0.imshow(volume[n1//2].T,cmap='gray')
+    a0.axis('off')
+
+    a1 = fig.add_subplot(spec[1])
+    a1.axis('off')
+
+    a2 = fig.add_subplot(spec[2])
+    a2.imshow(volume[:,:,m//2],cmap='gray')
+    a2.axis('off')
+
+    a3 = fig.add_subplot(spec[3])
+    a3.imshow(volume[:,n2//2,:],cmap='gray')
+    a3.axis('off')
+    print(save_path)
+    plt.savefig(save_path+'.png',dpi=300)
+    plt.close()
+
+
+generateCentralSlice(V,os.path.join(config.path_save,'evaluation','central_slice_true'))
+generateCentralSlice(V_ours,os.path.join(config.path_save,'evaluation','central_slice_ours'))
+if(eval_AreTomo):
+    generateCentralSlice(V_AreTomo,os.path.join(config.path_save,'evaluation','central_slice_AreTomo'))
+if(eval_ETOMO):
+    generateCentralSlice(V_Etomo,os.path.join(config.path_save,'evaluation','central_slice_Etomo'))
+generateCentralSlice(V_FBP,os.path.join(config.path_save,'evaluation','central_slice_FBP'))
+generateCentralSlice(V_FBP_no_deformed,os.path.join(config.path_save,'evaluation','central_slice_FBP_no_deformed'))
+
+##################################################################################################
+## Save Volume slices as png
+##################################################################################################
+saveIndex = [60,110,150] # The slices to save taken from previous plots
+
+for index in saveIndex:
+    # True volume
+    tmp = V[:,:,index]
+    tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+    tmp = np.floor(255*tmp).astype(np.uint8)
+    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","true","slice_{}.png".format(index)),tmp)
+
+    # Ours
+    tmp = V_ours[:,:,index]
+    tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+    tmp = np.floor(255*tmp).astype(np.uint8)
+    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ours","slice_{}.png".format(index)),tmp)
+
+
+    # FBP
+    tmp = V_FBP[:,:,index]
+    tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+    tmp = np.floor(255*tmp).astype(np.uint8)
+    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP","slice_{}.png".format(index)),tmp)
+
+    # FBP no deformed
+    tmp = V_FBP_no_deformed[:,:,index]
+    tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+    tmp = np.floor(255*tmp).astype(np.uint8)
+    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_no_deformed","slice_{}.png".format(index)),tmp)
+
+    if(eval_AreTomo):
+        tmp = V_AreTomo[:,:,index]
+        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+        tmp = np.floor(255*tmp).astype(np.uint8)
+        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo","slice_{}.png".format(index)),tmp)
+
+    if(eval_ETOMO):
+        tmp = V_Etomo[:,:,index]
+        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+        tmp = np.floor(255*tmp).astype(np.uint8)
+        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo","slice_{}.png".format(index)),tmp)
+
+##################################################################################################
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -423,6 +600,21 @@ out.close()
 out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes","FBP_no_deformed","projections.mrc"),np.moveaxis(V_FBP_no_deformed,2,0),overwrite=True)
 out.close()
 
+## Saving the inplance angles 
+
+inplaneAngles = np.zeros((config.Nangles,5))
+inplaneAngles[:,0] = angles
+inplaneAngles[:,1] = inplane_rotation
+inplaneAngles[:,2] = inplane_rotation_ours
+if(eval_AreTomo):
+    inplaneAngles[:,3] = inplane_rotation_aretomo
+if(eval_ETOMO):
+    inplaneAngles[:,4] = inplane_rotation_etomo
+
+
+# save as a csv file
+header ='angles,true,ours,AreTomo,Etomo'
+np.savetxt(os.path.join(config.path_save,'evaluation','inplane_angles.csv'),inplaneAngles,header=header,delimiter=",",comments='')
 
 
 
@@ -433,8 +625,65 @@ out.close()
 
 
 
+# TODO: comparing local deformation  
 
-# TODO: comparing local deformation 
+grid_class = utils_sampling.grid_class(config.n1,config.n2,config.n3,config.torch_type,device)
+
+err_local_ours = np.zeros(config.Nangles)
+err_local_init = np.zeros(config.Nangles)
+err_local_AreTomo = np.zeros(config.Nangles)
+
+for k in range(config.Nangles):
+    # Error in ours
+    grid_correction_true = local_tr[k](grid_class.grid2d_t).detach().cpu().numpy()
+    grid_correction_est_ours = implicit_deformation_ours[k](grid_class.grid2d_t).detach().cpu().numpy()
+    tmp = np.abs(grid_correction_true-grid_correction_est_ours)
+    err_local_ours[k] = (0.5*config.n1*tmp[:,0]+0.5*config.n2*tmp[:,1]).mean()
+    # Finidng the magnitude for init
+    tmp = np.abs(grid_correction_true)
+    err_local_init[k] = (0.5*config.n1*tmp[:,0]+0.5*config.n2*tmp[:,1]).mean()
+
+    # Finding the error for AreTomo
+    if(eval_AreTomo):
+        grid_correction_est_AreTomo = implicit_deformation_AreTomo[k](grid_class.grid2d_t).detach().cpu().numpy()
+        tmp = np.abs(grid_correction_true-grid_correction_est_AreTomo)
+        err_local_AreTomo[k] = (0.5*config.n1*tmp[:,0]+0.5*config.n2*tmp[:,1]).mean()
+    else: 
+        err_local_AreTomo[k] = np.nan
+
+# Save the error in a csv file
+err_local_arr = np.zeros((config.Nangles,4))
+err_local_arr[:,0] = angles
+err_local_arr[:,1] = err_local_ours
+err_local_arr[:,2] = err_local_init
+err_local_arr[:,3] = err_local_AreTomo
+
+err_mean = np.nanmean(err_local_arr[:,1:],0)
+err_std = np.nanstd(err_local_arr[:,1:],0)
+
+err_local_arr = np.concatenate([np.array([err_mean,err_std])],0)
+
+HEADER ='ours,init,AreTomo'
+np.savetxt(os.path.join(config.path_save,'evaluation','local_deformation_error.csv'),err_local_arr,header=HEADER,delimiter=",",comments='')
+
+
+# Get the local deformation error plots 
+
+
+deformationIndeces = [0,1,2]
+
+for index in deformationIndeces:
+    # Ours
+    savepath = os.path.join(config.path_save,'evaluation','deformations/ours','local_deformation_error_{}'.format(index))
+    utils_display.display_local(implicit_deformation_ours[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath )
+
+
+    # Aretomo
+    savepath = os.path.join(config.path_save,'evaluation','deformations/AreTomo','local_deformation_error_{}'.format(index))
+    utils_display.display_local(implicit_deformation_AreTomo[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath )
+
+
+
 
 
 
