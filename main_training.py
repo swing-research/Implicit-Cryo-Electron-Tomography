@@ -10,7 +10,7 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 from utils.utils_sampling import sample_implicit_batch_lowComp, generate_rays_batch_bilinear
 from utils import utils_deformation, utils_ricardo, utils_display
-from configs.config_reconstruct_simulation import get_default_configs
+from configs.config_reconstruct_simulation import get_default_configs,get_areTomoValidation_configs,bare_bones_config,get_config_local_implicit
 
 
 
@@ -23,7 +23,7 @@ plt.ion()
 
 
 
-config = get_default_configs()
+config = get_config_local_implicit()
 warnings.filterwarnings('ignore') 
 use_cuda=torch.cuda.is_available()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
@@ -152,17 +152,48 @@ if config.local_model=='implicit':
     implicit_deformation_list = []
     for k in range(config.Nangles):
         implicit_deformation = FourierNet(
-            in_features=config.input_size,
-            out_features=config.output_size,
-            hidden_features=config.hidden_size,
-            hidden_blocks=config.num_layers,
-            L = config.L).to(device)
+            in_features=config.local_deformation.input_size,
+            out_features=config.local_deformation.output_size,
+            hidden_features=config.local_deformation.hidden_size,
+            hidden_blocks=config.local_deformation.num_layers,
+            L = config.local_deformation.L).to(device)
         implicit_deformation_list.append(implicit_deformation)
 
     num_param = sum(p.numel() for p in implicit_deformation_list[0].parameters() if p.requires_grad) 
     print('---> Number of trainable parameters in implicit net: {}'.format(num_param))
+
+if config.local_model=='tcnn':
+    import tinycudann as tcnn
+    config_network = {"encoding": {
+            'otype': config.local_deformation.encoding.otype,
+            'type': config.local_deformation.encoding.type,
+            'n_levels': config.local_deformation.encoding.n_levels,
+            'n_features_per_level': config.local_deformation.encoding.n_features_per_level,
+            'log2_hashmap_size': config.local_deformation.encoding.log2_hashmap_size,
+            'base_resolution': config.local_deformation.encoding.base_resolution,
+            'per_level_scale': config.local_deformation.encoding.per_level_scale,
+            'interpolation': config.local_deformation.encoding.interpolation
+        },
+        "network": {
+            "otype": config.local_deformation.network.otype,   
+            "activation": config.local_deformation.network.activation,       
+            "output_activation": config.local_deformation.network.output_activation,
+            "n_neurons": config.local_deformation.hidden_size,           
+            "n_hidden_layers": config.local_deformation.num_layers,       
+        }       
+        }
+    implicit_deformation_list = []
+    for k in range(config.Nangles):
+        implicit_deformation = tcnn.NetworkWithInputEncoding(n_input_dims=config.local_deformation.input_size, 
+                                                             n_output_dims=config.local_deformation.output_size, encoding_config=config_network["encoding"], network_config=config_network["network"]).to(device)
+        implicit_deformation_list.append(implicit_deformation)
+
+    num_param = sum(p.numel() for p in implicit_deformation_list[0].parameters() if p.requires_grad)
+    print('---> Number of trainable parameters in implicit net: {}'.format(num_param))
+
+
 if config.local_model=='interp':
-    depl_ctr_pts_net = torch.zeros((2,config.N_ctrl_pts_net,config.N_ctrl_pts_net)).to(device).type(config.torch_type)/max([config.n1,config.n2,config.n3])/10
+    depl_ctr_pts_net = torch.zeros((2,config.local_deformation.N_ctrl_pts_net,config.local_deformation.N_ctrl_pts_net)).to(device).type(config.torch_type)/max([config.n1,config.n2,config.n3])/10
     implicit_deformation_list = []
     for k in range(config.Nangles):
         # depl_ctr_pts_net = local_tr[k].depl_ctr_pts.clone().detach()[0].cuda()/deformationScale
@@ -255,6 +286,11 @@ t_test = []
 
 train_volume = config.train_volume
 learn_deformations = False
+
+check_point_training = True
+if config.isbare_bones:
+    memory_used = []
+    check_point_training = False
 t0 = time.time()
 for ep in range(config.epochs):
     if(ep>=config.delay_deformations):
@@ -350,7 +386,8 @@ for ep in range(config.epochs):
 
         ## Add regularizations
         if train_local_def and config.lamb_local_ampl!=0:
-            depl = torch.abs(implicit_deformation_list[ii](raysSet.reshape(-1,3)))
+            # Using only the x and y coordinates
+            depl = torch.abs(implicit_deformation_list[ii](raysSet[:,:,0,:2].reshape(-1,2)))
             loss += config.lamb_local_ampl*(depl.mean())
             loss_regul_local_ampl.append(config.lamb_local_ampl*depl.mean().item())
         if train_global_def and (config.lamb_rot!=0 or config.lamb_shifts!=0):
@@ -386,8 +423,10 @@ for ep in range(config.epochs):
     l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader):])
     print("Epoch: {}, loss_avg: {:2.3} || Loss data fidelity: {:2.3}, regul volume: {:2.3}, regul shifts: {:2.3}, regul inplane: {:2.3}, regul local: {:2.3}, time: {:2.3}".format(
         ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
-
-    if ep%config.Ntest==0 :#and ep!=0:
+    if config.isbare_bones:
+        memory_used.append(torch.cuda.memory_allocated())
+    if (ep%config.Ntest==0)  and check_point_training:#and ep!=0:
+        print('Test')
         x_lin1 = np.linspace(-1,1,config.n1)*rays_scaling[0,0,0,0].item()/2+0.5
         x_lin2 = np.linspace(-1,1,config.n2)*rays_scaling[0,0,0,1].item()/2+0.5
         XX, YY = np.meshgrid(x_lin1,x_lin2,indexing='ij')
@@ -456,6 +495,15 @@ torch.save({
 'local_deformation_network': implicit_deformation_list,
 'implicit_volume': impl_volume.state_dict(),
 }, os.path.join(config.path_save,'training','model_everything_joint_batch.pt'))
+
+
+training_time = time.time()-t0
+# Saving the training time and the memory used
+if config.isbare_bones:
+    np.save(os.path.join(config.path_save,'training','memory_used.npy'),memory_used)
+np.save(os.path.join(config.path_save,'training','training_time.npy'),training_time)
+
+
 
 
 ## save or volume in full resolution
