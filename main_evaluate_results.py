@@ -11,7 +11,10 @@ import imageio
 from utils import utils_deformation, utils_display, utils_ricardo,utils_sampling
 import shutil
 import pandas as pd
-from configs.config_reconstruct_simulation import get_default_configs, get_areTomoValidation_configs
+from configs.config_reconstruct_simulation import get_default_configs, get_areTomoValidation_configs,get_config_local_implicit
+from configs.config_reconstruct_simulation import get_volume_save_configs
+from configs.config_simulation_SNR import get_SNR_configs
+
 
 from matplotlib import gridspec
 from utils import utils_deformation, utils_display
@@ -23,13 +26,38 @@ import warnings
 warnings.filterwarnings('ignore') 
 
 # Introduction
+import argparse
 
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--config', type=str, default='default', help='Configuration to use')
+parser.add_argument('--snrIndex', type=int, default=10, help='SNR value, Note: Only used for the SNR experiment ')
+
+args = parser.parse_args()
+
+if args.config == 'default':
+    config = get_default_configs()
+elif args.config == 'bare_bones':
+    config = bare_bones_config()
+elif args.config == 'local_implicit':
+    config = get_config_local_implicit()
+elif args.config == 'areTomoValidation':
+    config = get_areTomoValidation_configs()
+elif args.config == 'volume_save':
+    config = get_volume_save_configs()
+elif args.config == 'snr':
+    print('Using SNR experiment config')
+    config = get_SNR_configs()
+    snr_index = args.snrIndex
+    print('SNR index: ', snr_index)
+    SNR_value= config.SNR_value[snr_index]
+    config.path_save_data = config.path_save_data + str(SNR_value) + '/'
+    config.path_save = config.path_save + str(SNR_value) + '/'
 
 '''
 This script is used to compare our reconstruction with AreTomo and other standard methods
 '''
 
-config = get_areTomoValidation_configs()
 
 use_cuda=torch.cuda.is_available()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
@@ -423,14 +451,14 @@ XX_t = torch.unsqueeze(XX_t, dim = 2)
 YY_t = torch.unsqueeze(YY_t, dim = 2)
 for i in range(config.Nangles):
     coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
-    field = utils_deformation.deformation_field(-implicit_deformation_ours[i].depl_ctr_pts[0].detach().clone())
+    #field = utils_deformation.deformation_field(-implicit_deformation_ours[i].depl_ctr_pts[0].detach().clone())
     thetas = torch.tensor(-rot_ours[i].thetas.item()).to(device)
    
     rot_deform = torch.stack(
                     [torch.stack([torch.cos(thetas),torch.sin(thetas)],0),
                     torch.stack([-torch.sin(thetas),torch.cos(thetas)],0)]
                     ,0)
-    coordinates = coordinates + config.deformationScale*field(coordinates)
+    coordinates = coordinates - config.deformationScale*implicit_deformation_ours[i](coordinates)
     coordinates = coordinates - shift_ours[i].shifts_arr
     coordinates = torch.transpose(torch.matmul(rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
     x = projections_noisy[i].clone().view(1,1,config.n1,config.n2)
@@ -757,13 +785,76 @@ for index in deformation_indeces:
     savepath = os.path.join(config.path_save,'evaluation','deformations/ours','local_deformation_error_{}'.format(index))
     utils_display.display_local(implicit_deformation_ours[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath,displacement_scale=config.deformationScale)
     # Aretomo
-    savepath = os.path.join(config.path_save,'evaluation','deformations/AreTomo','local_deformation_error_{}'.format(index))
-    utils_display.display_local(implicit_deformation_AreTomo[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath )
+
+    if eval_AreTomo:
+        savepath = os.path.join(config.path_save,'evaluation','deformations/AreTomo','local_deformation_error_{}'.format(index))
+        utils_display.display_local(implicit_deformation_AreTomo[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath )
 
 
 
 
 
+
+## Get FSC at different training epochs
+
+if config.save_volume:
+    epochs = []
+    volFSCs = []
+    fsc_final = None
+    for file in os.listdir(config.path_save_data+'training/'):
+        if file.endswith('.mrc'):
+            vol_epc = np.moveaxis(np.double(mrcfile.open(config.path_save_data+'training/'+file).data),0,2)
+            if(file.split('_')[-1].split('.')[0]=='final'):
+                fsc = utils_ricardo.FSC(V,vol_epc)
+                fsc_final = fsc
+                continue            
+            fsplit = int(file.split('_')[-1].split('.')[0])
+            fsc_epc = utils_ricardo.FSC(V,vol_epc)
+
+            epochs.append(fsplit)
+            volFSCs.append(fsc_epc)
+
+
+    fig = plt.figure(figsize=(10,10))
+    for epc, fsc in zip(epochs,volFSCs):
+        plt.plot(x_fsc,fsc,label='epoch {}'.format(epc))
+
+    plt.plot(x_fsc,fsc_final,label='final')
+    plt.plot(x_fsc,fsc_FBP,'o-',label='FBP')
+    plt.plot(x_fsc,fsc_FBP_no_deformed,'o-',label='FBP no deformation',alpha=0.4)
+    plt.plot(x_fsc,0.5*np.ones(len(fsc_final)),'--',color='black')
+    plt.text(0,0.54,'       Cutoff = 0.5',color='black')
+    plt.plot(x_fsc,0.143*np.ones(len(fsc_final)),'--',color='blue')
+    plt.text(0,0.16,'       Cutoff = 0.143',color='black')
+
+    plt.legend()
+    plt.legend()
+    plt.savefig(os.path.join(config.path_save,'evaluation','FSC_epochs.png'))
+    plt.savefig(os.path.join(config.path_save,'evaluation','FSC_epochs.pdf'))
+    plt.close()
+
+
+    # Computing the resolution
+    def resolution(fsc,cutt_off=0.5):
+        """
+        The function returns the resolution of the volume
+        """
+        resolution_Set = np.zeros(fsc.shape[0])         
+        for i in range(fsc.shape[0]):
+            resolution_Set[i] = np.where(fsc[i]<cutt_off)[0][0]
+        return resolution_Set
+    
+    volFSC_np = np.array(volFSCs)[:,:,0]
+
+    res_05 = resolution(volFSC_np,0.5)
+    res_0143 =  resolution(volFSC_np,0.143)
+
+    res_arr = np.zeros((len(epochs),3))
+    res_arr[:,0] = epochs
+    res_arr[:,1] = res_05
+    res_arr[:,2] = res_0143
+    header ='epochs,cutoff = 0.5,cutoff = 0.143'
+    np.savetxt(os.path.join(config.path_save,'evaluation','resolution.csv'),res_arr,header=header,delimiter=",",comments='')
 
 
 

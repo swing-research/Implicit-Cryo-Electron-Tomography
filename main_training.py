@@ -11,6 +11,35 @@ from torch.utils.data import DataLoader, TensorDataset
 from utils.utils_sampling import sample_implicit_batch_lowComp, generate_rays_batch_bilinear
 from utils import utils_deformation, utils_ricardo, utils_display
 from configs.config_reconstruct_simulation import get_default_configs,get_areTomoValidation_configs,bare_bones_config,get_config_local_implicit
+from configs.config_reconstruct_simulation import get_volume_save_configs
+from configs.config_simulation_SNR import get_SNR_configs
+import argparse
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--config', type=str, default='default', help='Configuration to use')
+parser.add_argument('--snrIndex', type=int, default=10, help='SNR value, Note: Only used for the SNR experiment ')
+
+args = parser.parse_args()
+
+if args.config == 'default':
+    config = get_default_configs()
+elif args.config == 'bare_bones':
+    config = bare_bones_config()
+elif args.config == 'local_implicit':
+    config = get_config_local_implicit()
+elif args.config == 'areTomoValidation':
+    config = get_areTomoValidation_configs()
+elif args.config == 'volume_save':
+    config = get_volume_save_configs()
+elif args.config == 'snr':
+    print('Using SNR experiment config')
+    config = get_SNR_configs()
+    snr_index = args.snrIndex
+    print('SNR index: ', snr_index)
+    SNR_value= config.SNR_value[snr_index]
+    config.path_save_data = config.path_save_data + str(SNR_value) + '/'
+    config.path_save = config.path_save + str(SNR_value) + '/'
 
 
 
@@ -23,7 +52,6 @@ plt.ion()
 
 
 
-config = get_config_local_implicit()
 warnings.filterwarnings('ignore') 
 use_cuda=torch.cuda.is_available()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
@@ -270,7 +298,12 @@ def  globalDeformationValues(shift,rot):
     rotValueList = np.array(rotValueList)
     return shiftValueList, rotValueList
 
-
+## save or volume in full resolution or volume slice
+x_lin1 = np.linspace(-1,1,config.n1)*rays_scaling[0,0,0,0].item()/2+0.5
+x_lin2 = np.linspace(-1,1,config.n2)*rays_scaling[0,0,0,1].item()/2+0.5
+XX, YY = np.meshgrid(x_lin1,x_lin2,indexing='ij')
+grid2d = np.concatenate([XX.reshape(-1,1),YY.reshape(-1,1)],1)
+grid2d_t = torch.tensor(grid2d).type(config.torch_type)
 
 ######################################################################################################
 ## Iterative optimization
@@ -427,11 +460,6 @@ for ep in range(config.epochs):
         memory_used.append(torch.cuda.memory_allocated())
     if (ep%config.Ntest==0)  and check_point_training:#and ep!=0:
         print('Test')
-        x_lin1 = np.linspace(-1,1,config.n1)*rays_scaling[0,0,0,0].item()/2+0.5
-        x_lin2 = np.linspace(-1,1,config.n2)*rays_scaling[0,0,0,1].item()/2+0.5
-        XX, YY = np.meshgrid(x_lin1,x_lin2,indexing='ij')
-        grid2d = np.concatenate([XX.reshape(-1,1),YY.reshape(-1,1)],1)
-        grid2d_t = torch.tensor(grid2d).type(config.torch_type)
         z_range = np.linspace(-1,1,15)*rays_scaling[0,0,0,2].item()*(config.n3/config.n1)/2+0.5
         for zz, zval in enumerate(z_range):
             grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
@@ -488,6 +516,19 @@ for ep in range(config.epochs):
         'implicit_volume': impl_volume.state_dict(),
         }, os.path.join(config.path_save,'training','model_everything_joint_batch.pt'))
 
+        if config.save_volume:
+            z_range = np.linspace(-1,1,config.n3)*rays_scaling[0,0,0,2].item()*(config.n3/config.n1)/2+0.5
+            V_ours = np.zeros((config.n1,config.n2,config.n3))
+            for zz, zval in enumerate(z_range):
+                grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
+                grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
+                estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1,config.n2)
+                V_ours[:,:,zz] = estSlice
+
+            out = mrcfile.new(config.path_save+"/training/V_est_epoch_"+str(ep)+".mrc",np.moveaxis(V_ours.astype(np.float32),2,0),overwrite=True)
+            out.close() 
+
+
 
 torch.save({
 'shift_est': shift_est,
@@ -506,12 +547,6 @@ np.save(os.path.join(config.path_save,'training','training_time.npy'),training_t
 
 
 
-## save or volume in full resolution
-x_lin1 = np.linspace(-1,1,config.n1)*rays_scaling[0,0,0,0].item()/2+0.5
-x_lin2 = np.linspace(-1,1,config.n2)*rays_scaling[0,0,0,1].item()/2+0.5
-XX, YY = np.meshgrid(x_lin1,x_lin2,indexing='ij')
-grid2d = np.concatenate([XX.reshape(-1,1),YY.reshape(-1,1)],1)
-grid2d_t = torch.tensor(grid2d).type(config.torch_type)
 z_range = np.linspace(-1,1,config.n3)*rays_scaling[0,0,0,2].item()*(config.n3/config.n1)/2+0.5
 V_ours = np.zeros((config.n1,config.n2,config.n3))
 for zz, zval in enumerate(z_range):

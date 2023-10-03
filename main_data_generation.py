@@ -14,8 +14,47 @@ from utils import data_generation, utils_deformation, utils_display
 warnings.filterwarnings('ignore') 
 from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
 plt.ion()
-from configs.config_reconstruct_simulation import get_default_configs,get_areTomoValidation_configs
-config = get_default_configs()
+
+
+from configs.config_reconstruct_simulation import get_default_configs,get_areTomoValidation_configs,bare_bones_config,get_config_local_implicit
+from configs.config_reconstruct_simulation import get_volume_save_configs
+from configs.config_simulation_SNR import get_SNR_configs
+
+import argparse
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--config', type=str, default='default', help='Configuration to use')
+parser.add_argument('--snrIndex', type=int, default=10, help='SNR value, Note: Only used for the SNR experiment ')
+
+args = parser.parse_args()
+
+print(args.config)
+
+if args.config == 'default':
+    config = get_default_configs()
+elif args.config == 'bare_bones':
+    config = bare_bones_config()
+elif args.config == 'local_implicit':
+    config = get_config_local_implicit()
+elif args.config == 'areTomoValidation':
+    config = get_areTomoValidation_configs()
+elif args.config == 'volume_save':
+    print('Using volume save config')
+    config = get_volume_save_configs()
+elif args.config == 'snr':
+    print('Using SNR experiment config')
+    config = get_SNR_configs()
+    snr_index = args.snrIndex
+    SNR_value= config.SNR_value[snr_index]
+    config.path_save_data = config.path_save_data + str(SNR_value) + '/'
+    config.path_save = config.path_save + str(SNR_value) + '/'
+
+SNR_value = config.SNR_value
+
+if(args.config == 'snr'):
+    snr_index = args.snrIndex
+    SNR_value= config.SNR_value[snr_index]
 
 # Choosing the seed and the device
 use_cuda=torch.cuda.is_available()
@@ -111,10 +150,20 @@ else:
 # Define global and local deformations
 affine_tr = []
 local_tr = []
-# TODO: add a model of local deformation as Gaussian blob
+
+# Using polynomials to generate angle deformation, this is to comply with aretomo
+if(config.slowAngle):
+    print("Use polynomial with roots "+str(config.n_roots)+" to generate angle deformation")
+    angle_def = utils_deformation.polynomial_angle_deformation(**config)
+
+# TODO: add a model of local deformation as Gaussian blobs
 for i in range(config.Nangles*config.number_sub_projections):
     scaleX, scaleY, shiftX, shiftY, shearX, shearY, angle  = utils_deformation.generate_params_deformation(config.scale_min,
                 config.scale_max,config.shift_min,config.shift_max,config.shear_min,config.shear_max,config.angle_min,config.angle_max)
+    
+    if(config.slowAngle):
+        angle = angle_def[i]
+
     affine_tr.append(utils_deformation.AffineTransform(scaleX, scaleY, shiftX, shiftY, shearX, shearY, angle ).cuda())
     #print(angle)
     depl_ctr_pts = torch.randn(2,config.N_ctrl_pts_local_def[0],config.N_ctrl_pts_local_def[1]).to(device).type(config.torch_type)
@@ -174,7 +223,8 @@ if config.sigma_PSF!=0:
     projections_deformed = torch.fft.fftshift(torch.fft.ifft2(PSF_ext_fft_t * torch.fft.fft2(projections_deformed,dim=(1,2))),(1,2)).real
     
 # add noise
-sigma_noise = data_generation.find_sigma_noise_t(config.SNR_value,projections_deformed)
+
+sigma_noise = data_generation.find_sigma_noise_t(SNR_value,projections_deformed)
 projections_noisy = projections_deformed.clone() + torch.randn_like(projections_deformed)*sigma_noise
 projections_noisy_no_deformed = projections_clean.clone() + torch.randn_like(projections_clean)*sigma_noise
 
