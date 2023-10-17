@@ -4,10 +4,7 @@ import torch
 
 
 
-def get_SNR_configs():
-    '''
-    This is to run the experiment with different SNRS
-    '''
+def get_default_bilinear():
     config = ml_collections.ConfigDict()
     # simulation
     # config = simulation = ml_collections.ConfigDict()
@@ -27,11 +24,11 @@ def get_SNR_configs():
     config.Nangles = 61
     config.view_angle_min = -60
     config.view_angle_max = 60
-    config.SNR_value = [30,25,20,15,10,5,0,-5,-10,-15,-20]
+    config.SNR_value = -20
     config.sigma_PSF = 0
     config.number_sub_projections = 1
 
-    deformation_scale = 0.5
+    deformation_scale = 0
     config.scale_min = 1.0
     config.scale_max = 1.0
     config.shift_min = -0.02*deformation_scale
@@ -46,8 +43,8 @@ def get_SNR_configs():
 
 
     # # Parameters for the data generation
-    config.path_save_data = "./results/SNR/"+str(config.volume_name)+"_size_"+str(config.n1)+"_no_PSF_SNR_"
-    config.path_save = "./results/SNR/"+str(config.volume_name)+"_size_"+str(config.n1)+"_no_PSF_SNR_"
+    config.path_save_data = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_interpol/"
+    config.path_save = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_interpol/"
 
     config.seed = 42
     config.device_num = 0
@@ -67,7 +64,7 @@ def get_SNR_configs():
     config.local_model = 'interp' #  'implicit' or 'interp'
     config.initialize_local_def = False
     config.initialize_volume = False
-    config.volume_model = "multi-resolution" # multi-resolution, Fourier-features, grid, MLP
+    config.volume_model = "grid" # multi-resolution, Fourier-features, grid, MLP
 
 
     # When to start or stop optimizing over a variable
@@ -89,7 +86,7 @@ def get_SNR_configs():
     config.Ntest = 25 # number of epoch before display
     config.NsaveNet = 100 # number of epoch before saving again the nets
     config.save_volume = False
-    config.lr_volume = 1e-2
+    config.lr_volume = 0.1
     config.lr_local_def = 1e-4
     config.lr_shift = 1e-3
     config.lr_rot = 1e-3
@@ -106,8 +103,8 @@ def get_SNR_configs():
     # Params of implicit deformation
     config.deformationScale = 0.1
     config.inputRange = 1
+    config.loss_data = torch.nn.L1Loss()
 
-    # if implicit model
     config.local_deformation = ml_collections.ConfigDict()
     if config.local_model == 'implicit':
         config.local_deformation.input_size = 2
@@ -117,28 +114,5 @@ def get_SNR_configs():
         config.local_deformation.L = 10
     elif config.local_model == 'interp':
         config.local_deformation.N_ctrl_pts_net = 20
-    # params for the network
-    # params of implicit volume
-    config.input_size_volume = 3
-    config.output_size_volume = 1
-    config.num_layers_volume = 3
-    config.hidden_size_volume = 64
-    config.L_volume = 3
 
-    config.loss_data = torch.nn.L1Loss()
-    # params for the multi-resolution grids
-    config.encoding = ml_collections.ConfigDict()
-    config.encoding.otype = 'Grid'
-    config.encoding.type = 'Hash'
-    config.encoding.n_levels = 8#
-    config.encoding.n_features_per_level = 4
-    config.encoding.log2_hashmap_size = 22
-    config.encoding.base_resolution = 8
-    config.encoding.per_level_scale = 2#1.3
-    config.encoding.interpolation = 'Smoothstep'
-    config.network = ml_collections.ConfigDict()
-    # params specific to Tiny cuda network
-    config.network.otype = 'FullyFusedMLP'
-    config.network.activation = 'ReLU'
-    config.network.output_activation = 'None'
     return config

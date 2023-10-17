@@ -101,6 +101,7 @@ def get_default_configs():
     # Params of implicit deformation
     config.deformationScale = 0.1
     config.inputRange = 1
+    config.loss_data = torch.nn.L1Loss()
 
     # if implicit model
     config.local_deformation = ml_collections.ConfigDict()
@@ -120,7 +121,6 @@ def get_default_configs():
     config.hidden_size_volume = 64
     config.L_volume = 3
 
-    config.loss_data = torch.nn.L1Loss()
     # params for the multi-resolution grids
     config.encoding = ml_collections.ConfigDict()
     config.encoding.otype = 'Grid'
@@ -628,7 +628,7 @@ def get_volume_save_configs():
     config.save_volume = True
     # # Parameters for the data generation
     config.path_save_data = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_no_PSF_vol_save/"
-    config.path_save = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_no_PSF/"
+    config.path_save = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_no_PSF_vol_save/"
 
     config.seed = 42
     config.device_num = 0
