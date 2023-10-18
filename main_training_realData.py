@@ -11,7 +11,12 @@ from torch.utils.data import DataLoader, TensorDataset
 from utils.utils_sampling import sample_implicit_batch_lowComp, generate_rays_batch_bilinear
 from utils import utils_deformation, utils_ricardo, utils_display
 from configs.config_reconstruct_simulation import get_default_configs
-from configs.config_realData import get_default_realData
+from configs.config_realData import get_default_realData,get_default_realData_multiresolution
+from utils.utils_deformation import cropper
+from torch.autograd import Variable
+from skimage.transform import pyramid_gaussian
+
+
 # from configs.config_reconstruct_simulation import get_default_configs,get_areTomoValidation_configs,bare_bones_config,get_config_local_implicit
 # from configs.config_reconstruct_simulation import get_volume_save_configs
 # from configs.config_simulation_SNR import get_SNR_configs
@@ -45,9 +50,9 @@ from configs.config_realData import get_default_realData
 #     config.path_save_data = config.path_save_data + str(SNR_value) + '/'
 #     config.path_save = config.path_save + str(SNR_value) + '/'
 
+from configs.config_realData_emp_10364 import get_default_realData_10364
 
-
-config = get_default_realData()
+config = get_default_realData_10364()
 #import torch.nn as nn
 import matplotlib.pyplot as plt
 plt.ion()
@@ -72,6 +77,32 @@ if not os.path.exists(config.path_save+"training/deformations/"):
     os.makedirs(config.path_save+"training/deformations/")
 
 projection_np = np.load(config.path_save_data+"projections.npy")
+if config.multiresolution:
+    img_pyramids = []
+    for proj in projection_np:
+        img_pyramid = tuple(pyramid_gaussian(proj, downscale=2, order =2))
+        img_pyramids.append(img_pyramid)
+
+    len_set = []
+
+    for img in img_pyramids[0]:
+        len_set.append(img.shape[0])
+
+    proj_pyramid_set = []
+
+    for lenIndex, projLen in enumerate(len_set):
+        if config.multires_params.upsample:
+            proj_downsample = np.zeros((projection_np.shape[0], config.n1,config.n2))
+        else:
+            proj_downsample = np.zeros((projection_np.shape[0], projLen, projLen))
+        for i,img_tuple in enumerate(img_pyramids):
+            if config.multires_params.upsample:
+                proj_downsample[i] = resize(img_tuple[lenIndex],(config.n1,config.n2))
+            else:
+                proj_downsample[i] = img_tuple[lenIndex]
+        proj_pyramid_set.append(proj_downsample)
+    
+
 projections_noisy = torch.Tensor(projection_np).type(config.torch_type).to(device)
 # PSF = torch.tensor(data['PSF']).type(config.torch_type).to(device)
 if config.sigma_PSF!=0:
@@ -219,11 +250,15 @@ if config.local_model=='interp':
 
 ######################################################################################################
 ## Define the global deformations
+fixedAngle = torch.FloatTensor([config.fixed_angle* np.pi/180]).to(device)[0]
+
 shift_est = []
 rot_est = []
+fixed_rot =[ ]
 for k in range(config.Nangles):
     shift_est.append(utils_deformation.shiftNet(1).to(device))
     rot_est.append(utils_deformation.rotNet(1).to(device))
+    fixed_rot.append(utils_deformation.rotNet(1,x0=fixedAngle).to(device))
 
 
 ######################################################################################################
@@ -241,8 +276,12 @@ if(train_global_def or train_local_def):
             list_params_deformations_glob.append({"params": rot_est[k].parameters(), "lr": config.lr_rot})
         if train_global_def:
             list_params_deformations_loc.append({"params": implicit_deformation_list[k].parameters(), "lr": config.lr_local_def})
+if config.use_gains:    
+    gains = Variable(torch.rand(config.Nangles).to(device)/5+1, requires_grad=True) 
+    optimizer_volume = torch.optim.Adam(list(impl_volume.parameters())+[gains], lr=config.lr_volume, weight_decay=config.wd)
+else:
+    optimizer_volume = torch.optim.Adam(impl_volume.parameters(), lr=config.lr_volume, weight_decay=config.wd)
 
-optimizer_volume = torch.optim.Adam(impl_volume.parameters(), lr=config.lr_volume, weight_decay=config.wd)
 optimizer_deformations_glob = torch.optim.Adam(list_params_deformations_glob, weight_decay=config.wd)
 optimizer_deformations_loc = torch.optim.Adam(list_params_deformations_loc, weight_decay=config.wd)
 
@@ -256,13 +295,13 @@ if train_local_def:
 
 ######################################################################################################
 # Format data for batch training
-index = torch.arange(0, config.Nangles, dtype=torch.long) # index for the dataloader
 
 # Define dataset
-angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
+angles = np.load(config.path_save_data+"angles.npy")
 angles_t = torch.tensor(angles).type(config.torch_type).to(device)
-dataset = TensorDataset(angles_t,projections_noisy.detach(),index)
-trainLoader = DataLoader(dataset, batch_size=config.batch_size, shuffle=True, drop_last=True)
+index = torch.arange(0, len(angles), dtype=torch.long) # index for the dataloader
+
+
 
 
 ######################################################################################################
@@ -306,6 +345,39 @@ t_test = []
 TRAIN_VOLUME = config.train_volume
 LEARN_DEFORMATIONS = False
 
+
+
+if config.multiresolution:
+    batch_set =  config.multires_params.batch_size
+    proj_len = len_set.index(config.multires_params.startResolution)
+    proj_set_Data = torch.FloatTensor(proj_pyramid_set[proj_len]).to(device) 
+
+    
+
+    dataset = TensorDataset(angles_t,proj_set_Data.detach(),index)
+    trainLoader = DataLoader(dataset, batch_size = batch_set[0], shuffle=True, drop_last=True)
+
+    ray_length_set = config.multires_params.ray_length
+    ray_length_set_index = 0
+    batch_set_index = 0
+
+    ray_change_epoch = config.multires_params.ray_change_epoch
+
+    n_rays_set = config.multires_params.n_rays
+
+    multi_resolution_counter = 0
+    N_RAYS = n_rays_set[0]
+    RAY_LENGTH = ray_length_set[0]
+    BATCH_SIZE = batch_set[0]
+else: 
+    N_RAYS = config.nRays
+    RAY_LENGTH = config.ray_length
+    BATCH_SIZE = config.batch_size
+
+    dataset = TensorDataset(angles_t,projections_noisy.detach(),index)
+    trainLoader = DataLoader(dataset, batch_size = BATCH_SIZE, shuffle=True, drop_last=True)
+
+
 check_point_training = True
 if config.isbare_bones:
     memory_used = []
@@ -323,6 +395,24 @@ for ep in range(config.epochs):
         use_global_def = False
         train_local_def = False
         train_global_def = False
+
+
+    # Multi-resolution training
+    if config.multiresolution:
+        if(ep in ray_change_epoch):
+            multi_resolution_counter += 1
+            proj_len = max(0,proj_len-1)
+
+            proj_set_Data = torch.FloatTensor(proj_pyramid_set[proj_len]).to(device) 
+            print('New resolution: ', proj_set_Data.shape)
+            dataset = TensorDataset(angles_t,proj_set_Data.detach(),index)
+            trainLoader = DataLoader(dataset, batch_size=batch_set[batch_set_index], shuffle=True, drop_last=True)
+
+            N_RAYS = n_rays_set[min(multi_resolution_counter, len(n_rays_set)-1)]
+            RAY_LENGTH = ray_length_set[min(multi_resolution_counter, len(ray_length_set)-1)]
+
+
+
         
     for   angle,proj, idx_loader  in trainLoader:
         optimizer_volume.zero_grad()
@@ -363,29 +453,30 @@ for ep in range(config.epochs):
         else:
             rot_deformSet = None
             shift_deformSet = None
+        fixedRotSet = list(map(fixed_rot.__getitem__, idx_loader))
 
         ## Sample the rays
         ## TODO: make sure that every parameter can be changed in config file
         ## TODO: add an option for density_sampling
-        raysSet,raysRot, isOutsideSet, pixelValues = generate_rays_batch_bilinear(proj,angle,config.nRays,config.ray_length,
+        raysSet,raysRot, isOutsideSet, pixelValues = generate_rays_batch_bilinear(proj,angle,N_RAYS,RAY_LENGTH,
                                                                                             randomZ=2,zmax=config.z_max,
                                                                                             choosenLocations_all=choosenLocations_all,density_sampling=None,idx_loader=idx_loader)
 
         if config.sigma_PSF!=0:
-            raysSet_ = raysSet.reshape(config.batch_size,config.nRays,1,config.ray_length,3).repeat(1,1,supp_PSF**2,1,1)
+            raysSet_ = raysSet.reshape(BATCH_SIZE,config.nRays,1,config.ray_length,3).repeat(1,1,supp_PSF**2,1,1)
             raysSet_[:,:,:,:,0] = raysSet_[:,:,:,:,0]+psf_shift_x
             raysSet_[:,:,:,:,1] = raysSet_[:,:,:,:,1]+psf_shift_y
-            raysSet = raysSet_.reshape(config.batch_size,config.nRays*supp_PSF**2,config.ray_length,3)
+            raysSet = raysSet_.reshape(BATCH_SIZE,config.nRays*supp_PSF**2,config.ray_length,3)
 
         raysSet = raysSet*rays_scaling
 
         outputValues,support = sample_implicit_batch_lowComp(impl_volume,raysSet,angle,
             rot_deformSet=rot_deformSet,shift_deformSet=shift_deformSet,local_deformSet=local_deformSet,
-            scale=config.deformationScale,range=config.inputRange,zlimit=config.n3/max(config.n1,config.n2))
+            fixedRotSet = fixedRotSet, scale=config.deformationScale,range=config.inputRange,zlimit=config.n3/max(config.n1,config.n2))
         outputValues = outputValues.type(config.torch_type)
 
         if config.sigma_PSF!=0:
-            outputValues = (outputValues.reshape(config.batch_size,config.nRays,supp_PSF**2,config.ray_length)*PSF_t).sum(2)
+            outputValues = (outputValues.reshape(BATCH_SIZE,config.nRays,supp_PSF**2,config.ray_length)*PSF_t).sum(2)
             support = support.reshape(outputValues.shape[0],outputValues.shape[1],supp_PSF**2,-1)
             support = support[:,:,supp_PSF//2+supp_PSF//2,:] # take only the central elements
         else:
@@ -395,7 +486,10 @@ for ep in range(config.epochs):
         projEstimate = torch.sum(support*outputValues,2)/config.n3
 
         # Take the datafidelity loss
-        loss = loss_data(projEstimate,pixelValues.to(projEstimate.dtype))
+        if config.use_gains:
+            loss = loss_data(projEstimate*gains[idx_loader,None],pixelValues.to(projEstimate.dtype))
+        else:
+            loss = loss_data(projEstimate,pixelValues.to(projEstimate.dtype))
         loss_data_fidelity.append(loss.item())
 
         # update sampling
@@ -546,7 +640,7 @@ for zz, zval in enumerate(z_range):
 out = mrcfile.new(config.path_save+"/training/V_est_final.mrc",np.moveaxis(V_ours.astype(np.float32),2,0),overwrite=True)
 out.close() 
 
-loss_tot_avg = np.array(loss_tot).reshape(config.Nangles//config.batch_size,-1).mean(0)
+loss_tot_avg = np.array(loss_tot).reshape(config.Nangles//BATCH_SIZE,-1).mean(0)
 step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
 plt.figure(figsize=(10,10))
 plt.plot(loss_tot_avg[10:])
@@ -555,3 +649,47 @@ plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
 plt.grid()
 plt.savefig(os.path.join(config.path_save,'training','loss.png'))
 plt.savefig(os.path.join(config.path_save,'training','loss.pdf'))
+
+
+
+# Saving the underformed the projections
+
+projections_noisy_undeformed = torch.zeros_like(projections_noisy)
+
+
+xx1 = torch.linspace(-1,1,config.n1,dtype=config.torch_type,device=device)
+xx2 = torch.linspace(-1,1,config.n2,dtype=config.torch_type,device=device)
+XX_t, YY_t = torch.meshgrid(xx1,xx2,indexing='ij')
+XX_t = torch.unsqueeze(XX_t, dim = 2)
+YY_t = torch.unsqueeze(YY_t, dim = 2)
+for i in range(config.Nangles):
+    coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
+    thetas = torch.tensor(-rot_est[i].thetas.item()).to(device)
+    fixed_thetas = torch.tensor(-fixed_rot[i].thetas.item()).to(device)
+    rot_deform = torch.stack(
+                    [torch.stack([torch.cos(thetas),torch.sin(thetas)],0),
+                    torch.stack([-torch.sin(thetas),torch.cos(thetas)],0)]
+                    ,0)
+    
+    fixed_rot_deform = torch.stack(
+                [torch.stack([torch.cos(fixed_thetas),torch.sin(fixed_thetas)],0),
+                torch.stack([-torch.sin(fixed_thetas),torch.cos(fixed_thetas)],0)]
+                ,0)
+
+
+    coordinates = coordinates -shift_est[i].shifts_arr*2
+    coordinates = torch.transpose(torch.matmul(rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
+    coordinates = torch.transpose(torch.matmul(fixed_rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
+    
+    
+    x = projections_noisy[i].clone().view(1,1,config.n1,config.n2)
+    x = x.expand(config.n1*config.n2, -1, -1, -1)
+    out = cropper(x,coordinates,output_size = 1).reshape(config.n1,config.n2)
+    projections_noisy_undeformed[i] = out
+    
+projections_noisy_undeformedNP = projections_noisy_undeformed.cpu().detach().numpy()
+
+
+out = mrcfile.new(
+    config.path_save+"/training/proj_underformed_est.mrc",projections_noisy_undeformedNP.astype(np.float32),overwrite=True)
+out.close() 
