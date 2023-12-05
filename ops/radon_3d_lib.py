@@ -44,7 +44,7 @@ class ParallelBeamGeometry3DOpAngles_rectangular(ParallelBeamGeometry3DOp):
       min_pt=[-self.n1/(n), -self.n2/(n), -self.n3/(n)],
       max_pt=[self.n1/(n), self.n2/(n), self.n3/(n)],
       shape=[self.n1, self.n2, self.n3],
-      dtype='float32'
+      dtype='float16'
       )
     self.angles = angles
     # angle partition is changed to not be uniform

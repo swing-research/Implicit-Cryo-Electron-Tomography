@@ -8,108 +8,6 @@ from utils import utils_sampling
 #######################################################################################
 ## Define local deformations
 #######################################################################################
-
-## Function to perform bilinear interpolation. These functions are not use but can be usefull if we need to differentiate 
-# through the deformation parameters.
-def reflect_coords(ix, min_val, max_val):
-    pos_delta = ix[ix>max_val] - max_val
-    neg_delta = min_val - ix[ix < min_val]
-    ix[ix>max_val] = ix[ix>max_val] - 2*pos_delta
-    ix[ix<min_val] = ix[ix<min_val] + 2*neg_delta
-    return ix
-
-def grid_sample_customized_bilinear(image, grid, pad = 'reflect', align_corners = False):
-    '''Differentiable grid_sample:
-    equivalent performance with torch.nn.functional.grid_sample can be obtained by setting
-    align_corners = True,
-    pad: 'border': use border pixels,
-    'reflect': create reflect pad manually.
-    image is a tensor of shape (N, C, IH, IW)
-    grid is a tensor of shape (N, H, W, 2)'''
-
-    N, C, IH, IW = image.shape
-    _, H, W, _ = grid.shape
-
-    ix = grid[..., 0]
-    iy = grid[..., 1]
-
-
-    if align_corners == True:
-        ix = ((ix + 1) / 2) * (IW-1);
-        iy = ((iy + 1) / 2) * (IH-1);
-        
-        boundary_x = (0, IW-1)
-        boundary_y = (0, IH-1)
-        
-    
-    elif align_corners == False:
-        ix = ((1+ix)*IW/2) - 1/2
-        iy = ((1+iy)*IH/2) - 1/2
-        
-        boundary_x = (-1/2, IW-1/2)
-        boundary_y = (-1/2, IH-1/2)
-    
-
-    with torch.no_grad():
-        ix_nw = torch.floor(ix);
-        iy_nw = torch.floor(iy);
-        ix_ne = ix_nw + 1;
-        iy_ne = iy_nw;
-        ix_sw = ix_nw;
-        iy_sw = iy_nw + 1;
-        ix_se = ix_nw + 1;
-        iy_se = iy_nw + 1;
-
-    nw = (ix_se - ix)    * (iy_se - iy)
-    ne = (ix    - ix_sw) * (iy_sw - iy)
-    sw = (ix_ne - ix)    * (iy    - iy_ne)
-    se = (ix    - ix_nw) * (iy    - iy_nw)
-
-    if pad == 'reflect' or 'reflection':
-        
-        ix_nw = reflect_coords(ix_nw, boundary_x[0], boundary_x[1])
-        iy_nw = reflect_coords(iy_nw, boundary_y[0], boundary_y[1])
-
-        ix_ne = reflect_coords(ix_ne, boundary_x[0], boundary_x[1])
-        iy_ne = reflect_coords(iy_ne, boundary_y[0], boundary_y[1])
-
-        ix_sw = reflect_coords(ix_sw, boundary_x[0], boundary_x[1])
-        iy_sw = reflect_coords(iy_sw, boundary_y[0], boundary_y[1])
-
-        ix_se = reflect_coords(ix_se, boundary_x[0], boundary_x[1])
-        iy_se = reflect_coords(iy_se, boundary_y[0], boundary_y[1])
-
-
-    elif pad == 'border':
-
-        with torch.no_grad():
-            torch.clamp(ix_nw, 0, IW-1, out=ix_nw)
-            torch.clamp(iy_nw, 0, IH-1, out=iy_nw)
-
-            torch.clamp(ix_ne, 0, IW-1, out=ix_ne)
-            torch.clamp(iy_ne, 0, IH-1, out=iy_ne)
-
-            torch.clamp(ix_sw, 0, IW-1, out=ix_sw)
-            torch.clamp(iy_sw, 0, IH-1, out=iy_sw)
-
-            torch.clamp(ix_se, 0, IW-1, out=ix_se)
-            torch.clamp(iy_se, 0, IH-1, out=iy_se)
-
-
-    image = image.reshape(N, C, IH * IW)
-
-    nw_val = torch.gather(image, 2, (iy_nw * IW + ix_nw).long().view(N, 1, H * W).repeat(1, C, 1))
-    ne_val = torch.gather(image, 2, (iy_ne * IW + ix_ne).long().view(N, 1, H * W).repeat(1, C, 1))
-    sw_val = torch.gather(image, 2, (iy_sw * IW + ix_sw).long().view(N, 1, H * W).repeat(1, C, 1))
-    se_val = torch.gather(image, 2, (iy_se * IW + ix_se).long().view(N, 1, H * W).repeat(1, C, 1))
-
-    out_val = (nw_val.view(N, C, H, W) * nw.view(N, 1, H, W) +
-            ne_val.view(N, C, H, W) * ne.view(N, 1, H, W) +
-            sw_val.view(N, C, H, W) * sw.view(N, 1, H, W) +
-            se_val.view(N, C, H, W) * se.view(N, 1, H, W))
-    return out_val
-
-
 def cropper(image, coordinate , output_size, padding_mode="zeros"):
     # Coordinate shape: b X 2
     # image shape: b X c X h X w
@@ -128,8 +26,6 @@ def cropper(image, coordinate , output_size, padding_mode="zeros"):
     image = image.reshape(b, c , h , w)
     theta = theta.reshape(b , 2 , 3)
     f = F.affine_grid(theta, size=(b, c, output_size, output_size), align_corners=True)
-    # image_cropped = grid_sample_customized_bilinear(image, f, align_corners = True)
-    # We might need to change with the above if we want to pass gradient more than once to the parameters of the deformation
     image_cropped = F.grid_sample(image, f, mode='bicubic', align_corners = True, padding_mode=padding_mode)
     return image_cropped
 
