@@ -163,6 +163,8 @@ with torch.no_grad():
     projections_clean = operator_ET(V_t)
     projections_clean = projections_clean[:,None].repeat(1,config.number_sub_projections,1,1).reshape(-1,config.n1,config.n2)
 
+     V_FBP = operator_ET.pinv(projections_clean.detach().requires_grad_(False))
+
     # add deformations
     projections_deformed_global = utils_deformation.apply_deformation(affine_tr,projections_clean)
     projections_deformed = utils_deformation.apply_local_deformation(local_tr,projections_deformed_global)
@@ -204,7 +206,7 @@ with torch.no_grad():
 
     projections_noisy_avg = projections_noisy.reshape(config.Nangles,-1,config.n1,config.n2).mean(1).contiguous().type(torch.float32)
     projections_noisy_no_deformed_avg =  projections_noisy_no_deformed.reshape(config.Nangles,-1,config.n1,config.n2).mean(1)
-    V_FBP = operator_ET.pinv(projections_noisy_avg).detach().requires_grad_(False)
+    V_FBP = operator_ET.pinv(projections_noisy_avg.detach().requires_grad_(False))
     V_FBP_no_deformed = operator_ET.pinv(projections_noisy_no_deformed_avg).detach().requires_grad_(False)
     out = mrcfile.new(config.path_save_data+"V_FBP.mrc",np.moveaxis(V_FBP.detach().cpu().numpy().reshape(config.n1,config.n2,config.n3),2,0),overwrite=True)
     out.close() 
