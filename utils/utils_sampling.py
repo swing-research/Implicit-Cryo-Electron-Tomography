@@ -8,7 +8,7 @@ import os
 import torch.nn as nn
 import sys
 sys.path.insert(0, '..')
-from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles
+from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
 from utils import utils_deformation, utils_interpolation
 
 
@@ -1081,7 +1081,7 @@ if __name__ == '__main__':
     #######################################################################################
     angles = np.linspace(-angle_bound,angle_bound,Nangles)
     angles_t = torch.tensor(angles).type(torch_type).to(device)
-    operator_ET = ParallelBeamGeometry3DOpAngles(n, angles/180*np.pi, op_snr=np.inf, fact=1)
+    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular(n, angles/180*np.pi, fact=1)
 
     # define deformation
     affine_tr = []
