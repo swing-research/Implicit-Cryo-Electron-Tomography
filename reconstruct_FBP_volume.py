@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import mrcfile
 from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
 
-from configs.config_reconstruct_simulation import get_default_configs,get_areTomoValidation_configs
+from configs.config_reconstruct_simulation import get_default_configs, get_areTomoValidation_configs
 
 config = get_default_configs()
 device = 0

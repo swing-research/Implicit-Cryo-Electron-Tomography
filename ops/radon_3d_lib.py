@@ -20,23 +20,13 @@ class ParallelBeamGeometry3DOp(object):
       )
       
     # Make a 3d single-axis parallel beam geometry with flat detector
-    # Angles: uniformly spaced, n = 180, min = 0, max = pi
-    # self.angle_partition = odl.uniform_partition(0, np.pi, 180)
     self.angle_partition = odl.uniform_partition(-angle_max, angle_max, num_angles)
-    # Detector: uniformly sampled, n = (512, 512), min = (-30, -30), max = (30, 30)
-    # self.detector_partition = odl.uniform_partition([-30, -30], [30, 30], [256, 256])
-    # self.detector_partition = odl.tomo.parallel_beam_geometry(self.reco_space).det_partition
-    # self.detector_partition = odl.tomo.parallel_beam_geometry(self.reco_space,det_shape=(fact*img_size,fact*img_size)).det_partition
     self.detector_partition = odl.uniform_partition([-0.5, -0.5], [0.5, 0.5], [fact*img_size,fact*img_size])
     self.geometry = odl.tomo.Parallel3dAxisGeometry(self.angle_partition, self.detector_partition)
-
     self.num_detectors_x, self.num_detectors_y = self.geometry.detector.shape
-
     self.angles = apply_angle_noise(self.geometry.angles, op_snr)
-    self.optimizable_params = torch.tensor(self.angles, dtype=torch.float32)  # Convert to torch.Tensor.  
-    
+    self.optimizable_params = torch.tensor(self.angles, dtype=torch.float32)  # Convert to torch.Tensor.     
     self.op = odl.tomo.RayTransform(self.reco_space, self.geometry, impl='astra_cuda')
-
     self.fbp = odl.tomo.analytic.filtered_back_projection.fbp_op(self.op)
 
   def __call__(self, x):
@@ -45,48 +35,8 @@ class ParallelBeamGeometry3DOp(object):
   def pinv(self, y):
     return OperatorFunction.apply(self.fbp, y)
 
-class ParallelBeamGeometry3DOpBroken(ParallelBeamGeometry3DOp):
-  def __init__(self, clean_operator, op_snr, fact=2):
-    super().__init__(clean_operator.img_size, clean_operator.num_angles, op_snr, clean_operator.angle_max, fact)
-
-    self.optimizable_params = torch.tensor(clean_operator.geometry.angles, dtype=torch.float32)
-
-    self.angles = apply_angle_noise(clean_operator.geometry.angles, op_snr)
-    # angle partition is changed to not be uniform
-    self.angle_partition = odl.discr.nonuniform_partition(np.sort(self.angles))
-
-    self.geometry = odl.tomo.Parallel3dAxisGeometry(self.angle_partition, self.detector_partition)
-
-    self.num_detectors_x, self.num_detectors_y = self.geometry.detector.shape
-
-    self.op = odl.tomo.RayTransform(self.reco_space, self.geometry, impl='astra_cuda')
-    self.fbp = odl.tomo.analytic.filtered_back_projection.fbp_op(self.op)
-
-
-class ParallelBeamGeometry3DOpAngles(ParallelBeamGeometry3DOp):
-  def __init__(self, img_size, angles, op_snr, angle_max=np.pi/3, fact=2):
-    super().__init__(img_size, angles.shape[0], op_snr,angle_max, fact)
-
-    self.optimizable_params = torch.tensor(self.geometry.angles, dtype=torch.float32)
-
-    self.angles = angles
-    # angle partition is changed to not be uniform
-    self.angle_partition = odl.discr.nonuniform_partition(np.sort(self.angles))
-
-    # TODO: change following axes to get rotation around another axis
-    self.geometry = odl.tomo.Parallel3dAxisGeometry(self.angle_partition, self.detector_partition,
-    axis=(1,0,0),det_axes_init=[(1, 0, 0), (0, 1, 0)],det_pos_init=(0,0,1))
-
-
-    self.num_detectors_x, self.num_detectors_y = self.geometry.detector.shape
-
-    self.op = odl.tomo.RayTransform(self.reco_space, self.geometry, impl='astra_cuda')
-    self.fbp = odl.tomo.analytic.filtered_back_projection.fbp_op(self.op)
-
-
 class ParallelBeamGeometry3DOpAngles_rectangular(ParallelBeamGeometry3DOp):
-  def __init__(self, img_size, angles, op_snr, angle_max=np.pi/3, fact=2):
-    # super().__init__(img_size, angles.shape[0], op_snr,angle_max, fact)
+  def __init__(self, img_size, angles, fact=2):
     self.n1, self.n2, self.n3 = img_size
     self.num_angles = angles.shape[0]
     n = max(self.n1, self.n2, self.n3)
@@ -96,35 +46,12 @@ class ParallelBeamGeometry3DOpAngles_rectangular(ParallelBeamGeometry3DOp):
       shape=[self.n1, self.n2, self.n3],
       dtype='float32'
       )
-      
-    # # Make a 3d single-axis parallel beam geometry with flat detector
-    # self.angle_partition = odl.uniform_partition(-angle_max, angle_max, self.num_angles)
-    # # self.detector_partition = odl.tomo.parallel_beam_geometry(self.reco_space,det_shape=(fact*self.n1,fact*self.n2)).det_partition
-    # self.detector_partition = odl.uniform_partition([-self.n1/(n), -self.n2/(n)], [self.n1/(n), self.n2/(n)], [fact*self.n1,fact*self.n2])
-    # self.geometry = odl.tomo.Parallel3dAxisGeometry(self.angle_partition, self.detector_partition)
-
-    # # self.num_detectors_x, self.num_detectors_y = self.geometry.detector.shape
-
-    # self.angles = apply_angle_noise(self.geometry.angles, op_snr)
-    # self.optimizable_params = torch.tensor(self.angles, dtype=torch.float32)  # Convert to torch.Tensor.  
-    
-    # self.op = odl.tomo.RayTransform(self.reco_space, self.geometry, impl='astra_cuda')
-
-    # self.fbp = odl.tomo.analytic.filtered_back_projection.fbp_op(self.op)
-
-    # self.optimizable_params = torch.tensor(self.geometry.angles, dtype=torch.float32)
-
     self.angles = angles
     # angle partition is changed to not be uniform
     self.angle_partition = odl.discr.nonuniform_partition(np.sort(self.angles))
-
     self.detector_partition = odl.uniform_partition([-self.n1/(n), -self.n2/(n)], [self.n1/(n), self.n2/(n)], [fact*self.n1,fact*self.n2])
-    # TODO: change following axes to get rotation around another axis
     self.geometry = odl.tomo.Parallel3dAxisGeometry(self.angle_partition, self.detector_partition,
     axis=(1,0,0),det_axes_init=[(1, 0, 0), (0, 1, 0)],det_pos_init=(0,0,1))
-
-    # self.num_detectors_x, self.num_detectors_y = self.geometry.detector.shape
-
     self.op = odl.tomo.RayTransform(self.reco_space, self.geometry, impl='astra_cuda')
     self.fbp = odl.tomo.analytic.filtered_back_projection.fbp_op(self.op)
 
@@ -132,7 +59,6 @@ class ParallelBeamGeometry3DOpAngles_rectangular(ParallelBeamGeometry3DOp):
 def unit_test():
   plt.ion() 
 
-  
   img_size = 64
   num_angles = 60
   A = ParallelBeamGeometry3DOp(img_size, num_angles, np.inf)
@@ -159,7 +85,7 @@ def unit_test():
   x_[n//2-n1//2:n//2+n1//2,n//2-n2//2:n//2+n2//2,n//2-n3//2:n//2+n3//2] = x
   angles = np.linspace(-90,90,91)
   angles_t = torch.tensor(angles).type(torch_type).to(device)
-  A = ParallelBeamGeometry3DOpAngles_rectangular((n1,n2,n3), angles/180*np.pi, op_snr=np.inf, fact=1)
+  A = ParallelBeamGeometry3DOpAngles_rectangular((n1,n2,n3), angles/180*np.pi, fact=1)
 
   proj_clean = A(x)
   proj_clean /= proj_clean.sum((1,2)).mean()
@@ -183,7 +109,6 @@ def unit_test():
   plt.imshow(torch.abs(proj_est.detach().cpu()-proj_clean[kk].detach().cpu()))
   plt.colorbar()
   plt.show()
-
 
 
 if __name__ == "__main__":

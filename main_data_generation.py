@@ -1,34 +1,26 @@
 '''
 This script is used to generate data from a clean tomogram. 
-The goal is to compare different approach on this dataset that is suppose to mimic the CryoET image formation model.
+The goal is to compare different approaches on this dataset that is suppose to mimic the CryoET image formation model.
 '''
-from skimage.transform import resize
 import os
-import warnings
-import numpy as np
 import torch
-import matplotlib.pyplot as plt
 import mrcfile
 import imageio
+import argparse
+import numpy as np
+import matplotlib.pyplot as plt
+from skimage.transform import resize
 from utils import data_generation, utils_deformation, utils_display
-warnings.filterwarnings('ignore') 
 from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
-plt.ion()
-
-
 from configs.config_reconstruct_simulation import get_default_configs,get_areTomoValidation_configs,bare_bones_config,get_config_local_implicit
 from configs.config_reconstruct_simulation import get_volume_save_configs
 from configs.config_simulation_SNR import get_SNR_configs
-
-import argparse
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='default', help='Configuration to use')
 parser.add_argument('--snrIndex', type=int, default=10, help='SNR value, Note: Only used for the SNR experiment ')
-
 args = parser.parse_args()
-
 print(args.config)
 
 if args.config == 'default':
@@ -51,13 +43,12 @@ elif args.config == 'snr':
     config.path_save = config.path_save + str(SNR_value) + '/'
 
 SNR_value = config.SNR_value
-
 if(args.config == 'snr'):
     snr_index = args.snrIndex
     SNR_value= config.SNR_value[snr_index]
 
 # Choosing the seed and the device
-use_cuda=torch.cuda.is_available()
+use_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
 if torch.cuda.device_count()>1:
     torch.cuda.set_device(config.device_num)
@@ -66,6 +57,8 @@ torch.manual_seed(config.seed)
 
 if not os.path.exists("results/"):
     os.makedirs("results/")
+if not os.path.exists("datasests/"):
+    os.makedirs("datasests/")
 if not os.path.exists(config.path_save_data):
     os.makedirs(config.path_save_data)
 if not os.path.exists(config.path_save_data+"projections/"):
@@ -80,18 +73,21 @@ if not os.path.exists(config.path_save_data+"volumes/"):
     os.makedirs(config.path_save_data+"volumes/")
 if not os.path.exists(config.path_save_data+"volumes/clean/"):
     os.makedirs(config.path_save_data+"volumes/clean/")
-if not os.path.exists(config.path_save_data+"deformations/"):
-    os.makedirs(config.path_save_data+"deformations/")
-
+if not os.path.exists(config.path_save_data+"deformations_true/"):
+    os.makedirs(config.path_save_data+"deformations_true/")
 
 #######################################################################################
 ## Load data
 #######################################################################################
 # Parameters
 name_volume="grandmodel.mrc" # here: https://www.shrec.net/cryo-et/
+path_volume = "./datasets/"+str(config.volume_name)+"/"+name_volume
 
-
-path_volume = "./datasets/"+str(config.volume_name)+"/"+name_volume #TODO: maybe requires a redisign
+if not(os.path.isfile(path_volume)):
+    print("Please download the Shrec 2021 dataset and move the files in the folder datasests.")
+    print("The structure of the folder should be 'datasets/model_X/grandmodel.mrc', where model_X is specifiec by config.volume_name")
+    print("Here is the link to download the dataset: https://dataverse.nl/dataset.xhtml?persistentId=doi:10.34894/XRTJMA")
+    
 
 
 # Loading and shaping the volume
@@ -103,18 +99,9 @@ V = np.swapaxes(V,0,1)
 V = np.swapaxes(V,1,2)
 V = (V - V.min())/(V.max()-V.min())
 V *= config.n3
-
 out = mrcfile.new(config.path_save_data+"V_central_slice.mrc",V[:,:,config.n3//2].astype(np.float32),overwrite=True)
 out.close() 
-# # define molifier to ensure support and avoid padding artifacts
-# mollifier = utils_sampling.mollifier_class(-1,config.torch_type,device)
-
-# V = mollifier.mollify3d_np()*V
-# w = (V.sum()/(config.n1*config.n2*config.n3)).item()
-# V /= w
 V_t = torch.tensor(V).to(device).type(config.torch_type)
-# barycenter_true = (V_t.reshape(-1,1)*grid_class.grid3d_t).mean(0)
-
 
 #######################################################################################
 ## Generate projections
@@ -122,30 +109,7 @@ V_t = torch.tensor(V).to(device).type(config.torch_type)
 # Define angles and X-ray transform
 angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
 angles_t = torch.tensor(angles).type(config.torch_type).to(device)
-operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, op_snr=np.inf, fact=1)
-
-
-# TODO: implement more realistic PSF (and spatially varying?)
-def PSF_generator(E,F,c,x):
-    return E[0]
-
-
-# Define the PSF
-if config.sigma_PSF!=0:
-    xx1 = np.linspace(-config.n1//2,config.n1//2,config.n1)
-    xx2 = np.linspace(-config.n2//2,config.n2//2,config.n2)
-    XX, YY = np.meshgrid(xx1,xx2)
-    G = np.exp(-(XX**2+YY**2)/(2*config.sigma_PSF**2))
-    supp = int(np.round(4*config.sigma_PSF))
-    PSF = G[config.n1//2-supp//2:config.n1//2+supp//2,config.n2//2-supp//2:config.n2//2+supp//2]
-    PSF /= PSF.sum()
-    PSF_ext = np.zeros_like(G)
-    PSF_ext[config.n1//2-supp//2:config.n1//2+supp//2,config.n2//2-supp//2:config.n2//2+supp//2] = G[config.n1//2-supp//2:config.n1//2+supp//2,config.n2//2-supp//2:config.n2//2+supp//2]
-    PSF_ext_t = torch.tensor(PSF_ext).type(config.torch_type).to(device)
-    PSF_ext_fft_t = torch.fft.fft2(PSF_ext_t).view(1,config.n1,config.n2)
-else: 
-    PSF = 0
-
+operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
 
 # Define global and local deformations
 affine_tr = []
@@ -155,33 +119,25 @@ local_tr = []
 if(config.slowAngle):
     print("Use polynomial with roots "+str(config.n_roots)+" to generate angle deformation")
     angle_def = utils_deformation.polynomial_angle_deformation(**config)
-
-# TODO: add a model of local deformation as Gaussian blobs
 for i in range(config.Nangles*config.number_sub_projections):
     scaleX, scaleY, shiftX, shiftY, shearX, shearY, angle  = utils_deformation.generate_params_deformation(config.scale_min,
-                config.scale_max,config.shift_min,config.shift_max,config.shear_min,config.shear_max,config.angle_min,config.angle_max)
-    
+                config.scale_max,config.shift_min,config.shift_max,config.shear_min,config.shear_max,config.angle_min,config.angle_max)  
     if(config.slowAngle):
         angle = angle_def[i]
-
     affine_tr.append(utils_deformation.AffineTransform(scaleX, scaleY, shiftX, shiftY, shearX, shearY, angle ).cuda())
-    #print(angle)
     depl_ctr_pts = torch.randn(2,config.N_ctrl_pts_local_def[0],config.N_ctrl_pts_local_def[1]).to(device).type(config.torch_type)
     depl_ctr_pts[0] = depl_ctr_pts[0]/config.n1*config.sigma_local_def
     depl_ctr_pts[1] = depl_ctr_pts[1]/config.n2*config.sigma_local_def
     field = utils_deformation.deformation_field(depl_ctr_pts)
     local_tr.append(field)
-
-    # Display the transformations
+    # Display the 10-th first transformations
     if i < 10:
         nsr = (config.n1*4,config.n2*4)
         Nsp = (config.n1//20,config.n2//20) # number of Diracs in each direction
         supp = config.n1//70
-
         # Display local deformations
-        utils_display.display_local(field,field_true=None,Npts=Nsp,img_path=config.path_save_data+"deformations/local_quiver_"+str(i),
+        utils_display.display_local(field,field_true=None,Npts=Nsp,img_path=config.path_save_data+"deformations_true/local_quiver_"+str(i),
                                     img_type='.png',scale=1,alpha=0.8,width=0.0015,wx=config.n1//2,wy=config.n2//2)
-
         # Display global deformations
         sp1 = np.array(np.floor(np.linspace(0,nsr[0],Nsp[0]+2)),dtype=int)[1:-1]
         sp2 = np.array(np.floor(np.linspace(0,nsr[1],Nsp[1]+2)),dtype=int)[1:-1]
@@ -194,47 +150,33 @@ for i in range(config.Nangles*config.number_sub_projections):
         G[nsr[0]//2+supp:,:]=0
         G[:,:nsr[1]//2-supp]=0
         G[:,nsr[1]//2+supp:]=0
-
         G /= G.sum()
         im_grid = np.zeros(nsr)
         im_grid[spx,spy] = 1
         im_grid = np.fft.ifftshift(np.fft.ifft2(np.fft.fft2(G)*np.fft.fft2(im_grid))).real
         im_grid_t = torch.tensor(im_grid).to(device).type(config.torch_type)
-
         img_deform_global = utils_deformation.apply_deformation([affine_tr[-1]],im_grid_t.reshape(1,nsr[0],nsr[1]))
-
         tmp = img_deform_global.detach().cpu().numpy()[0].reshape(nsr)
         tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(config.path_save_data+"deformations/global_deformation_indiviudal_"+str(i)+".png",tmp)
-    
+        imageio.imwrite(config.path_save_data+"deformations_true/global_deformation_indiviudal_"+str(i)+".png",tmp)  
 
 projections_clean = operator_ET(V_t)
 projections_clean = projections_clean[:,None].repeat(1,config.number_sub_projections,1,1).reshape(-1,config.n1,config.n2)
-
 
 # add deformations
 projections_deformed_global = utils_deformation.apply_deformation(affine_tr,projections_clean)
 projections_deformed = utils_deformation.apply_local_deformation(local_tr,projections_deformed_global)
 
-# add PSF
-# TODO: implement spatial PSF
-if config.sigma_PSF!=0:
-    projections_deformed = torch.fft.fftshift(torch.fft.ifft2(PSF_ext_fft_t * torch.fft.fft2(projections_deformed,dim=(1,2))),(1,2)).real
-    
 # add noise
-
 sigma_noise = data_generation.find_sigma_noise_t(SNR_value,projections_deformed)
 projections_noisy = projections_deformed.clone() + torch.randn_like(projections_deformed)*sigma_noise
 projections_noisy_no_deformed = projections_clean.clone() + torch.randn_like(projections_clean)*sigma_noise
 
-
+# Save deformations and projections
 np.save(config.path_save_data+"global_deformations.npy",affine_tr)
-#np.savetxt(config.path_save_data+"global_deformations.txt",affine_tr)
 np.save(config.path_save_data+"local_deformations.npy",local_tr)
-np.savez(config.path_save_data+"volume_and_projections.npz",projections_noisy=projections_noisy.detach().cpu().numpy(),projections_deformed=projections_deformed.detach().cpu().numpy(),projections_deformed_global=projections_deformed_global.detach().cpu().numpy(),projections_clean=projections_clean.detach().cpu().numpy(),PSF=PSF)
-# np.savez(config.path_save_data+"parameters.npz",Nangles=config.Nangles,angle_min=config.angle_min,angle_max=config.angle_max,
-#          n1=config.n1,n2=config.n2,n3=config.n3,SNR_value=config.SNR_value,sigma_PSF=config.sigma_PSF)
+np.savez(config.path_save_data+"volume_and_projections.npz",projections_noisy=projections_noisy.detach().cpu().numpy(),projections_deformed=projections_deformed.detach().cpu().numpy(),projections_deformed_global=projections_deformed_global.detach().cpu().numpy(),projections_clean=projections_clean.detach().cpu().numpy())
 
 # save projections
 for k in range(config.Nangles):
@@ -254,13 +196,12 @@ for k in range(config.Nangles):
     imageio.imwrite(config.path_save_data+"projections/noisy/noisy_"+str(k)+".png",tmp)
 
 
-## Save volume
+## Save volumes and other interesting qunatities
 for k in range(V_t.shape[2]):
     tmp = V_t[:,:,k].detach().cpu().numpy()
     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save,'volumes','clean','obs_{}.png'.format(k)),tmp)
-
 
 projections_noisy_avg = projections_noisy.reshape(config.Nangles,-1,config.n1,config.n2).mean(1).contiguous().type(torch.float32)
 projections_noisy_no_deformed_avg =  projections_noisy_no_deformed.reshape(config.Nangles,-1,config.n1,config.n2).mean(1)
@@ -275,7 +216,6 @@ out.close()
 out = mrcfile.new(config.path_save_data+"projections.mrc",projections_noisy.detach().cpu().numpy(),overwrite=True)
 out.close() 
 
-
 projections_noisy_ = projections_noisy.detach().cpu().numpy()*1
 projections_noisy_no_deformed_ = projections_noisy_no_deformed.detach().cpu().numpy()*1
 projections_noisy_reversed = projections_noisy_.max() - projections_noisy_ + 0.0001
@@ -286,7 +226,6 @@ out = mrcfile.new(config.path_save_data+"projections_noisy_no_deformed.mrc",proj
 out.close()
 out = mrcfile.new(config.path_save_data+"projections_noisy_no_deformed_reversed.mrc",projections_noisy_no_deformed_reversed,overwrite=True)
 out.close()
-
 
 # Save angle files
 np.save(config.path_save_data+"angles.npy",angles)
