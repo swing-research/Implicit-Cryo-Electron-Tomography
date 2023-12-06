@@ -33,7 +33,7 @@ class ParallelBeamGeometry3DOp(object):
     return OperatorFunction.apply(self.op, x)
 
   def pinv(self, y):
-    return OperatorFunction.apply(self.fbp, y)/np.prod(self.img_size)
+    return OperatorFunction.apply(self.fbp, y)
 
 class ParallelBeamGeometry3DOpAngles_rectangular(ParallelBeamGeometry3DOp):
   def __init__(self, img_size, angles, fact=2):
@@ -55,6 +55,11 @@ class ParallelBeamGeometry3DOpAngles_rectangular(ParallelBeamGeometry3DOp):
     self.op = odl.tomo.RayTransform(self.reco_space, self.geometry, impl='astra_cuda')
     self.fbp = odl.tomo.analytic.filtered_back_projection.fbp_op(self.op)
 
+  def __call__(self, x):
+    return OperatorFunction.apply(self.op, x)
+
+  def pinv(self, y):
+    return OperatorFunction.apply(self.fbp, y)/np.prod(self.img_size)
 
 def unit_test():
   plt.ion() 
