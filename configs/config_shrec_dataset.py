@@ -47,7 +47,7 @@ def get_config():
     config.seed = 42
     config.device_num = 0
     config.torch_type = torch.float
-    config.isbare_bones = False
+    config.track_memory = False
 
     # training
     # Estimate Volume from the deformed projections

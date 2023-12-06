@@ -1,6 +1,7 @@
 '''
 Contain the function used to generate simulated data from a clean tomogram. 
-The goal is to compare different approaches on this dataset that is suppose to mimic the CryoET image formation model.
+The goal is to compare different approaches on this dataset that is suppose
+to mimic the CryoET image formation model.
 '''
 import os
 import torch
@@ -23,6 +24,7 @@ def data_generation(config):
     np.random.seed(config.seed)
     torch.manual_seed(config.seed)
 
+    # prepare the folders
     if not os.path.exists("results/"):
         os.makedirs("results/")
     if not os.path.exists("datasests/"):
