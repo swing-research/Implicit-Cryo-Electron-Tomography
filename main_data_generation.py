@@ -90,14 +90,14 @@ if not(os.path.isfile(path_volume)):
 
 
 # Loading and shaping the volume
-V = np.double(mrcfile.open(path_volume).data)
+V = -np.double(mrcfile.open(path_volume).data)
 nv = V.shape # size of the loaded volume 
 V = V[nv[0]//2-config.n3_patch//2:nv[0]//2+config.n3_patch//2,nv[1]//2-config.n1_patch//2:nv[1]//2+config.n1_patch//2,nv[2]//2-config.n2_patch//2:nv[2]//2+config.n2_patch//2]
 V = resize(V,(config.n3,config.n1,config.n2))
 V = np.swapaxes(V,0,1)
 V = np.swapaxes(V,1,2)
-V = (V - V.min())/(V.max()-V.min())
-V *= config.n3
+# V = (V - V.min())/(V.max()-V.min())
+# V *= config.n3
 out = mrcfile.new(config.path_save_data+"V_central_slice.mrc",V[:,:,config.n3//2].astype(np.float32),overwrite=True)
 out.close() 
 V_t = torch.tensor(V).to(device).type(config.torch_type)
@@ -162,8 +162,6 @@ for i in range(config.Nangles*config.number_sub_projections):
 with torch.no_grad():
     projections_clean = operator_ET(V_t)
     projections_clean = projections_clean[:,None].repeat(1,config.number_sub_projections,1,1).reshape(-1,config.n1,config.n2)
-
-    V_FBP = operator_ET.pinv(projections_clean.detach().requires_grad_(False))
 
     # add deformations
     projections_deformed_global = utils_deformation.apply_deformation(affine_tr,projections_clean)
