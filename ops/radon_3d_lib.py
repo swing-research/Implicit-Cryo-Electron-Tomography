@@ -59,7 +59,7 @@ class ParallelBeamGeometry3DOpAngles_rectangular(ParallelBeamGeometry3DOp):
     return OperatorFunction.apply(self.op, x)
 
   def pinv(self, y):
-    return OperatorFunction.apply(self.fbp, y)/(self.n1*self.n2*self.n3)
+    return OperatorFunction.apply(self.fbp, y)
 
 def unit_test():
   plt.ion() 
