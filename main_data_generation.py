@@ -84,7 +84,7 @@ path_volume = "./datasets/"+str(config.volume_name)+"/"+name_volume
 
 if not(os.path.isfile(path_volume)):
     print("Please download the Shrec 2021 dataset and move the files in the folder datasests.")
-    print("The structure of the folder should be 'datasets/model_X/grandmodel.mrc', where model_X is specifiec by config.volume_name")
+    print("The structure of the folder should be 'datasets/model_X/grandmodel.mrc', where model_X is specified by config.volume_name")
     print("Here is the link to download the dataset: https://dataverse.nl/dataset.xhtml?persistentId=doi:10.34894/XRTJMA")
     
 
@@ -163,7 +163,7 @@ with torch.no_grad():
     projections_clean = operator_ET(V_t)
     projections_clean = projections_clean[:,None].repeat(1,config.number_sub_projections,1,1).reshape(-1,config.n1,config.n2)
 
-     V_FBP = operator_ET.pinv(projections_clean.detach().requires_grad_(False))
+    V_FBP = operator_ET.pinv(projections_clean.detach().requires_grad_(False))
 
     # add deformations
     projections_deformed_global = utils_deformation.apply_deformation(affine_tr,projections_clean)

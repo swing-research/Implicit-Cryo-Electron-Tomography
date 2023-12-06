@@ -9,6 +9,27 @@ ICE-TIDE's ability to perform on experimental data sets is also demonstrated.
 
 This repo contains the scripts used to produce the experiments in the associated paper.
 
+
+
+
+
+## Prepare for the ICE-TIDE
+
+# Install everything
+using requierments
+
+# Install [tiny cuda](https://github.com/NVlabs/tiny-cuda-nn)
+pip install git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
+
+# Download simulation dataset
+Please download the [(Shrec 2021)](https://dataverse.nl/dataset.xhtml?persistentId=doi:10.34894/XRTJMA) dataset and move the files in the folder datasests.
+The structure of the folder should be 'datasets/model_X/grandmodel.mrc', where model_X is specified by the variable volume_name in the config files
+
+# Use your own dataset
+put your tilt-series here ... and run ...
+
+
+
 ```
 usage: train.py [-h] [--num_epochs NUM_EPOCHS] [--batch_size BATCH_SIZE] [--dataset DATASET] [--lr LR]
                 [--ml_threshold ML_THRESHOLD] [--model_depth MODEL_DEPTH] [--latent_depth LATENT_DEPTH] [--learntop LEARNTOP]

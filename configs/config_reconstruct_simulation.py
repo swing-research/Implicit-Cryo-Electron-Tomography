@@ -39,7 +39,7 @@ def get_default_configs():
     config.path_save_data = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_no_PSF/"
     config.path_save = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_no_PSF/"
     config.seed = 42
-    config.device_num = 0
+    config.device_num = 2
     config.torch_type = torch.float
     config.isbare_bones = False
 
