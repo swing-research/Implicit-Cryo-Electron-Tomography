@@ -30,7 +30,7 @@ put your tilt-series here ... and run ...
 
 
 ## How to use
-python -m experiment_scripts.simulation_model0.py
+python -m experiment_scripts.simulation_model0
 
 
 

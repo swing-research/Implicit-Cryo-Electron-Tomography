@@ -30,12 +30,12 @@ def get_config():
     deformation_scale = 0.5
     config.scale_min = 1.0
     config.scale_max = 1.0
-    config.shift_min = -0.02*deformation_scale # percentage of the field of view
-    config.shift_max = 0.02*deformation_scale  # percentage of the field of view
+    config.shift_min = -0.03*deformation_scale # percentage of the field of view
+    config.shift_max = 0.03*deformation_scale  # percentage of the field of view
     config.shear_min = -0.0
     config.shear_max = 0.0
-    config.angle_min = -0.5/180*np.pi*deformation_scale # in degrees
-    config.angle_max = 0.5/180*np.pi*deformation_scale # in degrees
+    config.angle_min = -0.1/180*np.pi*deformation_scale # in degrees
+    config.angle_max = 0.1/180*np.pi*deformation_scale # in degrees
     config.slowAngle = False 
     config.sigma_local_def = 2*deformation_scale
     config.N_ctrl_pts_local_def = (12,12)

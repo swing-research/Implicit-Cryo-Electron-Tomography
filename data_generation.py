@@ -14,7 +14,6 @@ from utils import utils_data_generation, utils_deformation, utils_display
 
 
 def data_generation(config):
-
     SNR_value = config.SNR_value
 
     # Choosing the seed and the device
@@ -42,8 +41,8 @@ def data_generation(config):
         os.makedirs(config.path_save_data+"volumes/")
     if not os.path.exists(config.path_save_data+"volumes/clean/"):
         os.makedirs(config.path_save_data+"volumes/clean/")
-    if not os.path.exists(config.path_save_data+"deformations_true/"):
-        os.makedirs(config.path_save_data+"deformations_true/")
+    if not os.path.exists(config.path_save_data+"deformations/"):
+        os.makedirs(config.path_save_data+"deformations/")
 
     #######################################################################################
     ## Load data
@@ -64,10 +63,6 @@ def data_generation(config):
     V = resize(V,(config.n3,config.n1,config.n2))
     V = np.swapaxes(V,0,1)
     V = np.swapaxes(V,1,2)
-    # V = (V - V.min())/(V.max()-V.min())
-    # V *= config.n3
-    out = mrcfile.new(config.path_save_data+"V_central_slice.mrc",V[:,:,config.n3//2].astype(np.float32),overwrite=True)
-    out.close() 
     V_t = torch.tensor(V).to(device).type(config.torch_type)
 
     #######################################################################################
@@ -97,36 +92,35 @@ def data_generation(config):
         depl_ctr_pts[1] = depl_ctr_pts[1]/config.n2*config.sigma_local_def
         field = utils_deformation.deformation_field(depl_ctr_pts)
         local_tr.append(field)
-        # Display the 10-th first transformations
-        if i < 10:
-            nsr = (config.n1*4,config.n2*4)
-            Nsp = (config.n1//20,config.n2//20) # number of Diracs in each direction
-            supp = config.n1//70
-            # Display local deformations
-            utils_display.display_local(field,field_true=None,Npts=Nsp,img_path=config.path_save_data+"deformations_true/local_quiver_"+str(i),
-                                        img_type='.png',scale=1,alpha=0.8,width=0.0015,wx=config.n1//2,wy=config.n2//2)
-            # Display global deformations
-            sp1 = np.array(np.floor(np.linspace(0,nsr[0],Nsp[0]+2)),dtype=int)[1:-1]
-            sp2 = np.array(np.floor(np.linspace(0,nsr[1],Nsp[1]+2)),dtype=int)[1:-1]
-            spx, spy = np.meshgrid(sp1,sp2)  
-            xx1 = np.linspace(-nsr[0]/2,nsr[0]/2,nsr[0])
-            xx2 = np.linspace(-nsr[1]/2,nsr[1]/2,nsr[1])
-            XX, YY = np.meshgrid(xx1,xx2, indexing='ij')
-            G = np.exp(-(XX**2+YY**2)/(2*(supp/3)**2))
-            G[:nsr[0]//2-supp,:]=0
-            G[nsr[0]//2+supp:,:]=0
-            G[:,:nsr[1]//2-supp]=0
-            G[:,nsr[1]//2+supp:]=0
-            G /= G.sum()
-            im_grid = np.zeros(nsr)
-            im_grid[spx,spy] = 1
-            im_grid = np.fft.ifftshift(np.fft.ifft2(np.fft.fft2(G)*np.fft.fft2(im_grid))).real
-            im_grid_t = torch.tensor(im_grid).to(device).type(config.torch_type)
-            img_deform_global = utils_deformation.apply_deformation([affine_tr[-1]],im_grid_t.reshape(1,nsr[0],nsr[1]))
-            tmp = img_deform_global.detach().cpu().numpy()[0].reshape(nsr)
-            tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
-            tmp = np.floor(255*tmp).astype(np.uint8)
-            imageio.imwrite(config.path_save_data+"deformations_true/global_deformation_indiviudal_"+str(i)+".png",tmp)  
+        # Some display
+        nsr = (config.n1*4,config.n2*4)
+        Nsp = (config.n1//20,config.n2//20) # number of Diracs in each direction
+        supp = config.n1//70
+        # Display local deformations
+        utils_display.display_local(field,field_true=None,Npts=Nsp,img_path=config.path_save_data+"deformations/local_deformations_view_"+str(i),
+                                    img_type='.png',scale=1,alpha=0.8,width=0.0015,wx=config.n1//2,wy=config.n2//2)
+        # Display global deformations
+        sp1 = np.array(np.floor(np.linspace(0,nsr[0],Nsp[0]+2)),dtype=int)[1:-1]
+        sp2 = np.array(np.floor(np.linspace(0,nsr[1],Nsp[1]+2)),dtype=int)[1:-1]
+        spx, spy = np.meshgrid(sp1,sp2)  
+        xx1 = np.linspace(-nsr[0]/2,nsr[0]/2,nsr[0])
+        xx2 = np.linspace(-nsr[1]/2,nsr[1]/2,nsr[1])
+        XX, YY = np.meshgrid(xx1,xx2, indexing='ij')
+        G = np.exp(-(XX**2+YY**2)/(2*(supp/3)**2))
+        G[:nsr[0]//2-supp,:]=0
+        G[nsr[0]//2+supp:,:]=0
+        G[:,:nsr[1]//2-supp]=0
+        G[:,nsr[1]//2+supp:]=0
+        G /= G.sum()
+        im_grid = np.zeros(nsr)
+        im_grid[spx,spy] = 1
+        im_grid = np.fft.ifftshift(np.fft.ifft2(np.fft.fft2(G)*np.fft.fft2(im_grid))).real
+        im_grid_t = torch.tensor(im_grid).to(device).type(config.torch_type)
+        img_deform_global = utils_deformation.apply_deformation([affine_tr[-1]],im_grid_t.reshape(1,nsr[0],nsr[1]))
+        tmp = img_deform_global.detach().cpu().numpy()[0].reshape(nsr)
+        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+        tmp = np.floor(255*tmp).astype(np.uint8)
+        imageio.imwrite(config.path_save_data+"deformations/global_deformations_view_"+str(i)+".png",tmp)  
 
     with torch.no_grad():
         projections_clean = operator_ET(V_t)
@@ -149,17 +143,17 @@ def data_generation(config):
         # save projections
         for k in range(config.Nangles):
             tmp = projections_clean[k].detach().cpu().numpy()
-            tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+            tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
             tmp = np.floor(255*tmp).astype(np.uint8)
             imageio.imwrite(config.path_save_data+"projections/clean/clean_"+str(k)+".png",tmp)
 
             tmp = projections_deformed[k].detach().cpu().numpy()
-            tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+            tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
             tmp = np.floor(255*tmp).astype(np.uint8)
             imageio.imwrite(config.path_save_data+"projections/deformed/deformed_"+str(k)+".png",tmp)
 
             tmp = projections_noisy[k].detach().cpu().numpy()
-            tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+            tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
             tmp = np.floor(255*tmp).astype(np.uint8)
             imageio.imwrite(config.path_save_data+"projections/noisy/noisy_"+str(k)+".png",tmp)
 
@@ -167,7 +161,7 @@ def data_generation(config):
         ## Save volumes and other interesting qunatities
         for k in range(V_t.shape[2]):
             tmp = V_t[:,:,k].detach().cpu().numpy()
-            tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+            tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
             tmp = np.floor(255*tmp).astype(np.uint8)
             imageio.imwrite(os.path.join(config.path_save,'volumes','clean','obs_{}.png'.format(k)),tmp)
 
@@ -186,13 +180,7 @@ def data_generation(config):
 
         projections_noisy_ = projections_noisy.detach().cpu().numpy()*1
         projections_noisy_no_deformed_ = projections_noisy_no_deformed.detach().cpu().numpy()*1
-        projections_noisy_reversed = projections_noisy_.max() - projections_noisy_ + 0.0001
-        projections_noisy_no_deformed_reversed = projections_noisy_no_deformed_.max() - projections_noisy_no_deformed_ + 0.0001
-        out = mrcfile.new(config.path_save_data+"projections_reversed.mrc",projections_noisy_reversed,overwrite=True)
-        out.close()
         out = mrcfile.new(config.path_save_data+"projections_noisy_no_deformed.mrc",projections_noisy_no_deformed_,overwrite=True)
-        out.close()
-        out = mrcfile.new(config.path_save_data+"projections_noisy_no_deformed_reversed.mrc",projections_noisy_no_deformed_reversed,overwrite=True)
         out.close()
 
         # Save angle files
