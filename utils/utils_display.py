@@ -3,7 +3,6 @@ import torch
 import matplotlib.pyplot as plt
 
 
-
 """
 field: implicit representation that given a set of coordinates return the displacement in these points.
 field_true: optional, if not None, this field in added on the same plot as the true field.

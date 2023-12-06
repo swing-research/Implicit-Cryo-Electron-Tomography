@@ -29,8 +29,8 @@ def get_default_configs():
     config.shift_max = 0.02*deformation_scale
     config.shear_min = -0.0
     config.shear_max = 0.0
-    config.angle_min = -2/180*np.pi*deformation_scale
-    config.angle_max = 2/180*np.pi*deformation_scale
+    config.angle_min = -0.5/180*np.pi*deformation_scale
+    config.angle_max = 0.5/180*np.pi*deformation_scale
     config.slowAngle = False
     config.sigma_local_def = 2*deformation_scale
     config.N_ctrl_pts_local_def = (12,12)

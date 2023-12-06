@@ -1,9 +1,11 @@
-import numpy as np
+
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
-from utils import utils_sampling
+
+from . import utils_sampling
 
 #######################################################################################
 ## Define local deformations

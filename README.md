@@ -29,6 +29,13 @@ The structure of the folder should be 'datasets/model_X/grandmodel.mrc', where m
 put your tilt-series here ... and run ...
 
 
+## How to use
+python -m experiment_scripts.simulation_model0.py
+
+
+
+
+
 
 ```
 usage: train.py [-h] [--num_epochs NUM_EPOCHS] [--batch_size BATCH_SIZE] [--dataset DATASET] [--lr LR]

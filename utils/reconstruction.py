@@ -1,29 +1,18 @@
 
-from scipy.spatial import SphericalVoronoi
 import  torch
 import numpy as np
-import torch.nn.functional as F
-# import raster_geometry as mrt
-import matplotlib.pyplot as plt
-
-# from scipy.spatial.transform import Rotation as rot
-import sys
-# sys.path.insert(0,'./../')
-from utils.data_generation import getRotationMatrix,rotate_t
-from sklearn.metrics.pairwise import euclidean_distances
-from scipy.optimize import lsq_linear
+from scipy.spatial import SphericalVoronoi
 from scipy.spatial.transform import Rotation as R
+from sklearn.metrics.pairwise import euclidean_distances
 
-from utils import utils_sampling
+from . import utils_sampling
+from .utils_data_generation import getRotationMatrix,rotate_t
 
 
 def SNR(x, xhat):
   """Returns SNR of xhat wrt to gt image x."""
-
-  # TODO(konik): assert x and xhat have same image.
   diff = x - xhat
   return -20*np.log10(np.linalg.norm(diff)/ np.linalg.norm(x))
-
 
 
 def backprojection(projections,angles,weightType = 0,ignoreAxis=2,polynomialOrder = 2,order='X',degrees=True):
@@ -119,7 +108,7 @@ def compute_fsc(
         image_2: np.ndarray,
         bin_width: int = 2.0, epsilon=1e-10
 ):
-# Code modified from https://tttrlib.readthedocs.io/en/latest/auto_examples/imaging/plot_imaging_frc.html
+    # Code modified from https://tttrlib.readthedocs.io/en/latest/auto_examples/imaging/plot_imaging_frc.html
     """ Computes the Fourier Ring/Shell Correlation of two 3-D volume
 
     :param image_1:
@@ -169,42 +158,6 @@ def compute_fsc(
     )
     density = f1f2_r / np.sqrt(f12_r * f22_r + epsilon)
     return density, bin_edges
-
-# Not sure which is correct
-# def getfsc(vol1,vol2,mask=None):
-#     #Works for even n
-#     #This is the function used in cryodrgn    
-#     D = vol1.shape[0]
-#     x = np.arange(-D//2, D//2)
-#     x2, x1, x0 = np.meshgrid(x,x,x, indexing='ij')
-#     coords = np.stack((x0,x1,x2), -1)
-#     r = (coords**2).sum(-1)**.5
-    
-#     #print(r[D//2, D//2, D//2])
-
-#     #assert r[D//2, D//2, D//2] == 0.0
-
-#     vol1 = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(vol1)))
-#     vol2 = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(vol2)))
-
-#     #log(r[D//2, D//2, D//2:])
-#     prev_mask = np.zeros((D,D,D), dtype=bool)
-#     fsc = [1.0]
-#     for i in range(1,D//2):
-#         mask = r < i
-#         shell = np.where(mask & np.logical_not(prev_mask))
-#         v1 = vol1[shell]
-#         v2 = vol2[shell]
-#         p = np.vdot(v1,v2) / (np.vdot(v1,v1)*np.vdot(v2,v2))**.5
-#         #print(p)
-#         fsc.append(p.real)
-#         prev_mask = mask
-#     #print(fsc)
-#     fsc = np.asarray(fsc)
-#     x = np.arange(D//2)/D
-    
-#     return fsc,x
-
 
 def getfsc(vol1,vol2,mask=None, DIndex = None):
     #Works for even n
@@ -256,8 +209,6 @@ def getfsc(vol1,vol2,mask=None, DIndex = None):
     x = np.arange(D//2)/D
     
     return fsc,x
-
-
 
 
 
