@@ -351,7 +351,6 @@ def train(config):
 
         # Track loss and display values
         if ((ep%10)==0 and (ep%config.Ntest!=0)):
-            import ipdb; ipdb.set_trace()
             loss_current_epoch = np.mean(loss_tot[-len(trainLoader):])
             l_fid = np.mean(loss_data_fidelity[-len(trainLoader):])
             l_v = np.mean(loss_regul_volume[-len(trainLoader):])
@@ -375,7 +374,7 @@ def train(config):
                 l_sh = np.mean(loss_regul_shifts[-len(trainLoader)*config.Ntest:])
                 l_rot = np.mean(loss_regul_rot[-len(trainLoader)*config.Ntest:])
                 l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader)*config.Ntest:])
-                print("----Epoch: {}, loss_avg: {:2.3f} || Loss data fidelity: {:2.3f}, regul volume: {:2.2f}, regul shifts: {:2.2f}, regul inplane: {:2.2f}, regul local: {:2.2f}, time: {:2.0f} s".format(
+                print("----Epoch: {}, loss_avg: {:2.3f} || Loss data fidelity: {:2.3f}, regul volume: {:2.2f}, regul shifts: {:2.4f}, regul inplane: {:2.2f}, regul local: {:2.4f}, time: {:2.0f} s".format(
                     ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
 
                 ## Save local deformation
