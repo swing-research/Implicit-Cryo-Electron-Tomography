@@ -321,9 +321,10 @@ def train(config):
             ## Add regularizations
             if train_local_def and config.lamb_local_ampl!=0:
                 # Using only the x and y coordinates
-                depl = torch.abs(config.deformationScale*implicit_deformation_list[ii](raysSet[:,:,0,:2].reshape(-1,2)))
-                loss += config.lamb_local_ampl*(depl.mean())
-                loss_regul_local_ampl.append(config.lamb_local_ampl*depl.mean().item())
+                for ii_ in idx_loader:
+                    depl = torch.abs(config.deformationScale*implicit_deformation_list[ii](raysSet[:,:,0,:2].reshape(-1,2)))
+                    loss += config.lamb_local_ampl*(depl.mean())
+                    loss_regul_local_ampl.append(config.lamb_local_ampl*depl.mean().item())
             if train_global_def and (config.lamb_rot!=0 or config.lamb_shifts!=0):
                 for ii in idx_loader:
                     loss += config.lamb_shifts*torch.abs(shift_est[ii]()*config.n1).sum()
@@ -380,7 +381,7 @@ def train(config):
                 ## Save local deformation
                 utils_display.display_local_movie(implicit_deformation_list,field_true=local_tr,Npts=(20,20),
                                             img_path=config.path_save+"/training/deformations/local_deformations_",img_type='.png',
-                                            scale=1/config.deformationScale,alpha=0.8,width=0.0015)
+                                            scale=1,alpha=0.8,width=0.0015,weights_est=config.deformationScale)
                     
                 ## Save global deformation
                 shiftEstimate, rotEstimate = globalDeformationValues(shift_est,rot_est)
