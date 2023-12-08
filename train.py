@@ -16,7 +16,6 @@ from utils.utils_sampling import sample_implicit_batch_lowComp, generate_rays_ba
 def train(config):
     # Choosing the seed and the device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
-    device = 'cpu'
     if torch.cuda.device_count()>1:
         torch.cuda.set_device(config.device_num)
     np.random.seed(config.seed)
