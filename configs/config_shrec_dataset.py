@@ -57,7 +57,7 @@ def get_config():
     config.local_model = 'interp' #  'implicit' or 'interp'
     config.initialize_local_def = False
     config.initialize_volume = False
-    config.volume_model = "MLP" # multi-resolution, Fourier-features, grid, MLP
+    config.volume_model = "multi-resolution" # multi-resolution, Fourier-features, grid, MLP
 
     # When to start or stop optimizing over a variable
     config.schedule_local = []
@@ -71,8 +71,7 @@ def get_config():
     config.rays_scaling = [1.,1.,1.] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
 
     config.epochs = 1000
-    config.Ntest = 25 # number of epoch before display
-    config.NsaveNet = 100 # number of epoch before saving again the nets
+    config.Ntest = 100 # number of epoch before display
     
     config.lr_volume = 1e-2
     config.lr_local_def = 1e-4
