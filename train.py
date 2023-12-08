@@ -325,14 +325,12 @@ def train(config):
                     depl = torch.abs(config.deformationScale*implicit_deformation_list[ii](raysSet[:,:,0,:2].reshape(-1,2))*config.n1)
                     loss += config.lamb_local_ampl*(depl.mean())
                     loss_regul_local_ampl.append(config.lamb_local_ampl*depl.mean().item())
-                    import ipdb; ipdb.set_trace()
             if train_global_def and (config.lamb_rot!=0 or config.lamb_shifts!=0):
                 for ii in idx_loader:
                     loss += config.lamb_shifts*torch.abs(shift_est[ii]()*config.n1).sum()
                     loss += config.lamb_rot*torch.abs(rot_est[ii]()*180/np.pi).sum()
                     loss_regul_shifts.append((config.lamb_shifts*torch.abs(shift_est[ii]()*config.n1).sum()).item())
                     loss_regul_rot.append((config.lamb_rot*torch.abs(rot_est[ii]()*180/np.pi).sum()).item())
-                    import ipdb; ipdb.set_trace()
             if config.train_volume and config.lamb_volume!=0:
                 loss += torch.linalg.norm(outputValues[outputValues<0])*config.lamb_volume
                 loss_regul_volume.append((torch.linalg.norm(outputValues[outputValues<0])*config.lamb_volume).item())
@@ -353,12 +351,13 @@ def train(config):
 
         # Track loss and display values
         if ((ep%10)==0 and (ep%config.Ntest!=0)):
+            import ipdb; ipdb.set_trace()
             loss_current_epoch = np.mean(loss_tot[-len(trainLoader):])
             l_fid = np.mean(loss_data_fidelity[-len(trainLoader):])
             l_v = np.mean(loss_regul_volume[-len(trainLoader):])
-            l_sh = np.mean(loss_regul_shifts[-len(trainLoader):])
-            l_rot = np.mean(loss_regul_rot[-len(trainLoader):])
-            l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader):])
+            l_sh = np.mean(loss_regul_shifts[-len(trainLoader)*trainLoader.batch_size:])
+            l_rot = np.mean(loss_regul_rot[-len(trainLoader)*trainLoader.batch_size:])
+            l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader)*trainLoader.batch_size:])
             print("Epoch: {}, loss_avg: {:2.3f} || Loss data fidelity: {:2.3f}, regul volume: {:2.2f}, regul shifts: {:2.2f}, regul inplane: {:2.2f}, regul local: {:2.2f}, time: {:2.0f} s".format(
                 ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
         if config.track_memory:
