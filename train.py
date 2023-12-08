@@ -346,15 +346,16 @@ def train(config):
         scheduler_deformation_glob.step()
         scheduler_deformation_loc.step()
 
-        # Track loss and display values        
-        loss_current_epoch = np.mean(loss_tot[-len(trainLoader):])
-        l_fid = np.mean(loss_data_fidelity[-len(trainLoader):])
-        l_v = np.mean(loss_regul_volume[-len(trainLoader):])
-        l_sh = np.mean(loss_regul_shifts[-len(trainLoader):])
-        l_rot = np.mean(loss_regul_rot[-len(trainLoader):])
-        l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader):])
-        print("Epoch: {}, loss_avg: {:2.3f} || Loss data fidelity: {:2.3f}, regul volume: {:2.2f}, regul shifts: {:2.2f}, regul inplane: {:2.2f}, regul local: {:2.2f}, time (s): {:2.3f}".format(
-            ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
+        # Track loss and display values
+        if ((ep%10)==0 and (ep%config.Ntest!=0)):
+            loss_current_epoch = np.mean(loss_tot[-len(trainLoader):])
+            l_fid = np.mean(loss_data_fidelity[-len(trainLoader):])
+            l_v = np.mean(loss_regul_volume[-len(trainLoader):])
+            l_sh = np.mean(loss_regul_shifts[-len(trainLoader):])
+            l_rot = np.mean(loss_regul_rot[-len(trainLoader):])
+            l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader):])
+            print("Epoch: {}, loss_avg: {:2.3f} || Loss data fidelity: {:2.3f}, regul volume: {:2.2f}, regul shifts: {:2.2f}, regul inplane: {:2.2f}, regul local: {:2.2f}, time: {:2.0f} s".format(
+                ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
         if config.track_memory:
             memory_used.append(torch.cuda.memory_allocated())
 
@@ -370,7 +371,7 @@ def train(config):
                 l_sh = np.mean(loss_regul_shifts[-len(trainLoader)*config.Ntest:])
                 l_rot = np.mean(loss_regul_rot[-len(trainLoader)*config.Ntest:])
                 l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader)*config.Ntest:])
-                print("----Epoch: {}, loss_avg: {:2.3f} || Loss data fidelity: {:2.3f}, regul volume: {:2.2f}, regul shifts: {:2.2f}, regul inplane: {:2.2f}, regul local: {:2.2f}, time (s): {:2.3f}".format(
+                print("----Epoch: {}, loss_avg: {:2.3f} || Loss data fidelity: {:2.3f}, regul volume: {:2.2f}, regul shifts: {:2.2f}, regul inplane: {:2.2f}, regul local: {:2.2f}, time: {:2.0f} s".format(
                     ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
 
                 ## Save local deformation

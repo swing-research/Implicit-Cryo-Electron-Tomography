@@ -50,6 +50,7 @@ def data_generation(config):
     ## Load data
     #######################################################################################
     # Parameters
+    print("Loading volume...")
     name_volume="grandmodel.mrc" # here: https://www.shrec.net/cryo-et/
     path_volume = "./datasets/"+str(config.volume_name)+"/"+name_volume
 
@@ -67,10 +68,13 @@ def data_generation(config):
     V = np.swapaxes(V,1,2)
     V_t = torch.tensor(V).to(device).type(config.torch_type)
 
+    print("Volume loaded.")
+
     #######################################################################################
     ## Generate projections
     #######################################################################################
     # Define angles and X-ray transform
+    print("Making tilt-series...")
     angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
     angles_t = torch.tensor(angles).type(config.torch_type).to(device)
     operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
@@ -127,7 +131,9 @@ def data_generation(config):
     with torch.no_grad():
         projections_clean = operator_ET(V_t)
         projections_clean = projections_clean[:,None].repeat(1,config.number_sub_projections,1,1).reshape(-1,config.n1,config.n2)
+        print("Tilt-series made.")
 
+        print("Saving volumes, tilt-series, FBP, ...")
         # add deformations
         projections_deformed_global = utils_deformation.apply_deformation(affine_tr,projections_clean)
         projections_deformed = utils_deformation.apply_local_deformation(local_tr,projections_deformed_global)
@@ -188,3 +194,4 @@ def data_generation(config):
         # Save angle files
         np.save(config.path_save_data+"angles.npy",angles)
         np.savetxt(config.path_save_data+"angles.txt",angles)
+        print("Saving done.")
