@@ -2,3 +2,4 @@
 - change name of utils_ricardo and only keep the FSC
 - handle the __main__ in utils_sampling.py
 - define other model for implicit net or remove it
+- provide script for AreTomo, must save aligned tilt_series as areTomo_alligned.mrc

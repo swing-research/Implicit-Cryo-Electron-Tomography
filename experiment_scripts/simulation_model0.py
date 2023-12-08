@@ -6,12 +6,15 @@ It creates the dataset (projections, FBP), train ICE-TIDE and compare the result
 
 import train
 import argparse
+from compare_results import compare_results
 import data_generation
 import configs.config_shrec_dataset as config_file
 
 def main():   
     parser = argparse.ArgumentParser(description='Run experiement for the SHREC dataset.')
     parser.add_argument('--no_gen_data', action='store_false', help='Generate the data, default is True.')
+    parser.add_argument('--no_train', action='store_false', help='Train the model, default is True.')
+    parser.add_argument('--no_comparison', action='store_false', help='Compare the different methods, default is True.')
     args = parser.parse_args()
 
     # Get config file
@@ -22,9 +25,12 @@ def main():
         data_generation.data_generation(config)
 
     # Train ICE-TIDE
-    train.train(config)
+    if args.no_train:
+        train.train(config)
 
     # Compare the results and save the figures
+    if args.no_comparison:
+        compare_results(config)
 
 
 if __name__ == '__main__':
