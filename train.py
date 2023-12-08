@@ -14,6 +14,7 @@ from utils.utils_sampling import sample_implicit_batch_lowComp, generate_rays_ba
 
 
 def train(config):
+    print("Runing training procedure.")
     # Choosing the seed and the device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if torch.cuda.device_count()>1:
@@ -49,6 +50,7 @@ def train(config):
     ##
     ######################################################################################################
     ######################################################################################################
+    print("Loading models and setting parameters...")
     # Some processing
     rays_scaling = torch.tensor(np.array(config.rays_scaling))[None,None,None].type(config.torch_type).to(device)
     # Define the neural networks
@@ -238,6 +240,7 @@ def train(config):
         memory_used = []
         check_point_training = False # Do not stop for display when keeping track of the memory
     t0 = time.time()
+    print("Training the network(s)...")
     for ep in range(config.epochs):
         # define what to estimate
         if(ep>=config.delay_deformations):
@@ -377,7 +380,7 @@ def train(config):
                 ## Save local deformation
                 utils_display.display_local_movie(implicit_deformation_list,field_true=local_tr,Npts=(20,20),
                                             img_path=config.path_save+"/training/deformations/local_deformations_",img_type='.png',
-                                            scale=1,alpha=0.8,width=0.0015)
+                                            scale=1/config.deformationScale,alpha=0.8,width=0.0015)
                     
                 ## Save global deformation
                 shiftEstimate, rotEstimate = globalDeformationValues(shift_est,rot_est)
@@ -443,6 +446,7 @@ def train(config):
                     'ep': ep,
                 }, os.path.join(config.path_save,'training','model_trained.pt'))
 
+    print("Saving final state after training...")
     torch.save({
         'shift_est': shift_est,
         'rot_est': rot_est,
@@ -483,3 +487,4 @@ def train(config):
     plt.grid()
     plt.savefig(os.path.join(config.path_save,'training','loss.png'))
     plt.savefig(os.path.join(config.path_save,'training','loss.pdf'))
+    print("Training is over.")

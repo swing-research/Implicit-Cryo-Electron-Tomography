@@ -18,7 +18,6 @@ def main():
     config = config_file.get_config()
 
     # Make the data
-    print(args.no_gen_data)
     if args.no_gen_data:
         data_generation.data_generation(config)
 
