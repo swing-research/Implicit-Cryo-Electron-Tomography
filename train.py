@@ -336,7 +336,6 @@ def train(config):
             if config.train_volume and config.lamb_volume!=0:
                 loss += torch.linalg.norm(outputValues[outputValues<0])*config.lamb_volume
                 loss_regul_volume.append((torch.linalg.norm(outputValues[outputValues<0])*config.lamb_volume).item())
-                import ipdb; ipdb.set_trace()
 
             # Compute gradient and optimize
             loss.backward()

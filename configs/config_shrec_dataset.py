@@ -96,7 +96,7 @@ def get_config():
     config.lr_local_def = 1e-4
 
     # Training regularization
-    config.lamb_volume = 1e-5 # regul parameters on volume regularization
+    config.lamb_volume = 0 # regul parameters on volume regularization
     config.lamb_rot = 1e-3 # regul parameters on inplane rotations
     config.lamb_shifts = 1e-3 # regul parameters on shifts
     config.lamb_local_ampl = 1e-3 # regul on amplitude of local def.
