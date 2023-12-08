@@ -15,7 +15,7 @@ from utils.utils_sampling import sample_implicit_batch_lowComp, generate_rays_ba
 
 def train(config):
     # Choosing the seed and the device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if torch.cuda.device_count()>1:
         torch.cuda.set_device(config.device_num)
     np.random.seed(config.seed)
@@ -299,7 +299,7 @@ def train(config):
             raysSet = raysSet*rays_scaling
             outputValues,support = sample_implicit_batch_lowComp(impl_volume,raysSet,angle,
                 rot_deformSet=rot_deformSet,shift_deformSet=shift_deformSet,local_deformSet=local_deformSet,
-                scale=config.deformationScale,range=config.inputRange,zlimit=config.n3/max(config.n1,config.n2))
+                scale=config.deformationScale,grid_positive=config.grid_positive,zlimit=config.n3/max(config.n1,config.n2))
             outputValues = outputValues.type(config.torch_type)
             support = support.reshape(outputValues.shape[0],outputValues.shape[1],-1)
             projEstimate = torch.sum(support*outputValues,2)/config.n3
@@ -318,7 +318,7 @@ def train(config):
             ## Add regularizations
             if train_local_def and config.lamb_local_ampl!=0:
                 # Using only the x and y coordinates
-                depl = torch.abs(implicit_deformation_list[ii](raysSet[:,:,0,:2].reshape(-1,2)))
+                depl = torch.abs(config.deformationScale*implicit_deformation_list[ii](raysSet[:,:,0,:2].reshape(-1,2)))
                 loss += config.lamb_local_ampl*(depl.mean())
                 loss_regul_local_ampl.append(config.lamb_local_ampl*depl.mean().item())
             if train_global_def and (config.lamb_rot!=0 or config.lamb_shifts!=0):
@@ -346,14 +346,14 @@ def train(config):
         scheduler_deformation_glob.step()
         scheduler_deformation_loc.step()
 
-        # Track loss and display values
+        # Track loss and display values        
         loss_current_epoch = np.mean(loss_tot[-len(trainLoader):])
         l_fid = np.mean(loss_data_fidelity[-len(trainLoader):])
         l_v = np.mean(loss_regul_volume[-len(trainLoader):])
         l_sh = np.mean(loss_regul_shifts[-len(trainLoader):])
         l_rot = np.mean(loss_regul_rot[-len(trainLoader):])
         l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader):])
-        print("Epoch: {}, loss_avg: {:2.3} || Loss data fidelity: {:2.3}, regul volume: {:2.3}, regul shifts: {:2.3}, regul inplane: {:2.3}, regul local: {:2.3}, time: {:2.3}".format(
+        print("Epoch: {}, loss_avg: {:2.3f} || Loss data fidelity: {:2.3f}, regul volume: {:2.2f}, regul shifts: {:2.2f}, regul inplane: {:2.2f}, regul local: {:2.2f}, time (s): {:2.3f}".format(
             ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
         if config.track_memory:
             memory_used.append(torch.cuda.memory_allocated())
@@ -370,13 +370,13 @@ def train(config):
                 l_sh = np.mean(loss_regul_shifts[-len(trainLoader)*config.Ntest:])
                 l_rot = np.mean(loss_regul_rot[-len(trainLoader)*config.Ntest:])
                 l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader)*config.Ntest:])
-                print("###### Epoch: {}, loss_avg: {:2.3} || Loss data fidelity: {:2.3}, regul volume: {:2.3}, regul shifts: {:2.3}, regul inplane: {:2.3}, regul local: {:2.3}, time: {:2.3}".format(
+                print("----Epoch: {}, loss_avg: {:2.3f} || Loss data fidelity: {:2.3f}, regul volume: {:2.2f}, regul shifts: {:2.2f}, regul inplane: {:2.2f}, regul local: {:2.2f}, time (s): {:2.3f}".format(
                     ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
 
                 ## Save local deformation
                 utils_display.display_local_movie(implicit_deformation_list,field_true=local_tr,Npts=(20,20),
-                                            img_path=config.path_save+"/training/deformations/local_deformations_est_",img_type='.png',
-                                            scale=1/10,alpha=0.8,width=0.002)
+                                            img_path=config.path_save+"/training/deformations/local_deformations_",img_type='.png',
+                                            scale=1,alpha=0.8,width=0.0015)
                     
                 ## Save global deformation
                 shiftEstimate, rotEstimate = globalDeformationValues(shift_est,rot_est)
@@ -406,7 +406,7 @@ def train(config):
                 plt.savefig(os.path.join(config.path_save,'training','loss_iter.png'))
                 
                 ## Save slice of the volume
-                z_range = np.linspace(-1,1,config.n3//10)*rays_scaling[0,0,0,2].item()*(config.n3/config.n1)/2+0.5
+                z_range = np.linspace(-1,1,config.n3//5)*rays_scaling[0,0,0,2].item()*(config.n3/config.n1)/2+0.5
                 for zz, zval in enumerate(z_range):
                     grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
                     grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)

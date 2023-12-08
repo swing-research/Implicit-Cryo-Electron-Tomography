@@ -66,7 +66,7 @@ def get_config():
     config.train_local_def = True
     config.train_global_def = True
     config.volume_model = "multi-resolution" # multi-resolution, Fourier-features, grid, MLP
-    config.local_model = 'implicit' #  'implicit' or 'interp'
+    config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
     config.epochs = 1000
@@ -97,14 +97,14 @@ def get_config():
 
     # Training regularization
     config.lamb_volume = 1e-5 # regul parameters on volume regularization
-    config.lamb_local_ampl = 1e0 # regul on amplitude of local def.
     config.lamb_rot = 1e-4 # regul parameters on inplane rotations
     config.lamb_shifts = 1e-4 # regul parameters on shifts
+    config.lamb_local_ampl = 1e-1 # regul on amplitude of local def.
     config.wd = 5e-6 # weights decay
 
-    # Params of implicit deformation
+    # Params for implicit deformation
     config.deformationScale = 0.1
-    config.inputRange = 1
+    config.grid_positive = True
 
     # params of implicit volume
     config.input_size_volume = 3 # always 3 for 3d tomography
@@ -137,6 +137,6 @@ def get_config():
         config.local_deformation.hidden_size = 32
         config.local_deformation.L = 10
     elif config.local_model == 'interp':
-        config.local_deformation.N_ctrl_pts_net = 20
+        config.local_deformation.N_ctrl_pts_net = 10
 
     return config

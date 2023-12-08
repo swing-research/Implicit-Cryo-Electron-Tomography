@@ -101,10 +101,10 @@ def sample_implicit_batch(implt_repr,rays,view_dirSet,rot_deformSet=None,shift_d
 
 ## TODO: is volume support really accurate when z dimension is originally smaller?
 def sample_implicit_batch_lowComp(implt_repr,rays,view_dirSet,rot_deformSet=None,shift_deformSet=None,
-                                  local_deformSet=None,scale=1.0,range=0,zlimit=1.0,fixedRotSet=None,
+                                  local_deformSet=None,scale=1.0,grid_positive=False,zlimit=1.0,fixedRotSet=None,
                                   yBoundary=True,xBoundary=True,local_range=0):
     # Range is to shift the grid in to the positive space to avoid negative indices in the grid
-    # range = 0: no shift in the grid , range = 1: shift the grid to the positive space
+    # grid_positive = False: keep the grid in [-1,1], otherwise shift to [0,1]
     # scale is the scale factor for the local deformation
     # zlimit: limit in the grid where volume is present (default is 1.0) should be greater than 0.0
     # yBoundary: if true, the y values are also limited to -1,1 (usually for simulated data), 
@@ -165,12 +165,10 @@ def sample_implicit_batch_lowComp(implt_repr,rays,view_dirSet,rot_deformSet=None
             if(not yBoundary and not xBoundary):
                 grid_supp[i] = ((grid_deformSet[i,:,2]<=zlimit[i])&(grid_deformSet[i,:,2]>=-zlimit[i]))
     
-
-    # import ipdb; ipdb.set_trace()
-    if(range==0):
-        return implt_repr(grid_deformSet.reshape(-1,3)).reshape(rays.shape[0],rays.shape[1],rays.shape[2]),grid_supp
-    if(range==1):
+    if grid_positive:
         return implt_repr(grid_deformSet.reshape(-1,3)/2 + 0.5).reshape(rays.shape[0],rays.shape[1],rays.shape[2]),grid_supp
+    else:
+        return implt_repr(grid_deformSet.reshape(-1,3)).reshape(rays.shape[0],rays.shape[1],rays.shape[2]),grid_supp
 
 
 def sample_implicit_batch_Double_lowComp(volModel,implt_repr,rays,view_dirSet,rot_deformSet=None,shift_deformSet=None,local_deformSet=None,scale=1.0,range=0):
