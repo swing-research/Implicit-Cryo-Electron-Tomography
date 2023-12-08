@@ -90,6 +90,7 @@ dependencies:
   - imageio=2.31.5=pyh8c1a49c_0
   - importlib-resources=6.1.1=pyhd8ed1ab_0
   - importlib_resources=6.1.1=pyhd8ed1ab_0
+  - ipdb=0.13.13=pyhd8ed1ab_0
   - ipython=8.12.2=pyh41d4057_0
   - jedi=0.19.1=pyhd8ed1ab_0
   - jxrlib=1.1=h7f98852_2
