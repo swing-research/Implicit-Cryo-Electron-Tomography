@@ -12,11 +12,10 @@ import configs.config_shrec_dataset as config_file
 config = config_file.get_config()
 
 # Make the data
-# data_generation.data_generation(config)
+data_generation.data_generation(config)
 
 # Train ICE-TIDE
 train.train(config)
-
 
 # Compare the results and save the figures
 
