@@ -15,6 +15,8 @@ from utils import utils_data_generation, utils_deformation, utils_display
 
 
 def data_generation(config):
+    print("Runing data generation to generate simulated projections.")
+
     SNR_value = config.SNR_value
 
     # Choosing the seed and the device
