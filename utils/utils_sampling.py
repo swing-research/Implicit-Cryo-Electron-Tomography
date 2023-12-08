@@ -101,8 +101,8 @@ def sample_implicit_batch(implt_repr,rays,view_dirSet,rot_deformSet=None,shift_d
 
 ## TODO: is volume support really accurate when z dimension is originally smaller?
 def sample_implicit_batch_lowComp(implt_repr,rays,view_dirSet,rot_deformSet=None,shift_deformSet=None,
-                                  local_deformSet=None,scale=1.0,grid_positive=False,zlimit=1.0,fixedRotSet=None,
-                                  yBoundary=True,xBoundary=True,local_range=0):
+                                    local_deformSet=None,scale=1.0,grid_positive=False,zlimit=1.0,fixedRotSet=None,
+                                    yBoundary=True,xBoundary=True,local_range=0):
     # Range is to shift the grid in to the positive space to avoid negative indices in the grid
     # grid_positive = False: keep the grid in [-1,1], otherwise shift to [0,1]
     # scale is the scale factor for the local deformation

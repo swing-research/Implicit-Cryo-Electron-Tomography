@@ -322,19 +322,21 @@ def train(config):
             if train_local_def and config.lamb_local_ampl!=0:
                 # Using only the x and y coordinates
                 for ii_ in idx_loader:
-                    depl = torch.abs(config.deformationScale*implicit_deformation_list[ii](raysSet[:,:,0,:2].reshape(-1,2)))
+                    depl = torch.abs(config.deformationScale*implicit_deformation_list[ii](raysSet[:,:,0,:2].reshape(-1,2))*config.n1)
                     loss += config.lamb_local_ampl*(depl.mean())
                     loss_regul_local_ampl.append(config.lamb_local_ampl*depl.mean().item())
+                    import ipdb; ipdb.set_trace()
             if train_global_def and (config.lamb_rot!=0 or config.lamb_shifts!=0):
                 for ii in idx_loader:
                     loss += config.lamb_shifts*torch.abs(shift_est[ii]()*config.n1).sum()
                     loss += config.lamb_rot*torch.abs(rot_est[ii]()*180/np.pi).sum()
                     loss_regul_shifts.append((config.lamb_shifts*torch.abs(shift_est[ii]()*config.n1).sum()).item())
                     loss_regul_rot.append((config.lamb_rot*torch.abs(rot_est[ii]()*180/np.pi).sum()).item())
+                    import ipdb; ipdb.set_trace()
             if config.train_volume and config.lamb_volume!=0:
-                V_est = impl_volume(raysSet.reshape(-1,3))
                 loss += torch.linalg.norm(outputValues[outputValues<0])*config.lamb_volume
                 loss_regul_volume.append((torch.linalg.norm(outputValues[outputValues<0])*config.lamb_volume).item())
+                import ipdb; ipdb.set_trace()
 
             # Compute gradient and optimize
             loss.backward()
