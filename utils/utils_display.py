@@ -71,7 +71,7 @@ def display_local(field,field_true=None,Npts=(10,10),img_path='',img_type='.pdf'
 
 
 def display_local_movie(field,field_true=None,Npts=(10,10),img_path='',img_type='.pdf',scale=3,alpha=0.8,width=0.002,
-                        device='cuda',loc='upper right',legend1='Estimation', legend2='True'):
+                        device='cuda',loc='upper right',legend1='Estimation', legend2='True',weights_est=1):
     xx1 = torch.linspace(-1,1,Npts[0],device=device)
     xx2 = torch.linspace(-1,1,Npts[1],device=device)
     XX_t, YY_t = torch.meshgrid(xx1,xx2,indexing='ij')
@@ -80,7 +80,7 @@ def display_local_movie(field,field_true=None,Npts=(10,10),img_path='',img_type=
     coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
     for k in range(len(field)):
         ## Display quiver
-        displacement = field[k](coordinates)
+        displacement = field[k](coordinates)*weights_est
         x2 = coordinates[:,0].detach().cpu().numpy()
         y2 = coordinates[:,1].detach().cpu().numpy()
         u2 = displacement[:,0].detach().cpu().numpy()
