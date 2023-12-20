@@ -46,6 +46,7 @@ def main():
             #TODO: save time and memory used in os.path.join(config.path_save,'AreTomo',f'time_memory_{npatch}by{npatch}.txt')
 
     # Etomo
+    # TODO
 
     # Compare the results and save the figures
     if args.no_comparison:

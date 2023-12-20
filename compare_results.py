@@ -580,9 +580,6 @@ def compare_results(config):
     # error_arr.to_csv(os.path.join(config.path_save,'evaluation'+'/affine_error.csv'),index=False)
 
 
-
-
-
     #######################################################################################
     ## Save slices of volumes
     #######################################################################################
