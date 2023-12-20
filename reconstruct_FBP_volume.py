@@ -48,7 +48,7 @@ def reconstruct_FBP_volume(config, tiltseries):
 
     # Define the forward operator
     angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
-    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, op_snr=np.inf, fact=1)
+    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
 
     # Reconstruct the volume    
     V_FBP = operator_ET.pinv(tiltseries).detach().requires_grad_(False)
