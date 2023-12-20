@@ -274,10 +274,13 @@ dependencies:
       - ninja==1.11.1.1
       - numpy==1.23.5
       - odl==0.7.0
+      - pandas==2.0.3
       - pillow==10.1.0
+      - pytz==2023.3.post1
       - sympy==1.12
       - tinycudann==1.7
       - torch==2.0.1+cu117
       - torchvision==0.15.2+cu117
       - triton==2.0.0
+      - tzdata==2023.3
 prefix: /users/staff/dmi-dmi/debarn0000/anaconda3/envs/ice-tide
