@@ -27,6 +27,12 @@ from reconstruct_FBP_volume import reconstruct_FBP_volume
 from utils.utils_deformation import cropper
 
 
+
+# TODO: Remove
+import configs.config_shrec_dataset as config_file
+config = config_file.get_config()
+
+
 """ 
 Remove deformation from a tilt-series.
 """
@@ -366,7 +372,6 @@ def compare_results(config):
     ######################################################################################################
     # Using only the deformation estimates
     ######################################################################################################
-    from utils.utils_deformation import cropper
     projections_noisy_undeformed = torch.zeros_like(projections_noisy)
     xx1 = torch.linspace(-1,1,config.n1,dtype=config.torch_type,device=device)
     xx2 = torch.linspace(-1,1,config.n2,dtype=config.torch_type,device=device)

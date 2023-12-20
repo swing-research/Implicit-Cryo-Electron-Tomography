@@ -8,18 +8,6 @@ def get_config():
     This config file uses the default parameters but saves the volume at NsaveNet epochs
     So that we can use it  to test how the volume is evolving and possible reduce the number of epochs
     '''
-    
-    #######################
-    ## Paths ##
-    #######################
-    config.path_aretomo = None
-
-
-    #######################
-    ## AreTomo ##
-    #######################
-    config.nPatch = [0,4]
-
     #######################
     ## Device parameters ##
     #######################
@@ -149,5 +137,11 @@ def get_config():
         config.local_deformation.L = 10
     elif config.local_model == 'interp':
         config.local_deformation.N_ctrl_pts_net = 10
+
+    #######################
+    ## AreTomo ##
+    #######################
+    config.path_aretomo = None
+    config.nPatch = [0,4]
 
     return config
