@@ -230,7 +230,7 @@ def compare_results(config):
 
             out = mrcfile.new(config.path_save_data+f"V_aretomo_{npatch}by{npatch}.mrc",np.moveaxis(V_aretomo.astype(np.float32),2,0),overwrite=True)
             out.close() 
-            out = mrcfile.new(config.path_save_data+f"V_FBP_aretomo_{npatch}by{npatch}_corrected.mrc",np.moveaxis(V_FBP_aretomo_corrected.astype(np.float32),2,0),overwrite=True)
+            out = mrcfile.new(config.path_save_data+f"V_FBP_aretomo_{npatch}by{npatch}_corrected.mrc",np.moveaxis(V_FBP_aretomo.astype(np.float32),2,0),overwrite=True)
             out.close() 
 
     ETOMO_FILE = 'projections_ali.mrc'
