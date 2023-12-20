@@ -8,29 +8,6 @@ import numexpr as ne
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-# # # NOTE ON FFT # # #
-# # At some point I might replace np.fft with pyfftw, but I couldn't get it working properly yet (see below).
-# # And, I don't go for scipy.fftpack because the output of scipy.fftpack.rfft is weird, plus I/O datatype manipulation can be cumbersome compared to np.fft.
-
-# try:
-
-#   # http://pyfftw.readthedocs.io/en/latest/source/tutorial.html#interfaces-tutorial
-#   import pyfftw
-
-#   # Monkey patch numpy_fft with pyfftw.interfaces.numpy_fft
-#   np.fft = pyfftw.interfaces.numpy_fft
-#   # np.empty = pyfftw.empty_aligned
-
-#   # Turn on the cache for optimum performance
-#   pyfftw.interfaces.cache.enable()
-#   pyfftw.interfaces.cache.set_keepalive_time(60)
-
-# except ImportError:
-
-#   print( "PyFFTW not found. Falling back to numpy.fft (slow).\nYou may want to install PyFFTW by running:\n'pip install pyfftw'" )
-
-# print np.fft.__file__
-
 pi = np.pi  # global PI
 
 

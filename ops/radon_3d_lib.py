@@ -1,12 +1,9 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
 import odl
+import torch
+import numpy as np
 
-# from odl.contrib.torch import OperatorFunction
-from ops.ODLHelper import OperatorFunction
-
-from ops.odl_lib import apply_angle_noise
+from .odl_lib import apply_angle_noise
+from .ODLHelper import OperatorFunction
 
 class ParallelBeamGeometry3DOp(object):
   def __init__(self, img_size, num_angles, op_snr, angle_max=np.pi/3,fact=2):
@@ -62,7 +59,7 @@ class ParallelBeamGeometry3DOpAngles_rectangular(ParallelBeamGeometry3DOp):
     return OperatorFunction.apply(self.fbp, y)
 
 def unit_test():
-  plt.ion() 
+  import matplotlib.pyplot as plt
 
   img_size = 64
   num_angles = 60

@@ -15,15 +15,14 @@ see `the pytorch installation guide
 
 from __future__ import division
 
-import warnings
 
-import numpy as np
 import torch
+import numpy as np
+from odl import Operator
 from packaging.version import parse as parse_version
 
-from odl import Operator
-
 if parse_version(torch.__version__) < parse_version('0.4'):
+    import warnings
     warnings.warn("This interface is designed to work with Pytorch >= 0.4",
                   RuntimeWarning, stacklevel=2)
 

@@ -1,16 +1,15 @@
-import numpy as np
 import torch
-import torch.nn as nn
-import matplotlib.pyplot as plt
+import numpy as np
 from skimage.transform import resize
-import mrcfile
-import os
-import torch.nn as nn
-import sys
-sys.path.insert(0, '..')
-from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
-from utils import utils_deformation, utils_interpolation
 
+# import sys
+# sys.path.insert(0, '..')
+from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
+
+
+def test():
+    t= ParallelBeamGeometry3DOpAngles_rectangular
+    return t
 
 """
 Here we define the functions used to sample the volume and apply the deformation.
@@ -102,10 +101,10 @@ def sample_implicit_batch(implt_repr,rays,view_dirSet,rot_deformSet=None,shift_d
 
 ## TODO: is volume support really accurate when z dimension is originally smaller?
 def sample_implicit_batch_lowComp(implt_repr,rays,view_dirSet,rot_deformSet=None,shift_deformSet=None,
-                                  local_deformSet=None,scale=1.0,range=0,zlimit=1.0,fixedRotSet=None,
-                                  yBoundary=True,xBoundary=True,local_range=0):
+                                    local_deformSet=None,scale=1.0,grid_positive=False,zlimit=1.0,fixedRotSet=None,
+                                    yBoundary=True,xBoundary=True,local_range=0):
     # Range is to shift the grid in to the positive space to avoid negative indices in the grid
-    # range = 0: no shift in the grid , range = 1: shift the grid to the positive space
+    # grid_positive = False: keep the grid in [-1,1], otherwise shift to [0,1]
     # scale is the scale factor for the local deformation
     # zlimit: limit in the grid where volume is present (default is 1.0) should be greater than 0.0
     # yBoundary: if true, the y values are also limited to -1,1 (usually for simulated data), 
@@ -166,12 +165,10 @@ def sample_implicit_batch_lowComp(implt_repr,rays,view_dirSet,rot_deformSet=None
             if(not yBoundary and not xBoundary):
                 grid_supp[i] = ((grid_deformSet[i,:,2]<=zlimit[i])&(grid_deformSet[i,:,2]>=-zlimit[i]))
     
-
-    # import ipdb; ipdb.set_trace()
-    if(range==0):
-        return implt_repr(grid_deformSet.reshape(-1,3)).reshape(rays.shape[0],rays.shape[1],rays.shape[2]),grid_supp
-    if(range==1):
+    if grid_positive:
         return implt_repr(grid_deformSet.reshape(-1,3)/2 + 0.5).reshape(rays.shape[0],rays.shape[1],rays.shape[2]),grid_supp
+    else:
+        return implt_repr(grid_deformSet.reshape(-1,3)).reshape(rays.shape[0],rays.shape[1],rays.shape[2]),grid_supp
 
 
 def sample_implicit_batch_Double_lowComp(volModel,implt_repr,rays,view_dirSet,rot_deformSet=None,shift_deformSet=None,local_deformSet=None,scale=1.0,range=0):
@@ -1007,365 +1004,366 @@ class grid_class_rectangular():
 
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
+    # from . import utils_deformation, utils_interpolation
 
-    torch_type=torch.float
-    use_cuda=torch.cuda.is_available()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
-    if torch.cuda.device_count()>1:
-        torch.cuda.set_device(1)
-    seed = 42
-    np.random.seed(seed)
-    torch.manual_seed(seed) 
+    # torch_type=torch.float
+    # use_cuda=torch.cuda.is_available()
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
+    # if torch.cuda.device_count()>1:
+    #     torch.cuda.set_device(1)
+    # seed = 42
+    # np.random.seed(seed)
+    # torch.manual_seed(seed) 
 
-    path_save = "results/test_sampling/"
-    if not os.path.exists("results/"):
-        os.makedirs("results/")
-    if not os.path.exists(path_save):
-        os.makedirs(path_save)
-    if not os.path.exists(path_save+"projections/"):
-        os.makedirs(path_save+"projections/")
-
-
-    #######################################################################################
-    ## Global parameters
-    #######################################################################################
-    # Image model
-    n = 65
-    npr = 65
-    Nangles = 90
-    angle_bound = 70
-    SNR_value = 100
-
-    # Grid
-    grid = generate_grid3d(n)
-    grid_t = torch.tensor(grid).to(device).type(torch_type)
-    grid2d = generate_grid3d(n)
-    grid2d_t = torch.tensor(grid2d).to(device).type(torch_type)
-    ball = generate_ball3d(n)
-    grid_ball = grid[ball.reshape(-1),:]
-    grid_ball_t = torch.tensor(grid_ball).type(torch_type).to(device)
-
-    #######################################################################################
-    ## Load data
-    #######################################################################################
-    # Parameters
-    # path_volume = "datasets/bunny/full_resolution/bunny.mrc"
-    path_volume = "datasets/volume_reconstruction.mrc" # download here: https://drive.google.com/file/d/1o9w5EX8YgSlW78nfaKaT9ZN8UnfxZ6Be/view?usp=sharing
-
-    # loading
-    V = np.double(mrcfile.open(path_volume).data)/255
-    # V = V[30:-30,30:-30]
-    V = resize(V,(n,n,n))
-    V /= V.max()
-    V_t = torch.tensor(V).to(device).type(torch_type)
-
-    # # define molifier to ensure support and avoid padding artifacts
-    # xx = np.linspace(-1,1,n)
-    # XX, YY, ZZ = np.meshgrid(xx,xx,xx,indexing='ij')
-    # mollifier = (XX**2+YY**2+ZZ**2) <= 1
-    # s = 1/(n/2)
-    # G = np.exp(-(XX**2+YY**2+ZZ**2)/2/s**2)
-    # G = G/G.sum()
-    # mollifier = np.real(np.fft.fftshift(np.fft.ifftn(np.fft.fftn(G)*np.fft.fftn(mollifier))))
-    # mollifier_t = torch.tensor(mollifier).type(torch_type).to(device)
-    # mollifier2d_t = mollifier_t[:,:,n//2]
-    mollifier = mollifier_class(n,torch_type,device)
+    # path_save = "results/test_sampling/"
+    # if not os.path.exists("results/"):
+    #     os.makedirs("results/")
+    # if not os.path.exists(path_save):
+    #     os.makedirs(path_save)
+    # if not os.path.exists(path_save+"projections/"):
+    #     os.makedirs(path_save+"projections/")
 
 
-    V = mollifier.mollify2d_np()*V
-    V_t = torch.tensor(V).to(device).type(torch_type)
+    # #######################################################################################
+    # ## Global parameters
+    # #######################################################################################
+    # # Image model
+    # n = 65
+    # npr = 65
+    # Nangles = 90
+    # angle_bound = 70
+    # SNR_value = 100
 
-    #######################################################################################
-    ## Generate projections
-    #######################################################################################
-    angles = np.linspace(-angle_bound,angle_bound,Nangles)
-    angles_t = torch.tensor(angles).type(torch_type).to(device)
-    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular(n, angles/180*np.pi, fact=1)
+    # # Grid
+    # grid = generate_grid3d(n)
+    # grid_t = torch.tensor(grid).to(device).type(torch_type)
+    # grid2d = generate_grid3d(n)
+    # grid2d_t = torch.tensor(grid2d).to(device).type(torch_type)
+    # ball = generate_ball3d(n)
+    # grid_ball = grid[ball.reshape(-1),:]
+    # grid_ball_t = torch.tensor(grid_ball).type(torch_type).to(device)
 
-    # define deformation
-    affine_tr = []
-    local_tr = []
-    for i in range(Nangles):
-        scaleX = scaleY = 1
-        shearX = shearY = 0
+    # #######################################################################################
+    # ## Load data
+    # #######################################################################################
+    # # Parameters
+    # # path_volume = "datasets/bunny/full_resolution/bunny.mrc"
+    # path_volume = "datasets/volume_reconstruction.mrc" # download here: https://drive.google.com/file/d/1o9w5EX8YgSlW78nfaKaT9ZN8UnfxZ6Be/view?usp=sharing
 
-        angle = 45/180*np.pi
-        shiftX = 0.2
-        shiftY = 0.4
-        affine_tr.append(utils_deformation.AffineTransform(scaleX, scaleY, shiftX, shiftY, shearX, shearY, angle, pad=30).cuda())
+    # # loading
+    # V = np.double(mrcfile.open(path_volume).data)/255
+    # # V = V[30:-30,30:-30]
+    # V = resize(V,(n,n,n))
+    # V /= V.max()
+    # V_t = torch.tensor(V).to(device).type(torch_type)
+
+    # # # define molifier to ensure support and avoid padding artifacts
+    # # xx = np.linspace(-1,1,n)
+    # # XX, YY, ZZ = np.meshgrid(xx,xx,xx,indexing='ij')
+    # # mollifier = (XX**2+YY**2+ZZ**2) <= 1
+    # # s = 1/(n/2)
+    # # G = np.exp(-(XX**2+YY**2+ZZ**2)/2/s**2)
+    # # G = G/G.sum()
+    # # mollifier = np.real(np.fft.fftshift(np.fft.ifftn(np.fft.fftn(G)*np.fft.fftn(mollifier))))
+    # # mollifier_t = torch.tensor(mollifier).type(torch_type).to(device)
+    # # mollifier2d_t = mollifier_t[:,:,n//2]
+    # mollifier = mollifier_class(n,torch_type,device)
+
+
+    # V = mollifier.mollify2d_np()*V
+    # V_t = torch.tensor(V).to(device).type(torch_type)
+
+    # #######################################################################################
+    # ## Generate projections
+    # #######################################################################################
+    # angles = np.linspace(-angle_bound,angle_bound,Nangles)
+    # angles_t = torch.tensor(angles).type(torch_type).to(device)
+    # operator_ET = ParallelBeamGeometry3DOpAngles_rectangular(n, angles/180*np.pi, fact=1)
+
+    # # define deformation
+    # affine_tr = []
+    # local_tr = []
+    # for i in range(Nangles):
+    #     scaleX = scaleY = 1
+    #     shearX = shearY = 0
+
+    #     angle = 45/180*np.pi
+    #     shiftX = 0.2
+    #     shiftY = 0.4
+    #     affine_tr.append(utils_deformation.AffineTransform(scaleX, scaleY, shiftX, shiftY, shearX, shearY, angle, pad=30).cuda())
         
-        N_ctrl_pts_local_def = 5
-        sigma_local_def = 3
-        depl_ctr_pts = torch.randn(2,N_ctrl_pts_local_def,N_ctrl_pts_local_def).to(device).type(torch_type)*2/n*sigma_local_def
-        field = utils_deformation.deformation_field(depl_ctr_pts)
-        local_tr.append(field)
+    #     N_ctrl_pts_local_def = 5
+    #     sigma_local_def = 3
+    #     depl_ctr_pts = torch.randn(2,N_ctrl_pts_local_def,N_ctrl_pts_local_def).to(device).type(torch_type)*2/n*sigma_local_def
+    #     field = utils_deformation.deformation_field(depl_ctr_pts)
+    #     local_tr.append(field)
 
-    projections_clean = operator_ET(V_t)
-    w_odl = np.median(V.sum(2)/n/projections_clean[Nangles//2].detach().cpu().numpy())
-    projections_clean = projections_clean*w_odl
-
-
-
-    impl_volume = lambda coord: utils_interpolation.interp_volume(V_t.unsqueeze(0).unsqueeze(1), coord)
-    V_est = impl_volume(grid_t)
-
-
-    # test 3D implicit
-    plt.figure(1)
-    plt.subplot(2,3,1)
-    plt.imshow(V_est[32].detach().cpu().numpy())
-    plt.title('Est. along 0')
-    plt.subplot(2,3,2)
-    plt.imshow(V_est[:,32].detach().cpu().numpy())
-    plt.title('Est. along 1')
-    plt.subplot(2,3,3)
-    plt.imshow(V_est[:,:,32].detach().cpu().numpy())
-    plt.title('Est. along 2')
-    plt.subplot(2,3,4)
-    plt.imshow(V_t[32].detach().cpu().numpy())
-    plt.title('True along 0')
-    plt.subplot(2,3,5)
-    plt.imshow(V_t[:,32].detach().cpu().numpy())
-    plt.title('True along 1')
-    plt.subplot(2,3,6)
-    plt.imshow(V_t[:,:,32].detach().cpu().numpy())
-    plt.title('True along 2')
-
-    plt.figure(2)
-    plt.subplot(2,4,5)
-    plt.imshow(V_t.detach().cpu().numpy().sum(0))
-    plt.title('Est. proj. 0')
-    plt.subplot(2,4,6)
-    plt.imshow(V_t.detach().cpu().numpy().sum(1))
-    plt.title('Est. proj. 1')
-    plt.subplot(2,4,7)
-    plt.imshow(V_t.detach().cpu().numpy().sum(2))
-    plt.title('Est. proj. 2')
-    plt.subplot(2,4,8)
-    plt.imshow(projections_clean[Nangles//2].detach().cpu().numpy())
-    plt.title('Proj at 0')
-    plt.subplot(2,4,1)
-    plt.imshow(V_est.detach().cpu().numpy().sum(0))
-    plt.title('True proj. 0')
-    plt.subplot(2,4,2)
-    plt.imshow(V_est.detach().cpu().numpy().sum(1))
-    plt.title('True proj. 1')
-    plt.subplot(2,4,3)
-    plt.imshow(V_est.detach().cpu().numpy().sum(2))
-    plt.title('True proj. 2')
-
-
-    # Try without deformation
-    t=15
-    view_dir = torch.tensor(angles[t]).type(torch_type).to(device)
-
-    vol_clean_est = sample_implicit(impl_volume,grid_t,view_dir,rot_deform=None,shift_deform=None,local_deform=None)
-    proj_clean_est = projection(vol_clean_est)
-
-    plt.figure(3)
-    plt.subplot(1,3,1)
-    plt.imshow(projections_clean[t].detach().cpu().numpy())
-    plt.title("Est")
-    plt.subplot(1,3,2)
-    plt.imshow(proj_clean_est.detach().cpu().numpy())
-    plt.title("True")
-    plt.subplot(1,3,3)
-    plt.imshow((projections_clean[t]-proj_clean_est).detach().cpu().numpy())
-    err = (torch.norm(projections_clean[t]-proj_clean_est)/torch.norm(projections_clean[t]))
-    plt.title("Rel. err {:2.2}".format(err))
-
-
-    # try to match the global deformations with networks 
-    t=15
-    view_dir = torch.tensor(angles[t]).type(torch_type).to(device)
-    projections_deformed_global = utils_deformation.apply_deformation(affine_tr,projections_clean)
-
-    theta0 = torch.tensor([affine_tr[k].angle.item() for k in range(Nangles)]).to(device).type(torch_type)
-    s0 = torch.tensor([[affine_tr[k].shiftX.item(),affine_tr[k].shiftY.item()] for k in range(Nangles)]).to(device).type(torch_type)
-    rot_est = utils_deformation.rotNet(Nangles,theta0).to(device)
-    shift_est = utils_deformation.shiftNet(Nangles,s0).to(device)
-
-
-    vol_est = sample_implicit(impl_volume,grid_t,view_dir,rot_deform=rot_est(t),shift_deform=shift_est(t),local_deform=None)
-    proj_est = projection(vol_est)
-
-    vol_clean_est = sample_implicit(impl_volume,grid_t,view_dir,rot_deform=None,shift_deform=None,local_deform=None)
-    proj_clean_est = projection(vol_clean_est)
-
-
-    plt.figure(4)
-    plt.subplot(2,3,1)
-    plt.imshow(projections_deformed_global[t].detach().cpu().numpy())
-    plt.title('True def.')
-    plt.subplot(2,3,2)
-    plt.imshow(proj_est.detach().cpu().numpy())
-    plt.title('Est. def.')
-    plt.subplot(2,3,3)
-    plt.imshow((projections_deformed_global[t]-proj_est).detach().cpu().numpy())
-    err = torch.norm(projections_deformed_global[t]-proj_est)/torch.norm(projections_deformed_global[t])
-    plt.title("Rel. err {:2.2}".format(err))
-    plt.subplot(2,3,4)
-    plt.imshow(projections_clean[t].detach().cpu().numpy())
-    plt.title('True no def.')
-    plt.subplot(2,3,5)
-    plt.imshow(proj_clean_est.detach().cpu().numpy())
-    plt.title('Est. no def.')
-    plt.subplot(2,3,6)
-    plt.imshow((projections_clean[t]-proj_clean_est).detach().cpu().numpy())
-    err = torch.norm(projections_clean[t]-proj_clean_est)/torch.norm(projections_clean[t])
-    plt.title("Rel. err {:2.2}".format(err))
+    # projections_clean = operator_ET(V_t)
+    # w_odl = np.median(V.sum(2)/n/projections_clean[Nangles//2].detach().cpu().numpy())
+    # projections_clean = projections_clean*w_odl
 
 
 
-    # try to match the local deformations with networks 
-    t=15
-    view_dir = torch.tensor(angles[t]).type(torch_type).to(device)
-    projections_deformed_local = utils_deformation.apply_local_deformation(local_tr,projections_clean)
-    vol_est = sample_implicit(impl_volume,grid_t,view_dir,rot_deform=None,shift_deform=None,local_deform=local_tr[t])
-    proj_est = projection(vol_est)
-
-    plt.figure(5)
-    plt.subplot(2,3,1)
-    plt.imshow(projections_deformed_local[t].detach().cpu().numpy())
-    plt.title('True local def.')
-    plt.subplot(2,3,2)
-    plt.imshow(proj_est.detach().cpu().numpy())
-    plt.title('Est. local def.')
-    plt.subplot(2,3,3)
-    plt.imshow((projections_deformed_local[t]-proj_est).detach().cpu().numpy())
-    err = torch.norm(projections_deformed_local[t]-proj_est)/torch.norm(projections_deformed_local[t])
-    plt.title("Rel. err {:2.2}".format(err))
-    plt.subplot(2,3,4)
-    plt.imshow(projections_clean[t].detach().cpu().numpy())
-    plt.title('True no def.')
-    plt.subplot(2,3,5)
-    plt.imshow(proj_clean_est.detach().cpu().numpy())
-    plt.title('Est. no def.')
-    plt.subplot(2,3,6)
-    plt.imshow((projections_clean[t]-proj_clean_est).detach().cpu().numpy())
-    err = torch.norm(projections_clean[t]-proj_clean_est)/torch.norm(projections_clean[t])
-    plt.title("Rel. err {:2.2}".format(err))
+    # impl_volume = lambda coord: utils_interpolation.interp_volume(V_t.unsqueeze(0).unsqueeze(1), coord)
+    # V_est = impl_volume(grid_t)
 
 
+    # # test 3D implicit
+    # plt.figure(1)
+    # plt.subplot(2,3,1)
+    # plt.imshow(V_est[32].detach().cpu().numpy())
+    # plt.title('Est. along 0')
+    # plt.subplot(2,3,2)
+    # plt.imshow(V_est[:,32].detach().cpu().numpy())
+    # plt.title('Est. along 1')
+    # plt.subplot(2,3,3)
+    # plt.imshow(V_est[:,:,32].detach().cpu().numpy())
+    # plt.title('Est. along 2')
+    # plt.subplot(2,3,4)
+    # plt.imshow(V_t[32].detach().cpu().numpy())
+    # plt.title('True along 0')
+    # plt.subplot(2,3,5)
+    # plt.imshow(V_t[:,32].detach().cpu().numpy())
+    # plt.title('True along 1')
+    # plt.subplot(2,3,6)
+    # plt.imshow(V_t[:,:,32].detach().cpu().numpy())
+    # plt.title('True along 2')
 
-    # # try to match the global+local deformations with networks 
-    t=15
-    view_dir = torch.tensor(angles[t]).type(torch_type).to(device)
-    projections_deformed_global = utils_deformation.apply_deformation(affine_tr,projections_clean)
-    projections_deformed = utils_deformation.apply_local_deformation(local_tr,projections_deformed_global)
-    projections_deformed_local = utils_deformation.apply_local_deformation(local_tr,projections_clean)
-
-
-    theta0 = torch.tensor([affine_tr[k].angle.item() for k in range(Nangles)]).to(device).type(torch_type)
-    s0 = torch.tensor([[affine_tr[k].shiftX.item(),affine_tr[k].shiftY.item()] for k in range(Nangles)]).to(device).type(torch_type)
-    rot_est = utils_deformation.rotNet(Nangles,theta0).to(device)
-    shift_est = utils_deformation.shiftNet(Nangles,s0).to(device)
-
-    vol_est = sample_implicit(impl_volume,grid_t,view_dir,rot_deform=rot_est(t),shift_deform=shift_est(t),local_deform=local_tr[t])
-    proj_est = projection(vol_est)
-
-    vol_est_ = sample_implicit(impl_volume,grid_t,view_dir,rot_deform=rot_est(t),shift_deform=shift_est(t),local_deform=None)
-    proj_est_ = projection(vol_est_)
-
-    vol_est__ = sample_implicit(impl_volume,grid_t,view_dir,rot_deform=None,shift_deform=None,local_deform=local_tr[t])
-    proj_est__ = projection(vol_est__)
-
-    plt.figure(6)
-    plt.subplot(3,3,1)
-    plt.imshow(projections_deformed_global[t].detach().cpu().numpy())
-    plt.title('True global def.')
-    plt.subplot(3,3,2)
-    plt.imshow(proj_est_.detach().cpu().numpy())
-    plt.title('Est. global def.')
-    plt.subplot(3,3,3)
-    plt.imshow((projections_deformed_global[t]-proj_est_).detach().cpu().numpy())
-    err = torch.norm(projections_deformed_global[t]-proj_est_)/torch.norm(projections_deformed_global[t])
-    plt.title("Rel. err {:2.2}".format(err))
-
-    plt.subplot(3,3,4)
-    plt.imshow(projections_deformed[t].detach().cpu().numpy())
-    plt.title('True global + local def.')
-    plt.subplot(3,3,5)
-    plt.imshow(proj_est.detach().cpu().numpy())
-    plt.title('Est. global + local def.')
-    plt.subplot(3,3,6)
-    plt.imshow((projections_deformed[t]-proj_est).detach().cpu().numpy())
-    err = torch.norm(projections_deformed[t]-proj_est)/torch.norm(projections_deformed[t])
-    plt.title("Rel. err {:2.2}".format(err))
-
-    plt.subplot(3,3,7)
-    plt.imshow(projections_deformed_local[t].detach().cpu().numpy())
-    plt.title('True local def.')
-    plt.subplot(3,3,8)
-    plt.imshow(proj_est__.detach().cpu().numpy())
-    plt.title('Est local def.')
-    plt.subplot(3,3,9)
-    plt.imshow((projections_deformed_local[t]-proj_est__).detach().cpu().numpy())
-    err = torch.norm(projections_deformed_local[t]-proj_est__)/torch.norm(projections_deformed_local[t])
-    plt.title("Rel. err {:2.2}".format(err))
+    # plt.figure(2)
+    # plt.subplot(2,4,5)
+    # plt.imshow(V_t.detach().cpu().numpy().sum(0))
+    # plt.title('Est. proj. 0')
+    # plt.subplot(2,4,6)
+    # plt.imshow(V_t.detach().cpu().numpy().sum(1))
+    # plt.title('Est. proj. 1')
+    # plt.subplot(2,4,7)
+    # plt.imshow(V_t.detach().cpu().numpy().sum(2))
+    # plt.title('Est. proj. 2')
+    # plt.subplot(2,4,8)
+    # plt.imshow(projections_clean[Nangles//2].detach().cpu().numpy())
+    # plt.title('Proj at 0')
+    # plt.subplot(2,4,1)
+    # plt.imshow(V_est.detach().cpu().numpy().sum(0))
+    # plt.title('True proj. 0')
+    # plt.subplot(2,4,2)
+    # plt.imshow(V_est.detach().cpu().numpy().sum(1))
+    # plt.title('True proj. 1')
+    # plt.subplot(2,4,3)
+    # plt.imshow(V_est.detach().cpu().numpy().sum(2))
+    # plt.title('True proj. 2')
 
 
+    # # Try without deformation
+    # t=15
+    # view_dir = torch.tensor(angles[t]).type(torch_type).to(device)
+
+    # vol_clean_est = sample_implicit(impl_volume,grid_t,view_dir,rot_deform=None,shift_deform=None,local_deform=None)
+    # proj_clean_est = projection(vol_clean_est)
+
+    # plt.figure(3)
+    # plt.subplot(1,3,1)
+    # plt.imshow(projections_clean[t].detach().cpu().numpy())
+    # plt.title("Est")
+    # plt.subplot(1,3,2)
+    # plt.imshow(proj_clean_est.detach().cpu().numpy())
+    # plt.title("True")
+    # plt.subplot(1,3,3)
+    # plt.imshow((projections_clean[t]-proj_clean_est).detach().cpu().numpy())
+    # err = (torch.norm(projections_clean[t]-proj_clean_est)/torch.norm(projections_clean[t]))
+    # plt.title("Rel. err {:2.2}".format(err))
 
 
-    ## try global+local deformations + ball sampling + mollifier
-    t=15
-    view_dir = torch.tensor(angles[t]).type(torch_type).to(device)
-    projections_deformed_global = utils_deformation.apply_deformation(affine_tr,projections_clean)
-    projections_deformed = utils_deformation.apply_local_deformation(local_tr,projections_deformed_global)
-    projections_deformed_local = utils_deformation.apply_local_deformation(local_tr,projections_clean)
+    # # try to match the global deformations with networks 
+    # t=15
+    # view_dir = torch.tensor(angles[t]).type(torch_type).to(device)
+    # projections_deformed_global = utils_deformation.apply_deformation(affine_tr,projections_clean)
 
-    theta0 = torch.tensor([affine_tr[k].angle.item() for k in range(Nangles)]).to(device).type(torch_type)
-    s0 = torch.tensor([[affine_tr[k].shiftX.item(),affine_tr[k].shiftY.item()] for k in range(Nangles)]).to(device).type(torch_type)
-    rot_est = utils_deformation.rotNet(Nangles,theta0).to(device)
-    shift_est = utils_deformation.shiftNet(Nangles,s0).to(device)
+    # theta0 = torch.tensor([affine_tr[k].angle.item() for k in range(Nangles)]).to(device).type(torch_type)
+    # s0 = torch.tensor([[affine_tr[k].shiftX.item(),affine_tr[k].shiftY.item()] for k in range(Nangles)]).to(device).type(torch_type)
+    # rot_est = utils_deformation.rotNet(Nangles,theta0).to(device)
+    # shift_est = utils_deformation.shiftNet(Nangles,s0).to(device)
 
-    impl_volume_ball = lambda coord: utils_interpolation.interp_volume(V_t.unsqueeze(0).unsqueeze(1), coord, -1,1,1)
 
-    vol_est = sample_implicit(impl_volume_ball,grid_ball_t,view_dir,rot_deform=rot_est(t),shift_deform=shift_est(t),local_deform=local_tr[t])
-    vol_est = resample_ball(torch.squeeze(vol_est),ball)
-    proj_est = projection(vol_est)
+    # vol_est = sample_implicit(impl_volume,grid_t,view_dir,rot_deform=rot_est(t),shift_deform=shift_est(t),local_deform=None)
+    # proj_est = projection(vol_est)
 
-    vol_est_ = sample_implicit(impl_volume_ball,grid_ball_t,view_dir,rot_deform=rot_est(t),shift_deform=shift_est(t),local_deform=None)
-    vol_est_ = resample_ball(torch.squeeze(vol_est_),ball)
-    proj_est_ = projection(vol_est_)
+    # vol_clean_est = sample_implicit(impl_volume,grid_t,view_dir,rot_deform=None,shift_deform=None,local_deform=None)
+    # proj_clean_est = projection(vol_clean_est)
 
-    vol_est__ = sample_implicit(impl_volume_ball,grid_ball_t,view_dir,rot_deform=None,shift_deform=None,local_deform=local_tr[t])
-    vol_est__ = resample_ball(torch.squeeze(vol_est__),ball)
-    proj_est__ = projection(vol_est__)
 
-    plt.figure(7)
-    plt.subplot(3,3,1)
-    plt.imshow(projections_deformed_global[t].detach().cpu().numpy())
-    plt.title('True global def.')
-    plt.subplot(3,3,2)
-    plt.imshow(proj_est_.detach().cpu().numpy())
-    plt.title('Est. global def.')
-    plt.subplot(3,3,3)
-    plt.imshow((projections_deformed_global[t]-proj_est_).detach().cpu().numpy())
-    err = torch.norm(projections_deformed_global[t]-proj_est_)/torch.norm(projections_deformed_global[t])
-    plt.title("Rel. err {:2.2}".format(err))
+    # plt.figure(4)
+    # plt.subplot(2,3,1)
+    # plt.imshow(projections_deformed_global[t].detach().cpu().numpy())
+    # plt.title('True def.')
+    # plt.subplot(2,3,2)
+    # plt.imshow(proj_est.detach().cpu().numpy())
+    # plt.title('Est. def.')
+    # plt.subplot(2,3,3)
+    # plt.imshow((projections_deformed_global[t]-proj_est).detach().cpu().numpy())
+    # err = torch.norm(projections_deformed_global[t]-proj_est)/torch.norm(projections_deformed_global[t])
+    # plt.title("Rel. err {:2.2}".format(err))
+    # plt.subplot(2,3,4)
+    # plt.imshow(projections_clean[t].detach().cpu().numpy())
+    # plt.title('True no def.')
+    # plt.subplot(2,3,5)
+    # plt.imshow(proj_clean_est.detach().cpu().numpy())
+    # plt.title('Est. no def.')
+    # plt.subplot(2,3,6)
+    # plt.imshow((projections_clean[t]-proj_clean_est).detach().cpu().numpy())
+    # err = torch.norm(projections_clean[t]-proj_clean_est)/torch.norm(projections_clean[t])
+    # plt.title("Rel. err {:2.2}".format(err))
 
-    plt.subplot(3,3,4)
-    plt.imshow(projections_deformed[t].detach().cpu().numpy())
-    plt.title('True global + local def.')
-    plt.subplot(3,3,5)
-    plt.imshow(proj_est.detach().cpu().numpy())
-    plt.title('Est. global + local def.')
-    plt.subplot(3,3,6)
-    plt.imshow((projections_deformed[t]-proj_est).detach().cpu().numpy())
-    err = torch.norm(projections_deformed[t]-proj_est)/torch.norm(projections_deformed[t])
-    plt.title("Rel. err {:2.2}".format(err))
 
-    plt.subplot(3,3,7)
-    plt.imshow(projections_deformed_local[t].detach().cpu().numpy())
-    plt.title('True local def.')
-    plt.subplot(3,3,8)
-    plt.imshow(proj_est__.detach().cpu().numpy())
-    plt.title('Est local def.')
-    plt.subplot(3,3,9)
-    plt.imshow((projections_deformed_local[t]-proj_est__).detach().cpu().numpy())
-    err = torch.norm(projections_deformed_local[t]-proj_est__)/torch.norm(projections_deformed_local[t])
-    plt.title("Rel. err {:2.2}".format(err))
 
-    plt.show()
+    # # try to match the local deformations with networks 
+    # t=15
+    # view_dir = torch.tensor(angles[t]).type(torch_type).to(device)
+    # projections_deformed_local = utils_deformation.apply_local_deformation(local_tr,projections_clean)
+    # vol_est = sample_implicit(impl_volume,grid_t,view_dir,rot_deform=None,shift_deform=None,local_deform=local_tr[t])
+    # proj_est = projection(vol_est)
+
+    # plt.figure(5)
+    # plt.subplot(2,3,1)
+    # plt.imshow(projections_deformed_local[t].detach().cpu().numpy())
+    # plt.title('True local def.')
+    # plt.subplot(2,3,2)
+    # plt.imshow(proj_est.detach().cpu().numpy())
+    # plt.title('Est. local def.')
+    # plt.subplot(2,3,3)
+    # plt.imshow((projections_deformed_local[t]-proj_est).detach().cpu().numpy())
+    # err = torch.norm(projections_deformed_local[t]-proj_est)/torch.norm(projections_deformed_local[t])
+    # plt.title("Rel. err {:2.2}".format(err))
+    # plt.subplot(2,3,4)
+    # plt.imshow(projections_clean[t].detach().cpu().numpy())
+    # plt.title('True no def.')
+    # plt.subplot(2,3,5)
+    # plt.imshow(proj_clean_est.detach().cpu().numpy())
+    # plt.title('Est. no def.')
+    # plt.subplot(2,3,6)
+    # plt.imshow((projections_clean[t]-proj_clean_est).detach().cpu().numpy())
+    # err = torch.norm(projections_clean[t]-proj_clean_est)/torch.norm(projections_clean[t])
+    # plt.title("Rel. err {:2.2}".format(err))
+
+
+
+    # # # try to match the global+local deformations with networks 
+    # t=15
+    # view_dir = torch.tensor(angles[t]).type(torch_type).to(device)
+    # projections_deformed_global = utils_deformation.apply_deformation(affine_tr,projections_clean)
+    # projections_deformed = utils_deformation.apply_local_deformation(local_tr,projections_deformed_global)
+    # projections_deformed_local = utils_deformation.apply_local_deformation(local_tr,projections_clean)
+
+
+    # theta0 = torch.tensor([affine_tr[k].angle.item() for k in range(Nangles)]).to(device).type(torch_type)
+    # s0 = torch.tensor([[affine_tr[k].shiftX.item(),affine_tr[k].shiftY.item()] for k in range(Nangles)]).to(device).type(torch_type)
+    # rot_est = utils_deformation.rotNet(Nangles,theta0).to(device)
+    # shift_est = utils_deformation.shiftNet(Nangles,s0).to(device)
+
+    # vol_est = sample_implicit(impl_volume,grid_t,view_dir,rot_deform=rot_est(t),shift_deform=shift_est(t),local_deform=local_tr[t])
+    # proj_est = projection(vol_est)
+
+    # vol_est_ = sample_implicit(impl_volume,grid_t,view_dir,rot_deform=rot_est(t),shift_deform=shift_est(t),local_deform=None)
+    # proj_est_ = projection(vol_est_)
+
+    # vol_est__ = sample_implicit(impl_volume,grid_t,view_dir,rot_deform=None,shift_deform=None,local_deform=local_tr[t])
+    # proj_est__ = projection(vol_est__)
+
+    # plt.figure(6)
+    # plt.subplot(3,3,1)
+    # plt.imshow(projections_deformed_global[t].detach().cpu().numpy())
+    # plt.title('True global def.')
+    # plt.subplot(3,3,2)
+    # plt.imshow(proj_est_.detach().cpu().numpy())
+    # plt.title('Est. global def.')
+    # plt.subplot(3,3,3)
+    # plt.imshow((projections_deformed_global[t]-proj_est_).detach().cpu().numpy())
+    # err = torch.norm(projections_deformed_global[t]-proj_est_)/torch.norm(projections_deformed_global[t])
+    # plt.title("Rel. err {:2.2}".format(err))
+
+    # plt.subplot(3,3,4)
+    # plt.imshow(projections_deformed[t].detach().cpu().numpy())
+    # plt.title('True global + local def.')
+    # plt.subplot(3,3,5)
+    # plt.imshow(proj_est.detach().cpu().numpy())
+    # plt.title('Est. global + local def.')
+    # plt.subplot(3,3,6)
+    # plt.imshow((projections_deformed[t]-proj_est).detach().cpu().numpy())
+    # err = torch.norm(projections_deformed[t]-proj_est)/torch.norm(projections_deformed[t])
+    # plt.title("Rel. err {:2.2}".format(err))
+
+    # plt.subplot(3,3,7)
+    # plt.imshow(projections_deformed_local[t].detach().cpu().numpy())
+    # plt.title('True local def.')
+    # plt.subplot(3,3,8)
+    # plt.imshow(proj_est__.detach().cpu().numpy())
+    # plt.title('Est local def.')
+    # plt.subplot(3,3,9)
+    # plt.imshow((projections_deformed_local[t]-proj_est__).detach().cpu().numpy())
+    # err = torch.norm(projections_deformed_local[t]-proj_est__)/torch.norm(projections_deformed_local[t])
+    # plt.title("Rel. err {:2.2}".format(err))
+
+
+
+
+    # ## try global+local deformations + ball sampling + mollifier
+    # t=15
+    # view_dir = torch.tensor(angles[t]).type(torch_type).to(device)
+    # projections_deformed_global = utils_deformation.apply_deformation(affine_tr,projections_clean)
+    # projections_deformed = utils_deformation.apply_local_deformation(local_tr,projections_deformed_global)
+    # projections_deformed_local = utils_deformation.apply_local_deformation(local_tr,projections_clean)
+
+    # theta0 = torch.tensor([affine_tr[k].angle.item() for k in range(Nangles)]).to(device).type(torch_type)
+    # s0 = torch.tensor([[affine_tr[k].shiftX.item(),affine_tr[k].shiftY.item()] for k in range(Nangles)]).to(device).type(torch_type)
+    # rot_est = utils_deformation.rotNet(Nangles,theta0).to(device)
+    # shift_est = utils_deformation.shiftNet(Nangles,s0).to(device)
+
+    # impl_volume_ball = lambda coord: utils_interpolation.interp_volume(V_t.unsqueeze(0).unsqueeze(1), coord, -1,1,1)
+
+    # vol_est = sample_implicit(impl_volume_ball,grid_ball_t,view_dir,rot_deform=rot_est(t),shift_deform=shift_est(t),local_deform=local_tr[t])
+    # vol_est = resample_ball(torch.squeeze(vol_est),ball)
+    # proj_est = projection(vol_est)
+
+    # vol_est_ = sample_implicit(impl_volume_ball,grid_ball_t,view_dir,rot_deform=rot_est(t),shift_deform=shift_est(t),local_deform=None)
+    # vol_est_ = resample_ball(torch.squeeze(vol_est_),ball)
+    # proj_est_ = projection(vol_est_)
+
+    # vol_est__ = sample_implicit(impl_volume_ball,grid_ball_t,view_dir,rot_deform=None,shift_deform=None,local_deform=local_tr[t])
+    # vol_est__ = resample_ball(torch.squeeze(vol_est__),ball)
+    # proj_est__ = projection(vol_est__)
+
+    # plt.figure(7)
+    # plt.subplot(3,3,1)
+    # plt.imshow(projections_deformed_global[t].detach().cpu().numpy())
+    # plt.title('True global def.')
+    # plt.subplot(3,3,2)
+    # plt.imshow(proj_est_.detach().cpu().numpy())
+    # plt.title('Est. global def.')
+    # plt.subplot(3,3,3)
+    # plt.imshow((projections_deformed_global[t]-proj_est_).detach().cpu().numpy())
+    # err = torch.norm(projections_deformed_global[t]-proj_est_)/torch.norm(projections_deformed_global[t])
+    # plt.title("Rel. err {:2.2}".format(err))
+
+    # plt.subplot(3,3,4)
+    # plt.imshow(projections_deformed[t].detach().cpu().numpy())
+    # plt.title('True global + local def.')
+    # plt.subplot(3,3,5)
+    # plt.imshow(proj_est.detach().cpu().numpy())
+    # plt.title('Est. global + local def.')
+    # plt.subplot(3,3,6)
+    # plt.imshow((projections_deformed[t]-proj_est).detach().cpu().numpy())
+    # err = torch.norm(projections_deformed[t]-proj_est)/torch.norm(projections_deformed[t])
+    # plt.title("Rel. err {:2.2}".format(err))
+
+    # plt.subplot(3,3,7)
+    # plt.imshow(projections_deformed_local[t].detach().cpu().numpy())
+    # plt.title('True local def.')
+    # plt.subplot(3,3,8)
+    # plt.imshow(proj_est__.detach().cpu().numpy())
+    # plt.title('Est local def.')
+    # plt.subplot(3,3,9)
+    # plt.imshow((projections_deformed_local[t]-proj_est__).detach().cpu().numpy())
+    # err = torch.norm(projections_deformed_local[t]-proj_est__)/torch.norm(projections_deformed_local[t])
+    # plt.title("Rel. err {:2.2}".format(err))
+
+    # plt.show()

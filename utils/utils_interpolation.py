@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils import utils_deformation
+from . import utils_deformation
 
 # Express the true volume continuously using bicubic interpolation
 def cropper3d(image, coordinate , output_size):
@@ -76,42 +76,3 @@ def interp_img(img,coordinates=None):
     return utils_deformation.cropper(img,coordinates,output_size = 1).reshape(-1,n,n)
 
 
-
-# def cropper2d(image, coordinate , output_size):
-#     # Coordinate shape: b X b_pixels X 2
-#     # image shape: b X b_pixels X c X h X w
-#     d_coordinate = coordinate * 2
-#     b , b_pixels , c , h , w = image.shape
-#     crop_size = 2 * output_size/h
-#     x_m_x = crop_size/2
-#     x_p_x = d_coordinate[:,:,1]
-#     y_m_y = crop_size/2
-#     y_p_y = d_coordinate[:,:,0]
-#     theta = torch.zeros(b, b_pixels, 2,3).to(image.device)
-#     theta[:,:,0,0] = x_m_x
-#     theta[:,:,0,2] = x_p_x
-#     theta[:,:,1,1] = y_m_y
-#     theta[:,:,1,2] = y_p_y
-
-#     image = image.reshape(b*b_pixels , c , h , w)
-#     theta = theta.reshape(b*b_pixels , 2 , 3)
-
-#     f = F.affine_grid(theta, size=(b * b_pixels, c, output_size, output_size), align_corners=True)
-#     image_cropped = F.grid_sample(image, f, mode='bilinear', align_corners = True)
-#     # image_cropped = grid_sample_customized(image, f, pad = 'reflect')
-#     return image_cropped
-
-
-# class Model_implicit_2d(nn.Module):
-#     def __init__(self, c):
-#         super(Model_implicit_2d, self).__init__()
-#         self.c = c
-#         self.w_size = 1
-       
-#     def forward(self, coordinate, x):
-#         b , b_pixels , _ = coordinate.shape
-#         x = torch.unsqueeze(x, dim = 1)
-#         x =x.expand(-1, b_pixels , -1, -1, -1)
-#         x = cropper2d(x , coordinate , output_size = self.w_size)
-#         x = x.reshape(b, b_pixels, -1)
-#         return x

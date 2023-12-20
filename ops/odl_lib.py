@@ -1,12 +1,9 @@
 """Holds all the odl related utilities."""
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-
 import odl
+import torch
+import numpy as np
 
-# from odl.contrib.torch import OperatorFunction
-from ops.ODLHelper import OperatorFunction
+from .ODLHelper import OperatorFunction
 
 class OperatorAsAutogradFunction(object):
   """Dummy class around OperatorFunction.
