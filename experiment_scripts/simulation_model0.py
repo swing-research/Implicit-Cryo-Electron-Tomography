@@ -9,6 +9,9 @@ import argparse
 from compare_results import compare_results
 import data_generation
 import configs.config_shrec_dataset as config_file
+import subprocess
+import time
+
 
 def main():   
     parser = argparse.ArgumentParser(description='Run experiement for the SHREC dataset.')
@@ -27,6 +30,22 @@ def main():
     # Train ICE-TIDE
     if args.no_train:
         train.train(config)
+
+    # AreTomo
+    if config.path_aretomo is not None:
+        for npatch in config.nPatch:
+            # TODO: keep track of GPU memory?
+            t0 = time.time()
+            try:
+                delimiter = '|'
+                combined_input = f"{config.path_aretomo}{delimiter}{config.path_save}{delimiter}{config.n3}{delimiter}{config.n3}{delimiter}{npatch}"
+                subprocess.run(['bash', 'aretomo.sh'], input=combined_input.encode(), check=True)
+            except subprocess.CalledProcessError as e:
+                print(f"Error: {e}")
+            t = time.time()-t0
+            #TODO: save time and memory used in os.path.join(config.path_save,'AreTomo',f'time_memory_{npatch}by{npatch}.txt')
+
+    # Etomo
 
     # Compare the results and save the figures
     if args.no_comparison:

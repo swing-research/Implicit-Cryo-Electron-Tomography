@@ -153,77 +153,116 @@ def compare_results(config):
     V_FBP_no_deformed = V_FBP_no_deformed_t.detach().cpu().numpy()    
 
     ## Aretomo
-    ARE_TOMO_FILE = 'areTomo_alligned.mrc'
-    path_file = os.path.join(config.path_save,'Aretomo',ARE_TOMO_FILE)
-    if os.path.isfile(path_file):
-        # load projections
-        aretomo_projections = np.double(mrcfile.open(path_file).data)
-        aretomo_projections_t = torch.tensor(aretomo_projections).type(config.torch_type).to(device)
-        V_FBP_aretomo = reconstruct_FBP_volume(config, aretomo_projections_t).detach().cpu().numpy()
-
-        # load estimated deformations
-        ARETOMO_FILENAME = 'projections.aln'
-        with open(os.path.join(config.path_save,'AreTomo',ARETOMO_FILENAME), 'r',encoding="utf-8") as file:
-            lines = file.readlines()
-        comments = []
-        affine_transforms_aretomo = []
-        local_transforms_aretomo = []
-        affine_flag = True
-        num_patches = 0
-        for line in lines:
-            if line.startswith('#'):
-                comments.append(line.strip())  # Strip removes leading/trailing whitespace
-                if line.startswith('# Local Alignment'):
-                    affine_flag = False
-                if line.startswith('# NumPatches'):
-                    num_patches = int(line.split('=')[-1])
-            else:
-                if affine_flag:
-                    affine_transforms_aretomo.append(line.strip().split())
-                else:
-                    local_transforms_aretomo.append(line.strip().split())  
-        aretomo_data = pd.DataFrame(affine_transforms_aretomo, 
-                                    columns=["SEC", "ROT", "GMAG", "TX", 
-                                                                "TY", "SMEAN", "SFIT", "SCALE",
-                                                                "BASE", "TILT"])
-        x_shifts_aretomo = aretomo_data['TX'].values.astype(np.float32)
-        y_shifts_aretomo = aretomo_data['TY'].values.astype(np.float32)
-        inplane_rotation_aretomo = aretomo_data['ROT'].values.astype(np.float32)
-        # The estimates are already in pixels
-        local_AreTomo = np.zeros((config.Nangles,num_patches,4))
-        for local_est in local_transforms_aretomo:
-            angle_index =int(local_est[0])
-            patch_index = int(local_est[1])
-            local_AreTomo[angle_index,patch_index,0] = float(local_est[2])
-            local_AreTomo[angle_index,patch_index,1] = float(local_est[3])
-            local_AreTomo[angle_index,patch_index,2] = float(local_est[4])
-
+    # TODO shift array and error for each patches size
+    # get the files
+    eval_AreTomo = False
+    for npatch in config.nPatch:
+        ARE_TOMO_FILE = f'projections_rec_aretomo_{npatch}by{npatch}.mrc'
+        path_file = os.path.join(config.path_save,'AreTomo',ARE_TOMO_FILE)
         shift_aretomo = np.zeros((config.Nangles,2))
-        shift_aretomo[:,1] = -x_shifts_aretomo
-        shift_aretomo[:,0] = -y_shifts_aretomo
-        # correct the mean shitfs
-        shift_aretomo[:,0] = shift_aretomo[:,0] - np.mean(shift_aretomo[:,0])
-        shift_aretomo[:,1] = shift_aretomo[:,1] - np.mean(shift_aretomo[:,1])
-        shift_aretomo_t = torch.from_numpy(shift_aretomo).to(device).type(config.torch_type)/config.n1*2
-        inplane_rotation_aretomo_t = -torch.from_numpy(inplane_rotation_aretomo).to(device).type(config.torch_type)*np.pi/180
-        projections_are_corrected_python = correct_deformations(aretomo_projections_t, shift_aretomo_t, inplane_rotation_aretomo_t, config)
+        if os.path.isfile(path_file):
+            eval_AreTomo = True
+            # load projections
+            aretomo_projections = np.double(mrcfile.open(path_file).data)
+            aretomo_projections_t = torch.tensor(aretomo_projections).type(config.torch_type).to(device)
+            V_FBP_aretomo = reconstruct_FBP_volume(config, aretomo_projections_t).detach().cpu().numpy()
 
-        V_FBP_aretomo_corrected = reconstruct_FBP_volume(config, projections_are_corrected_python).detach().cpu().numpy()
+            # load estimated deformations
+            ARETOMO_FILENAME = 'projections_rec_aretomo_{npatch}by{npatch}.aln'
+            with open(os.path.join(config.path_save,'AreTomo',ARETOMO_FILENAME), 'r',encoding="utf-8") as file:
+                lines = file.readlines()
+            comments = []
+            affine_transforms_aretomo = []
+            local_transforms_aretomo = []
+            affine_flag = True
+            num_patches = 0
+            for line in lines:
+                if line.startswith('#'):
+                    comments.append(line.strip())  # Strip removes leading/trailing whitespace
+                    if line.startswith('# Local Alignment'):
+                        affine_flag = False
+                    if line.startswith('# NumPatches'):
+                        num_patches = int(line.split('=')[-1])
+                else:
+                    if affine_flag:
+                        affine_transforms_aretomo.append(line.strip().split())
+                    else:
+                        local_transforms_aretomo.append(line.strip().split())  
+            aretomo_data = pd.DataFrame(affine_transforms_aretomo, 
+                                        columns=["SEC", "ROT", "GMAG", "TX", 
+                                                                    "TY", "SMEAN", "SFIT", "SCALE",
+                                                                    "BASE", "TILT"])
+            x_shifts_aretomo = aretomo_data['TX'].values.astype(np.float32)
+            y_shifts_aretomo = aretomo_data['TY'].values.astype(np.float32)
+            inplane_rotation_aretomo = aretomo_data['ROT'].values.astype(np.float32)
+            # The estimates are already in pixels
+            local_AreTomo = np.zeros((config.Nangles,num_patches,4))
+            for local_est in local_transforms_aretomo:
+                angle_index =int(local_est[0])
+                patch_index = int(local_est[1])
+                local_AreTomo[angle_index,patch_index,0] = float(local_est[2])
+                local_AreTomo[angle_index,patch_index,1] = float(local_est[3])
+                local_AreTomo[angle_index,patch_index,2] = float(local_est[4])
 
-        out = mrcfile.new(config.path_save_data+"V_aretomo.mrc",np.moveaxis(V_FBP_aretomo,2,0),overwrite=True)
-        out.close() 
-        out = mrcfile.new(config.path_save_data+"V_FBP_aretomo_corrected.mrc",np.moveaxis(V_FBP_aretomo_corrected,2,0),overwrite=True)
-        out.close() 
+            shift_aretomo[:,1] = -x_shifts_aretomo
+            shift_aretomo[:,0] = -y_shifts_aretomo
+            # correct the mean shitfs
+            shift_aretomo[:,0] = shift_aretomo[:,0] - np.mean(shift_aretomo[:,0])
+            shift_aretomo[:,1] = shift_aretomo[:,1] - np.mean(shift_aretomo[:,1])
+            shift_aretomo_t = torch.from_numpy(shift_aretomo).to(device).type(config.torch_type)/config.n1*2
+            inplane_rotation_aretomo_t = -torch.from_numpy(inplane_rotation_aretomo).to(device).type(config.torch_type)*np.pi/180
+            projections_aretomo_corrected_python = correct_deformations(projections_noisy, shift_aretomo_t, inplane_rotation_aretomo_t, config)
 
-    
+            V_FBP_aretomo_corrected = reconstruct_FBP_volume(config, projections_aretomo_corrected_python).detach().cpu().numpy()
+
+            out = mrcfile.new(config.path_save_data+f"V_aretomo_{npatch}by{npatch}.mrc",np.moveaxis(V_FBP_aretomo,2,0),overwrite=True)
+            out.close() 
+            out = mrcfile.new(config.path_save_data+f"V_FBP_aretomo_{npatch}by{npatch}_corrected.mrc",np.moveaxis(V_FBP_aretomo_corrected,2,0),overwrite=True)
+            out.close() 
+
+
     ETOMO_FILE = 'projections_ali.mrc'
     path_file = os.path.join(config.path_save,'Etomo',ETOMO_FILE)
+    shift_etomo = np.zeros((config.Nangles,2))
+    inplane_rotation_etomo = np.zeros(config.Nangles)
+    eval_Etomo = False
     if os.path.isfile(path_file):
+        eval_Etomo = True
         etomo_projections = np.double(mrcfile.open(path_file).data)
         etomo_projections_t = torch.tensor(etomo_projections).type(config.torch_type).to(device)
         V_FBP_etomo = reconstruct_FBP_volume(config, etomo_projections_t).detach().cpu().numpy()
         out = mrcfile.new(config.path_save_data+"V_etomo.mrc",np.moveaxis(V_FBP_etomo),2,0),overwrite=True)
         out.close() 
+
+        def extract_angle(rot_matrix):
+            """
+            Extract the angle from a rotation matrix in degrees
+            """
+            if rot_matrix[0,0] == 1:
+                angle = 0
+            elif rot_matrix[0,0] == -1:
+                angle = 180
+            else:
+                angle = np.arctan2(rot_matrix[1,0], rot_matrix[0,0])*180/np.pi
+            return angle
+
+        # Extract the estimated deformations for etomo
+        ETOMO_FILENAME = 'projections.xf'
+        path_file_etomo = os.path.join(config.path_save,'Etomo',ETOMO_FILENAME)
+        etomodata = pd.read_csv(path_file_etomo, sep='\s+', header=None)
+        etomodata.columns = ['a11', 'a12', 'a21', 'a22','y','x']
+        x_shifts_etomo = etomodata['x'].values
+        y_shifts_etomo = etomodata['y'].values
+
+        shift_etomo[:,1] = x_shifts_etomo
+        shift_etomo[:,0] = y_shifts_etomo
+        shift_etomo[:,0] = shift_etomo[:,0] - np.mean(shift_etomo[:,0])
+        shift_etomo[:,1] = shift_etomo[:,1] - np.mean(shift_etomo[:,1])
+
+        for index in range(len(etomodata)):
+            etomo_rotation_matrix = np.array([[etomodata['a11'][index],etomodata['a12'][index]],
+                                [etomodata['a21'][index],etomodata['a22'][index]]])
+            inplane_rotation_etomo[index] = extract_angle(etomo_rotation_matrix)
 
 
 
@@ -324,30 +363,47 @@ def compare_results(config):
             V_icetide[:,:,zz] = estSlice
         V_icetide_t = torch.tensor(V_icetide).type(config.torch_type).to(device)
 
-
-
-
-    # TODO: 
-    # -make script and generate AreTomo
-    # -make script and generate Etomo
-    # -compute and save the different FSC
-    # -compute error between deformations
-
-
-
+    ######################################################################################################
+    # Using only the deformation estimates
+    ######################################################################################################
+    from utils.utils_deformation import cropper
+    projections_noisy_undeformed = torch.zeros_like(projections_noisy)
+    xx1 = torch.linspace(-1,1,config.n1,dtype=config.torch_type,device=device)
+    xx2 = torch.linspace(-1,1,config.n2,dtype=config.torch_type,device=device)
+    XX_t, YY_t = torch.meshgrid(xx1,xx2,indexing='ij')
+    XX_t = torch.unsqueeze(XX_t, dim = 2)
+    YY_t = torch.unsqueeze(YY_t, dim = 2)
+    for i in range(config.Nangles):
+        coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
+        #field = utils_deformation.deformation_field(-implicit_deformation_ours[i].depl_ctr_pts[0].detach().clone())
+        thetas = torch.tensor(-rot_ours[i].thetas.item()).to(device)
+    
+        rot_deform = torch.stack(
+                        [torch.stack([torch.cos(thetas),torch.sin(thetas)],0),
+                        torch.stack([-torch.sin(thetas),torch.cos(thetas)],0)]
+                        ,0)
+        coordinates = coordinates - config.deformationScale*implicit_deformation_ours[i](coordinates)
+        coordinates = coordinates - shift_ours[i].shifts_arr
+        coordinates = torch.transpose(torch.matmul(rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
+        x = projections_noisy[i].clone().view(1,1,config.n1,config.n2)
+        x = x.expand(config.n1*config.n2, -1, -1, -1)
+        out = cropper(x,coordinates,output_size = 1).reshape(config.n1,config.n2)
+        projections_noisy_undeformed[i] = out
+    V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
+    # angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
+    # operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, op_snr=np.inf, fact=1)
+    # V_FBP_ours = operator_ET.pinv(projections_noisy_undeformed).detach().requires_grad_(False).cpu().numpy()
 
 
     #######################################################################################
     ## Compare the error between the true and estimated deformation
     #######################################################################################
-
     x_shifts = np.zeros(config.Nangles)
     y_shifts = np.zeros(config.Nangles)
     inplane_rotation = np.zeros(config.Nangles)
 
     # Extract the true deformations
     for index ,affine_transform in enumerate(affine_tr):
-
         x_shifts[index] = affine_transform.shiftX.item()
         y_shifts[index] = affine_transform.shiftY.item()
         inplane_rotation[index] = affine_transform.angle.item()*180/np.pi
@@ -356,18 +412,27 @@ def compare_results(config):
     x_shifts_ours = np.zeros(config.Nangles)
     y_shifts_ours = np.zeros(config.Nangles)
     inplane_rotation_ours = np.zeros(config.Nangles)
-
     for index, (shift_net, rot_net) in enumerate(zip(shift_ours,rot_ours)):
         x_shifts_ours[index] = shift_net.shifts_arr[0,0].item()
         y_shifts_ours[index] = shift_net.shifts_arr[0,1].item()
         inplane_rotation_ours[index] = rot_net.thetas.item()*180/np.pi
 
-
     # Compute the error between the true and estimated deformation
-
     error_x_shifts_ours = np.around(np.abs(x_shifts-x_shifts_ours).mean()*n1_eval,decimals=4)
     error_y_shifts_ours = np.around(np.abs(y_shifts-y_shifts_ours).mean()*n1_eval,decimals=4)
     error_inplane_rotation_ours =np.around( np.abs(inplane_rotation-inplane_rotation_ours
+                                                ).mean(),decimals=4)
+
+    # Compute the error between the true and AreTomo estimated deformation
+    error_x_shifts_aretomo = np.around(np.abs(x_shifts-shift_aretomo[:,0]).mean()*n1_eval,decimals=4)
+    error_y_shifts_aretomo = np.around(np.abs(y_shifts-shift_aretomo[:,1]).mean()*n1_eval,decimals=4)
+    error_inplane_rotation_aretomo =np.around( np.abs(inplane_rotation-inplane_rotation_aretomo
+                                                ).mean(),decimals=4)
+
+    # Compute the error between the true and Etomo estimated deformation
+    error_x_shifts_etomo = np.around(np.abs(x_shifts-shift_etomo[:,0]).mean()*n1_eval,decimals=4)
+    error_y_shifts_etomo = np.around(np.abs(y_shifts-shift_etomo[:,1]).mean()*n1_eval,decimals=4)
+    error_inplane_rotation_etomo = np.around(np.abs(inplane_rotation-inplane_rotation_etomo
                                                 ).mean(),decimals=4)
 
 
@@ -375,46 +440,84 @@ def compare_results(config):
     error_arr = pd.DataFrame(columns=['Method','x_shifts','y_shifts','inplane_rotation'])
     # Include the avg absolute error in pixels in the table
 
-
     x_mean_shift = np.around(np.abs(x_shifts).mean()*n1_eval,decimals=4)
     y_mean_shift = np.around(np.abs(y_shifts).mean()*n1_eval,decimals=4)
     inplane_mean_rotation = np.around(np.abs(inplane_rotation).mean(),decimals=4)
     error_arr.loc[0] = ['Observation',x_mean_shift,y_mean_shift,inplane_mean_rotation]
     error_arr.loc[1] = ['ours',error_x_shifts_ours,error_y_shifts_ours,error_inplane_rotation_ours]
-    # TODO: move this to a correct location?
-    def extract_angle(rot_matrix):
-        """
-        Extract the angle from a rotation matrix in degrees
-        """
-        if rot_matrix[0,0] == 1:
-            angle = 0
-        elif rot_matrix[0,0] == -1:
-            angle = 180
-        else:
-            angle = np.arctan2(rot_matrix[1,0], rot_matrix[0,0])*180/np.pi
-        return angle
-    if eval_ETOMO:
-        # Extract the estimated deformations for etomo
-        ETOMO_FILENAME = 'projections.xf'
-        etomodata = pd.read_csv(config.path_save+ETOMO_FILENAME, sep='\s+', header=None)
-        etomodata.columns = ['a11', 'a12', 'a21', 'a22','y','x']
-        x_shifts_etomo = etomodata['x'].values
-        y_shifts_etomo = etomodata['y'].values
-        inplane_rotation_etomo = np.zeros(config.Nangles)
+    error_arr.loc[2] = ['aretomo',error_x_shifts_aretomo,error_y_shifts_aretomo,error_inplane_rotation_aretomo]
+    error_arr.loc[3] = ['etomo',error_x_shifts_etomo,error_y_shifts_etomo,error_inplane_rotation_etomo]
+    
+    
 
-        for index in range(len(etomodata)):
-            etomo_rotation_matrix = np.array([[etomodata['a11'][index],etomodata['a12'][index]],
-                                [etomodata['a21'][index],etomodata['a22'][index]]])
-            inplane_rotation_etomo[index] = extract_angle(etomo_rotation_matrix)
+    #######################################################################################
+    ## Compute FSC
+    #######################################################################################
+    fsc_icetide = utils_ricardo.FSC(V,V_icetide)
+    fsc_FBP_icetide = utils_ricardo.FSC(V,V_FBP_icetide)
+    fsc_FBP = utils_ricardo.FSC(V,V_FBP)
+    fsc_FBP_no_deformed = utils_ricardo.FSC(V,V_FBP_no_deformed)
+    if(eval_AreTomo):
+        fsc_AreTomo = utils_ricardo.FSC(V,V_AreTomo)
+    if(eval_ETOMO):
+        fsc_Etomo = utils_ricardo.FSC(V,V_Etomo)
 
-        # The estimates are already in pixelsb
-        error_x_shifts_etomo = np.around(np.abs(x_shifts*n1_eval-x_shifts_etomo).mean(),decimals=4)
-        error_y_shifts_etomo = np.around(np.abs(y_shifts*n1_eval-y_shifts_etomo).mean(),decimals=4)
-        error_inplane_rotation_etomo = np.around(np.abs(inplane_rotation-
-                                                        inplane_rotation_etomo).mean(),decimals=4)
-        error_arr.loc[2] = ['Etomo',error_x_shifts_etomo,error_y_shifts_etomo,
-                            error_inplane_rotation_etomo]
-        
+    x_fsc = np.arange(fsc_FBP.shape[0])
+
+
+    plt.figure(1)
+    plt.clf()
+    plt.plot(x_fsc,fsc_icetide,'b',label="ours")
+    plt.plot(x_fsc,fsc_FBP_icetide,'--b',label="FBP with our deform. est. ")
+    if(eval_AreTomo):
+        plt.plot(x_fsc,fsc_AreTomo,'r',label="AreTomo")
+    if(eval_ETOMO):
+        plt.plot(x_fsc,fsc_Etomo,'c',label="Etomo")
+    plt.plot(x_fsc,fsc_FBP,'k',label="FBP")
+    plt.plot(x_fsc,fsc_FBP_no_deformed,'g',label="FBP no def.")
+    plt.legend()
+    plt.savefig(os.path.join(config.path_save,'evaluation','FSC.png'))
+    plt.savefig(os.path.join(config.path_save,'evaluation','FSC.pdf'))
+
+
+    fsc_arr = np.zeros((x_fsc.shape[0],7))
+    fsc_arr[:,0] = x_fsc
+    fsc_arr[:,1] = fsc_icetide[:,0]
+    fsc_arr[:,2] = fsc_FBP[:,0]
+    fsc_arr[:,3] = fsc_FBP_no_deformed[:,0]
+    if(eval_AreTomo):
+        fsc_arr[:,4] = fsc_AreTomo[:,0]
+    if(eval_ETOMO):
+        fsc_arr[:,5] = fsc_Etomo[:,0]
+    fsc_arr[:,6] = fsc_FBP_icetide[:,0]
+    # fsc_arr[:,6] = fsc_ours_isonet[:,0]
+    header ='x,ours,FBP,FBP_no_deformed,AreTomo,ETOMO,FBP_est_deformed'
+    np.savetxt(os.path.join(config.path_save,'evaluation','FSC.csv'),fsc_arr,header=header,delimiter=",",comments='')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    
+    
+    
+    
+    # TODO: 
+    # -compute and save the different FSC
+    # -compute error between local deformations
+
+
     if eval_AreTomo:
         # Extract the estimated deformations for AreTomo
 
@@ -523,87 +626,8 @@ def compare_results(config):
 
 
 
-    ######################################################################################################
-    # Using only the deformation estimates
-    ######################################################################################################
-
-    from utils.utils_deformation import cropper
-
-    projections_noisy_undeformed = torch.zeros_like(projections_noisy)
-    xx1 = torch.linspace(-1,1,config.n1,dtype=config.torch_type,device=device)
-    xx2 = torch.linspace(-1,1,config.n2,dtype=config.torch_type,device=device)
-    XX_t, YY_t = torch.meshgrid(xx1,xx2,indexing='ij')
-    XX_t = torch.unsqueeze(XX_t, dim = 2)
-    YY_t = torch.unsqueeze(YY_t, dim = 2)
-    for i in range(config.Nangles):
-        coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
-        #field = utils_deformation.deformation_field(-implicit_deformation_ours[i].depl_ctr_pts[0].detach().clone())
-        thetas = torch.tensor(-rot_ours[i].thetas.item()).to(device)
-    
-        rot_deform = torch.stack(
-                        [torch.stack([torch.cos(thetas),torch.sin(thetas)],0),
-                        torch.stack([-torch.sin(thetas),torch.cos(thetas)],0)]
-                        ,0)
-        coordinates = coordinates - config.deformationScale*implicit_deformation_ours[i](coordinates)
-        coordinates = coordinates - shift_ours[i].shifts_arr
-        coordinates = torch.transpose(torch.matmul(rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
-        x = projections_noisy[i].clone().view(1,1,config.n1,config.n2)
-        x = x.expand(config.n1*config.n2, -1, -1, -1)
-        out = cropper(x,coordinates,output_size = 1).reshape(config.n1,config.n2)
-        projections_noisy_undeformed[i] = out
-    #TODO : This is initialized twice correct it 
-    angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
-    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, op_snr=np.inf, fact=1)
-
-    V_FBP_ours = operator_ET.pinv(projections_noisy_undeformed).detach().requires_grad_(False).cpu().numpy()
 
 
-
-
-    ## Compute FSCs
-    fsc_ours = utils_ricardo.FSC(V,V_icetide)
-    fsc_FBP = utils_ricardo.FSC(V,V_FBP)
-    fsc_FBP_no_deformed = utils_ricardo.FSC(V,V_FBP_no_deformed)
-    fsc_FBP_ours = utils_ricardo.FSC(V,V_FBP_ours)
-    if(eval_AreTomo):
-        fsc_AreTomo = utils_ricardo.FSC(V,V_AreTomo)
-    if(eval_ETOMO):
-        fsc_Etomo = utils_ricardo.FSC(V,V_Etomo)
-
-    # TODO: add Isonet etc
-    x_fsc = np.arange(fsc_FBP.shape[0])
-
-
-    plt.figure(1)
-    plt.clf()
-    plt.plot(x_fsc,fsc_ours,'b',label="ours")
-    plt.plot(x_fsc,fsc_FBP_ours,'--b',label="FBP with our deforma. est. ")
-    # plt.plot(x_fsc,fsc_ours_post_process,'--b',label="ours post process")
-    # plt.plot(x_fsc,fsc_ours_isonet,'--b',label="ours + Isonet")
-    if(eval_AreTomo):
-        plt.plot(x_fsc,fsc_AreTomo,'r',label="AreTomo")
-    if(eval_ETOMO):
-        plt.plot(x_fsc,fsc_Etomo,'c',label="Etomo")
-    plt.plot(x_fsc,fsc_FBP,'k',label="FBP")
-    plt.plot(x_fsc,fsc_FBP_no_deformed,'g',label="FBP no def.")
-    plt.legend()
-    plt.savefig(os.path.join(config.path_save,'evaluation','FSC.png'))
-    plt.savefig(os.path.join(config.path_save,'evaluation','FSC.pdf'))
-
-
-    fsc_arr = np.zeros((x_fsc.shape[0],7))
-    fsc_arr[:,0] = x_fsc
-    fsc_arr[:,1] = fsc_ours[:,0]
-    fsc_arr[:,2] = fsc_FBP[:,0]
-    fsc_arr[:,3] = fsc_FBP_no_deformed[:,0]
-    if(eval_AreTomo):
-        fsc_arr[:,4] = fsc_AreTomo[:,0]
-    if(eval_ETOMO):
-        fsc_arr[:,5] = fsc_Etomo[:,0]
-    fsc_arr[:,6] = fsc_FBP_ours[:,0]
-    # fsc_arr[:,6] = fsc_ours_isonet[:,0]
-    header ='x,ours,FBP,FBP_no_deformed,AreTomo,ETOMO,FBP_est_deformed'
-    np.savetxt(os.path.join(config.path_save,'evaluation','FSC.csv'),fsc_arr,header=header,delimiter=",",comments='')
 
 
     ####Saving the Central slices
