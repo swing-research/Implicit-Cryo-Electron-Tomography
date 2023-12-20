@@ -452,14 +452,14 @@ def compare_results(config):
     #######################################################################################
     ## Compute FSC
     #######################################################################################
-    fsc_icetide = utils_ricardo.FSC(V,V_icetide)
-    fsc_FBP_icetide = utils_ricardo.FSC(V,V_FBP_icetide)
-    fsc_FBP = utils_ricardo.FSC(V,V_FBP)
-    fsc_FBP_no_deformed = utils_ricardo.FSC(V,V_FBP_no_deformed)
+    fsc_icetide = utils_FSC.FSC(V,V_icetide)
+    fsc_FBP_icetide = utils_FSC.FSC(V,V_FBP_icetide)
+    fsc_FBP = utils_FSC.FSC(V,V_FBP)
+    fsc_FBP_no_deformed = utils_FSC.FSC(V,V_FBP_no_deformed)
     if(eval_AreTomo):
-        fsc_AreTomo = utils_ricardo.FSC(V,V_FBP_aretomo)
+        fsc_AreTomo = utils_FSC.FSC(V,V_FBP_aretomo)
     if(eval_Etomo):
-        fsc_Etomo = utils_ricardo.FSC(V,V_FBP_etomo)
+        fsc_Etomo = utils_FSC.FSC(V,V_FBP_etomo)
 
     x_fsc = np.arange(fsc_FBP.shape[0])
 
@@ -586,14 +586,14 @@ def compare_results(config):
     #######################################################################################
     ## Save slices of volumes
     #######################################################################################
-    fsc_icetide = utils_ricardo.FSC(V,V_icetide)
-    fsc_FBP_icetide = utils_ricardo.FSC(V,V_FBP_icetide)
-    fsc_FBP = utils_ricardo.FSC(V,V_FBP)
-    fsc_FBP_no_deformed = utils_ricardo.FSC(V,V_FBP_no_deformed)
+    fsc_icetide = utils_FSC.FSC(V,V_icetide)
+    fsc_FBP_icetide = utils_FSC.FSC(V,V_FBP_icetide)
+    fsc_FBP = utils_FSC.FSC(V,V_FBP)
+    fsc_FBP_no_deformed = utils_FSC.FSC(V,V_FBP_no_deformed)
     if(eval_AreTomo):
-        fsc_AreTomo = utils_ricardo.FSC(V,V_FBP_aretomo)
+        fsc_AreTomo = utils_FSC.FSC(V,V_FBP_aretomo)
     if(eval_Etomo):
-        fsc_Etomo = utils_ricardo.FSC(V,V_FBP_etomo)
+        fsc_Etomo = utils_FSC.FSC(V,V_FBP_etomo)
 
 
     saveIndex = [n3_eval//4,n3_eval//2,int(3*n3_eval//4)] # The slices to save taken from previous plots
