@@ -625,7 +625,7 @@ def compare_results(config):
             tmp = np.floor(255*tmp).astype(np.uint8)
             imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo","slice_{}.png".format(index)),tmp)
 
-        if(eval_ETOMO):
+        if(eval_Etomo):
             tmp = V_FBP_etomo[:,:,index]
             tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
             tmp = np.floor(255*tmp).astype(np.uint8)
