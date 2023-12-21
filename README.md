@@ -36,25 +36,25 @@ python -m experiment_scripts.simulation_model0
 '''
 
 ### Only data generation
-'''
+```
 python -m experiment_scripts.simulation_model0 --no_train --no_aretomo --no_comparison
-'''
+```
 
 ### Only training ICE-TIDE
-'''
+```
 python -m experiment_scripts.simulation_model0 --no_gen_data --no_aretomo --no_comparison
-'''
+```
 
 ### Only run AreTomo
 Make sure to change the path of Aretomo in the config file
-'''
+```
 python -m experiment_scripts.simulation_model0 --no_gen_data --no_train --no_comparison
-'''
+```
 
 ### Only comparisons and display of different methods
-'''
+```
 python -m experiment_scripts.simulation_model0 --no_gen_data --no_train --no_aretomo
-'''
+```
 
 ### Use your own dataset
 put your tilt-series here ... and run ...

@@ -641,85 +641,86 @@ def compare_results(config):
 
     # TODO: generate aligned projections
 
-    # #######################################################################################
-    # ## Generate projections
-    # #######################################################################################
-    # # Define angles and X-ray transform
-    # angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
-    # angles_t = torch.tensor(angles).type(config.torch_type).to(device)
-    # operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, op_snr=np.inf, fact=1)
+    #######################################################################################
+    ## Generate projections
+    #######################################################################################
+    # Define angles and X-ray transform
+    angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
+    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, op_snr=np.inf, fact=1)
 
-    # projections_ours = operator_ET(V_icetide_t).detach().cpu().numpy()
-    # projections_FBP = operator_ET(V_FBP_t).detach().cpu().numpy()
-    # projections_FBP_no_deformed = operator_ET(V_FBP_no_deformed_t).detach().cpu().numpy()
-    # projections_FBP_ours = projections_noisy_undeformed.detach().cpu().numpy()
-    # if(eval_AreTomo):
-    #     projections_AreTomo = operator_ET(V_AreTomo_t).detach().cpu().numpy()
-    # if(eval_ETOMO):
-    #     projections_Etomo = operator_ET(V_Etomo_t).detach().cpu().numpy()
+    projections_icetide = operator_ET(V_icetide_t).detach().cpu().numpy()
+    projections_FBP = operator_ET(V_FBP_t).detach().cpu().numpy()
+    projections_FBP_no_deformed = operator_ET(V_FBP_no_deformed_t).detach().cpu().numpy()
+    projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
+    if(eval_AreTomo):
+        projections_AreTomo = operator_ET(V_FBP_aretomo).detach().cpu().numpy()
+    if(eval_Etomo):
+        projections_Etomo = operator_ET(V_FBP_etomo).detach().cpu().numpy()
 
-    # out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","ours","projections.mrc"),projections_ours.astype(np.float32),overwrite=True)
-    # out.close()
-    # if(eval_AreTomo):
-    #     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","AreTomo","projections.mrc"),projections_AreTomo.astype(np.float32),overwrite=True)
-    #     out.close()
-    # if(eval_ETOMO):
-    #     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","Etomo","projections.mrc"),projections_Etomo.astype(np.float32),overwrite=True)
-    #     out.close()
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","icetide_projections.mrc"),projections_icetide.astype(np.float32),overwrite=True)
+    out.close()
+    if(eval_AreTomo):
+        out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","AreTomo_projections.mrc"),projections_AreTomo.astype(np.float32),overwrite=True)
+        out.close()
+    if(eval_Etomo):
+        out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","Etomo_projections.mrc"),projections_Etomo.astype(np.float32),overwrite=True)
+        out.close()
 
-    # out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","FBP","projections.mrc"),projections_FBP.astype(np.float32),overwrite=True)
-    # out.close()
-    # out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","FBP_no_deformed","projections.mrc"),projections_FBP_no_deformed.astype(np.float32),overwrite=True)
-    # out.close()
-    # out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","FBP_ours","projections.mrc"),projections_FBP_ours.astype(np.float32),overwrite=True)
-    # out.close()
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","FBP_projections.mrc"),projections_FBP.astype(np.float32),overwrite=True)
+    out.close()
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","FBP_no_deformed_projections.mrc"),projections_FBP_no_deformed.astype(np.float32),overwrite=True)
+    out.close()
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","FBP_icetide_projections.mrc"),projections_FBP_icetide.astype(np.float32),overwrite=True)
+    
+    for k in range(config.Nangles):
+        tmp = projections_ours[k]
+        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+        tmp = np.floor(255*tmp).astype(np.uint8)
+        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","ICETIDE","snapshot_{}.png".format(k)),tmp)
+        if(eval_AreTomo):
+            tmp = projections_AreTomo[k]
+            tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+            tmp = np.floor(255*tmp).astype(np.uint8)
+            imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","AreTomo","snapshot_{}.png".format(k)),tmp)
+        if(eval_Etomo):
+            tmp = projections_Etomo[k]
+            tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+            tmp = np.floor(255*tmp).astype(np.uint8)
+            imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","Etomo","snapshot_{}.png".format(k)),tmp)
+        tmp = projections_FBP[k]
+        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+        tmp = np.floor(255*tmp).astype(np.uint8)
+        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","FBP","snapshot_{}.png".format(k)),tmp)
+        tmp = projections_FBP_no_deformed[k]
+        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+        tmp = np.floor(255*tmp).astype(np.uint8)
+        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","FBP_no_deformed","snapshot_{}.png".format(k)),tmp)
+        tmp = projections_FBP_icetide[k]
+        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+        tmp = np.floor(255*tmp).astype(np.uint8)
+        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","FBP_ICETIDE","snapshot_{}.png".format(k)),tmp)
 
-    # for k in range(config.Nangles):
-    #     tmp = projections_ours[k]
-    #     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
-    #     tmp = np.floor(255*tmp).astype(np.uint8)
-    #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","ours","snapshot_{}.png".format(k)),tmp)
-    #     if(eval_AreTomo):
-    #         tmp = projections_AreTomo[k]
-    #         tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
-    #         tmp = np.floor(255*tmp).astype(np.uint8)
-    #         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","AreTomo","snapshot_{}.png".format(k)),tmp)
-    #     if(eval_ETOMO):
-    #         tmp = projections_Etomo[k]
-    #         tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
-    #         tmp = np.floor(255*tmp).astype(np.uint8)
-    #         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","Etomo","snapshot_{}.png".format(k)),tmp)
-    #     tmp = projections_FBP[k]
-    #     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
-    #     tmp = np.floor(255*tmp).astype(np.uint8)
-    #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","FBP","snapshot_{}.png".format(k)),tmp)
-    #     tmp = projections_FBP_no_deformed[k]
-    #     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
-    #     tmp = np.floor(255*tmp).astype(np.uint8)
-    #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","FBP_no_deformed","snapshot_{}.png".format(k)),tmp)
-
-    # out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-    #                             "volumes","ours","volume.mrc"),np.moveaxis(V_icetide,2,0),overwrite=True)
-    # out.close()
-    # if eval_AreTomo:
-    #     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-    #                                 "volumes","AreTomo","volume.mrc"),np.moveaxis(V_AreTomo,2,0),overwrite=True)
-    #     out.close()
-    # if eval_ETOMO:
-    #     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-    #                                 "volumes","Etomo","volume.mrc"),np.moveaxis(V_Etomo,2,0),overwrite=True)
-    #     out.close()
-    # out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
-    #                             "FBP","volume.mrc"),np.moveaxis(V_FBP,2,0),overwrite=True)
-    # out.close()
-    # out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
-    #                             "FBP_no_deformed","volume.mrc"),np.moveaxis(V_FBP_no_deformed,2,0),overwrite=True)
-    # out.close()
-    # out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
-    #                             "FBP_ours","volume.mrc"),np.moveaxis(V_FBP_ours,2,0),overwrite=True)
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
+                                "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide,2,0),overwrite=True)
+    out.close()
+    if eval_AreTomo:
+        out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
+                                    "volumes","AreTomo_volume.mrc"),np.moveaxis(V_FBP_aretomo,2,0),overwrite=True)
+        out.close()
+    if eval_Etomo:
+        out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
+                                    "volumes","Etomo_volume.mrc"),np.moveaxis(V_etomo,2,0),overwrite=True)
+        out.close()
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
+                                "FBP_volume.mrc"),np.moveaxis(V_FBP,2,0),overwrite=True)
+    out.close()
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
+                                "FBP_no_deformed_volume.mrc"),np.moveaxis(V_FBP_no_deformed,2,0),overwrite=True)
+    out.close()
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
+                                "FBP_ours_volume.mrc"),np.moveaxis(V_FBP_icetide,2,0),overwrite=True)
 
     # ## Saving the inplance angles 
-
     # inplaneAngles = np.zeros((config.Nangles,5))
     # inplaneAngles[:,0] = angles
     # inplaneAngles[:,1] = inplane_rotation
