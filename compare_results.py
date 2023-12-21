@@ -389,9 +389,6 @@ def compare_results(config):
         out = cropper(x,coordinates,output_size = 1).reshape(config.n1,config.n2)
         projections_noisy_undeformed[i] = out
     V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
-    # angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
-    # operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, op_snr=np.inf, fact=1)
-    # V_FBP_ours = operator_ET.pinv(projections_noisy_undeformed).detach().requires_grad_(False).cpu().numpy()
 
 
     #######################################################################################
@@ -646,7 +643,7 @@ def compare_results(config):
     #######################################################################################
     # Define angles and X-ray transform
     angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
-    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, op_snr=np.inf, fact=1)
+    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
 
     projections_icetide = operator_ET(V_icetide_t).detach().cpu().numpy()
     projections_FBP = operator_ET(V_FBP_t).detach().cpu().numpy()
