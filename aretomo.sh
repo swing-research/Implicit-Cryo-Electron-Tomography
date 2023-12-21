@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$#" -eq 0 ]; then
-    path_aretomo=/scicore/home/dokman0000/debarn0000/Softwares/AreTomo_1.3.4_Cuda114_Feb22_2023
+    path_aretomo=/scicore/home/dokman0000/debarn0000/Softwares/AreTomo_1.3.4_Cuda101_Feb22_2023
     path_exp=./results/model_0_SNR_10_size_512_Nangles_61/
     VolZ=180
     AlignZ=180
