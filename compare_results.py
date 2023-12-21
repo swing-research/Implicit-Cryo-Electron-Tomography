@@ -597,43 +597,43 @@ def compare_results(config):
     for index in saveIndex:
         # True volume
         tmp = V[:,:,index]
-        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","true","slice_{}.png".format(index)),tmp)
 
         # ICETIDE
         tmp = V_icetide[:,:,index]
-        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ICETIDE","slice_{}.png".format(index)),tmp)
 
         # FBP
         tmp = V_FBP[:,:,index]
-        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP","slice_{}.png".format(index)),tmp)
 
         # FBP no deformed
         tmp = V_FBP_no_deformed[:,:,index]
-        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_no_deformed","slice_{}.png".format(index)),tmp)
 
         if(eval_AreTomo):
             tmp = V_FBP_aretomo[:,:,index]
-            tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+            tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
             tmp = np.floor(255*tmp).astype(np.uint8)
             imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo","slice_{}.png".format(index)),tmp)
 
         if(eval_Etomo):
             tmp = V_FBP_etomo[:,:,index]
-            tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+            tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
             tmp = np.floor(255*tmp).astype(np.uint8)
             imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo","slice_{}.png".format(index)),tmp)
 
         # FBP ours
         tmp = V_FBP_icetide[:,:,index]
-        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE","slice_{}.png".format(index)),tmp)
 
