@@ -4,10 +4,7 @@ File to run the simulation with SHREC2021 model_0 volume.
 It creates the dataset (projections, FBP), train ICE-TIDE and compare the results with AreTomo and Etomo.
 """
 
-import train
 import argparse
-from compare_results import compare_results
-import data_generation
 import configs.config_shrec_dataset as config_file
 import subprocess
 import time
@@ -26,10 +23,12 @@ def main():
 
     # Make the data
     if args.no_gen_data:
+        import data_generation
         data_generation.data_generation(config)
 
     # Train ICE-TIDE
     if args.no_train:
+        import train
         train.train(config)
 
     # AreTomo
@@ -52,6 +51,7 @@ def main():
 
     # Compare the results and save the figures
     if args.no_comparison:
+        from compare_results import compare_results
         compare_results(config)
 
 
