@@ -672,7 +672,7 @@ def compare_results(config):
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","FBP_icetide_projections.mrc"),projections_FBP_icetide.astype(np.float32),overwrite=True)
     
     for k in range(config.Nangles):
-        tmp = projections_ours[k]
+        tmp = projections_icetide[k]
         tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","ICETIDE","snapshot_{}.png".format(k)),tmp)
@@ -708,7 +708,7 @@ def compare_results(config):
         out.close()
     if eval_Etomo:
         out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-                                    "volumes","Etomo_volume.mrc"),np.moveaxis(V_etomo,2,0),overwrite=True)
+                                    "volumes","Etomo_volume.mrc"),np.moveaxis(V_FBP_etomo,2,0),overwrite=True)
         out.close()
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
                                 "FBP_volume.mrc"),np.moveaxis(V_FBP,2,0),overwrite=True)
