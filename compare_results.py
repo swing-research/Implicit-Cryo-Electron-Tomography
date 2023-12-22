@@ -789,7 +789,7 @@ def compare_results(config):
     for index in range(config.Nangles):
         # icetide
         savepath = os.path.join(config.path_save,'evaluation','deformations','icetide','local_deformation_error_{}'.format(index))
-        utils_display.display_local(implicit_deformation_icetide[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath,displacement_scale=config.deformationScale)
+        utils_display.display_local(implicit_deformation_icetide[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath)
         # Aretomo
 
         if eval_AreTomo:
