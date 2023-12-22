@@ -15,15 +15,17 @@ ICE-TIDE's ability to perform on experimental data sets is also demonstrated.
 ## Get started
 This repo contains the scripts used to produce the experiments in the associated paper.
 
-### Python environment
-You can then set up a conda environment with all dependencies like so:
+### Python environment installation
+The Python environment can be installed using the following command. It will install all the required Python packgaes to properly run ICE-TIDE. 
+Notice that the installation script should be run using 'source'.
 ```
-conda env create -f ice-tide.yml
-conda activate ice-tide
+source install_ICETIDE.sh
 ```
 
-### Install [tiny cuda](https://github.com/NVlabs/tiny-cuda-nn)
-pip install git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
+Then, you can simply activate you conda environment using the follwoing command every time you start a new session
+```
+conda activate ice-tide
+```
 
 ### Download simulation dataset
 Please download the [(Shrec 2021)](https://dataverse.nl/dataset.xhtml?persistentId=doi:10.34894/XRTJMA) dataset and move the files in the folder datasests.
