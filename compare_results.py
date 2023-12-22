@@ -226,6 +226,26 @@ def compare_results(config):
             inplane_rotation_aretomo_t = -torch.from_numpy(inplane_rotation_aretomo).to(device).type(config.torch_type)*np.pi/180
             projections_aretomo_corrected_python = correct_deformations(projections_noisy, shift_aretomo_t, inplane_rotation_aretomo_t, config)
 
+            # Local def
+            x_deformation = np.linspace(-config.n1//2,config.n1//2,config.N_ctrl_pts_local_def[0])
+            y_deformation = np.linspace(-config.n2//2,config.n2//2,config.N_ctrl_pts_local_def[1])
+            xx_deformation, yy_deformation = np.meshgrid(x_deformation,y_deformation,indexing='ij')
+            xx_deformation =xx_deformation[:,:,None]
+            yy_deformation = yy_deformation[:,:,None]
+            grid_interp = np.concatenate([xx_deformation,yy_deformation],2).reshape(-1,2)
+
+            implicit_deformation_AreTomo = []
+            for k in range(config.Nangles):
+                if num_patches != 0:
+                    values_x = griddata(local_AreTomo[k][:,:2],local_AreTomo[k][:,2],grid_interp,method='cubic',fill_value=0,rescale=True)
+                    values_y = griddata(local_AreTomo[k][:,:2],local_AreTomo[k][:,3],grid_interp,method='cubic',fill_value=0,rescale=True)
+                    depl_ctr_pts_net = np.concatenate([values_x[None],values_y[None]],0).reshape(2,config.N_ctrl_pts_local_def[0],config.N_ctrl_pts_local_def[1])
+                    depl_ctr_pts_net = torch.tensor(depl_ctr_pts_net/config.n1).to(device).type(config.torch_type)
+                else:
+                    depl_ctr_pts_net = torch.zeros(2,config.N_ctrl_pts_local_def[0],config.N_ctrl_pts_local_def[1]).to(device).type(config.torch_type)
+                field = utils_deformation.deformation_field(depl_ctr_pts_net.clone())
+                implicit_deformation_AreTomo.append(field)
+
             V_FBP_aretomo = reconstruct_FBP_volume(config, projections_aretomo_corrected_python).detach().cpu().numpy()
 
             out = mrcfile.new(config.path_save_data+f"V_aretomo_{npatch}by{npatch}.mrc",np.moveaxis(V_aretomo.astype(np.float32),2,0),overwrite=True)
@@ -286,7 +306,7 @@ def compare_results(config):
     #     V_AreTomo_t =  torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_aretomo.mrc").data),0,2)).type(config.torch_type).to(device)
     # if(eval_ETOMO):
     #     V_Etomo_t  = torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_etomo.mrc").data),0,2)).type(config.torch_type).to(device)
-    # # V_ours_isonet = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_ours+Isonet.mrc").data),0,2)
+    # # V_icetide_isonet = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_icetide+Isonet.mrc").data),0,2)
     # # V_AreTomo_isonet = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_AreTomo+Isonet.mrc").data),0,2)
 
 
@@ -340,9 +360,9 @@ def compare_results(config):
     print('---> Number of trainable parameters in volume net: {}'.format(num_param))
     checkpoint = torch.load(os.path.join(config.path_save,'training','model_trained.pt'),map_location=device)
     impl_volume.load_state_dict(checkpoint['implicit_volume'])
-    shift_ours = checkpoint['shift_est']
-    rot_ours = checkpoint['rot_est']
-    implicit_deformation_ours = checkpoint['local_deformation_network']
+    shift_icetide = checkpoint['shift_est']
+    rot_icetide = checkpoint['rot_est']
+    implicit_deformation_icetide = checkpoint['local_deformation_network']
     ## Compute our model at same resolution than other volume
     rays_scaling = torch.tensor(np.array(config.rays_scaling))[None,None,None].type(config.torch_type).to(device)
     n1_eval, n2_eval, n3_eval = V.shape
@@ -374,15 +394,15 @@ def compare_results(config):
     YY_t = torch.unsqueeze(YY_t, dim = 2)
     for i in range(config.Nangles):
         coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
-        #field = utils_deformation.deformation_field(-implicit_deformation_ours[i].depl_ctr_pts[0].detach().clone())
-        thetas = torch.tensor(-rot_ours[i].thetas.item()).to(device)
+        #field = utils_deformation.deformation_field(-implicit_deformation_icetide[i].depl_ctr_pts[0].detach().clone())
+        thetas = torch.tensor(-rot_icetide[i].thetas.item()).to(device)
     
         rot_deform = torch.stack(
                         [torch.stack([torch.cos(thetas),torch.sin(thetas)],0),
                         torch.stack([-torch.sin(thetas),torch.cos(thetas)],0)]
                         ,0)
-        coordinates = coordinates - config.deformationScale*implicit_deformation_ours[i](coordinates)
-        coordinates = coordinates - shift_ours[i].shifts_arr
+        coordinates = coordinates - config.deformationScale*implicit_deformation_icetide[i](coordinates)
+        coordinates = coordinates - shift_icetide[i].shifts_arr
         coordinates = torch.transpose(torch.matmul(rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
         x = projections_noisy[i].clone().view(1,1,config.n1,config.n2)
         x = x.expand(config.n1*config.n2, -1, -1, -1)
@@ -405,18 +425,18 @@ def compare_results(config):
         inplane_rotation[index] = affine_transform.angle.item()*180/np.pi
 
     #Extract the estimated deformations for the network
-    x_shifts_ours = np.zeros(config.Nangles)
-    y_shifts_ours = np.zeros(config.Nangles)
-    inplane_rotation_ours = np.zeros(config.Nangles)
-    for index, (shift_net, rot_net) in enumerate(zip(shift_ours,rot_ours)):
-        x_shifts_ours[index] = shift_net.shifts_arr[0,0].item()
-        y_shifts_ours[index] = shift_net.shifts_arr[0,1].item()
-        inplane_rotation_ours[index] = rot_net.thetas.item()*180/np.pi
+    x_shifts_icetide = np.zeros(config.Nangles)
+    y_shifts_icetide = np.zeros(config.Nangles)
+    inplane_rotation_icetide = np.zeros(config.Nangles)
+    for index, (shift_net, rot_net) in enumerate(zip(shift_icetide,rot_icetide)):
+        x_shifts_icetide[index] = shift_net.shifts_arr[0,0].item()
+        y_shifts_icetide[index] = shift_net.shifts_arr[0,1].item()
+        inplane_rotation_icetide[index] = rot_net.thetas.item()*180/np.pi
 
     # Compute the error between the true and estimated deformation
-    error_x_shifts_ours = np.around(np.abs(x_shifts-x_shifts_ours).mean()*n1_eval,decimals=4)
-    error_y_shifts_ours = np.around(np.abs(y_shifts-y_shifts_ours).mean()*n1_eval,decimals=4)
-    error_inplane_rotation_ours =np.around( np.abs(inplane_rotation-inplane_rotation_ours
+    error_x_shifts_icetide = np.around(np.abs(x_shifts-x_shifts_icetide).mean()*n1_eval,decimals=4)
+    error_y_shifts_icetide = np.around(np.abs(y_shifts-y_shifts_icetide).mean()*n1_eval,decimals=4)
+    error_inplane_rotation_icetide =np.around( np.abs(inplane_rotation-inplane_rotation_icetide
                                                 ).mean(),decimals=4)
 
     # Compute the error between the true and AreTomo estimated deformation
@@ -432,7 +452,7 @@ def compare_results(config):
                                                 ).mean(),decimals=4)
 
 
-    # Save the avg errors in a csv file with rownames: ours, AreTomo, Etomo
+    # Save the avg errors in a csv file with rownames: icetide, AreTomo, Etomo
     error_arr = pd.DataFrame(columns=['Method','x_shifts','y_shifts','inplane_rotation'])
     # Include the avg absolute error in pixels in the table
 
@@ -440,11 +460,12 @@ def compare_results(config):
     y_mean_shift = np.around(np.abs(y_shifts).mean()*n1_eval,decimals=4)
     inplane_mean_rotation = np.around(np.abs(inplane_rotation).mean(),decimals=4)
     error_arr.loc[0] = ['Observation',x_mean_shift,y_mean_shift,inplane_mean_rotation]
-    error_arr.loc[1] = ['ours',error_x_shifts_ours,error_y_shifts_ours,error_inplane_rotation_ours]
+    error_arr.loc[1] = ['icetide',error_x_shifts_icetide,error_y_shifts_icetide,error_inplane_rotation_icetide]
     error_arr.loc[2] = ['aretomo',error_x_shifts_aretomo,error_y_shifts_aretomo,error_inplane_rotation_aretomo]
     error_arr.loc[3] = ['etomo',error_x_shifts_etomo,error_y_shifts_etomo,error_inplane_rotation_etomo]
     
-    
+    error_arr.to_csv(os.path.join(config.path_save,'evaluation'+'/error_rigid_deformations.csv'),index=False)
+
 
     #######################################################################################
     ## Compute FSC
@@ -463,7 +484,7 @@ def compare_results(config):
 
     plt.figure(1)
     plt.clf()
-    plt.plot(x_fsc,fsc_icetide,'b',label="ours")
+    plt.plot(x_fsc,fsc_icetide,'b',label="icetide")
     plt.plot(x_fsc,fsc_FBP_icetide,'--b',label="FBP with our deform. est. ")
     if(eval_AreTomo):
         plt.plot(x_fsc,fsc_AreTomo,'r',label="AreTomo")
@@ -486,8 +507,8 @@ def compare_results(config):
     if(eval_Etomo):
         fsc_arr[:,5] = fsc_Etomo[:,0]
     fsc_arr[:,6] = fsc_FBP_icetide[:,0]
-    # fsc_arr[:,6] = fsc_ours_isonet[:,0]
-    header ='x,ours,FBP,FBP_no_deformed,AreTomo,ETOMO,FBP_est_deformed'
+    # fsc_arr[:,6] = fsc_icetide_isonet[:,0]
+    header ='x,icetide,FBP,FBP_no_deformed,AreTomo,ETOMO,FBP_est_deformed'
     np.savetxt(os.path.join(config.path_save,'evaluation','FSC.csv'),fsc_arr,header=header,delimiter=",",comments='')
 
 
@@ -553,24 +574,7 @@ def compare_results(config):
             
 
 
-    #     x_deformation = np.linspace(-config.n1//2,config.n1//2,config.N_ctrl_pts_local_def[0])
-    #     y_deformation = np.linspace(-config.n2//2,config.n2//2,config.N_ctrl_pts_local_def[1])
-    #     xx_deformation, yy_deformation = np.meshgrid(x_deformation,y_deformation,indexing='ij')
-    #     xx_deformation =xx_deformation[:,:,None]
-    #     yy_deformation = yy_deformation[:,:,None]
-    #     grid_interp = np.concatenate([xx_deformation,yy_deformation],2).reshape(-1,2)
 
-    #     implicit_deformation_AreTomo = []
-    #     for k in range(config.Nangles):
-    #         if num_patches != 0:
-    #             values_x = griddata(local_AreTomo[k][:,:2],local_AreTomo[k][:,2],grid_interp,method='cubic',fill_value=0,rescale=True)
-    #             values_y = griddata(local_AreTomo[k][:,:2],local_AreTomo[k][:,3],grid_interp,method='cubic',fill_value=0,rescale=True)
-    #             depl_ctr_pts_net = np.concatenate([values_x[None],values_y[None]],0).reshape(2,config.N_ctrl_pts_local_def[0],config.N_ctrl_pts_local_def[1])
-    #             depl_ctr_pts_net = torch.tensor(depl_ctr_pts_net/config.n1).to(device).type(config.torch_type)
-    #         else:
-    #             depl_ctr_pts_net = torch.zeros(2,config.N_ctrl_pts_local_def[0],config.N_ctrl_pts_local_def[1]).to(device).type(config.torch_type)
-    #         field = utils_deformation.deformation_field(depl_ctr_pts_net.clone())
-    #         implicit_deformation_AreTomo.append(field)
 
 
     # # save the error in a csv file
@@ -628,15 +632,12 @@ def compare_results(config):
             tmp = np.floor(255*tmp).astype(np.uint8)
             imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo","slice_{}.png".format(index)),tmp)
 
-        # FBP ours
+        # FBP icetide
         tmp = V_FBP_icetide[:,:,index]
         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE","slice_{}.png".format(index)),tmp)
 
-
-
-    # TODO: generate aligned projections
 
     #######################################################################################
     ## Generate projections
@@ -717,13 +718,13 @@ def compare_results(config):
                                 "FBP_no_deformed_volume.mrc"),np.moveaxis(V_FBP_no_deformed,2,0),overwrite=True)
     out.close()
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
-                                "FBP_ours_volume.mrc"),np.moveaxis(V_FBP_icetide,2,0),overwrite=True)
+                                "FBP_icetide_volume.mrc"),np.moveaxis(V_FBP_icetide,2,0),overwrite=True)
 
     # ## Saving the inplance angles 
     # inplaneAngles = np.zeros((config.Nangles,5))
     # inplaneAngles[:,0] = angles
     # inplaneAngles[:,1] = inplane_rotation
-    # inplaneAngles[:,2] = inplane_rotation_ours
+    # inplaneAngles[:,2] = inplane_rotation_icetide
     # if eval_AreTomo:
     #     inplaneAngles[:,3] = inplane_rotation_aretomo
     # if eval_ETOMO:
@@ -731,64 +732,66 @@ def compare_results(config):
 
 
     # # save as a csv file
-    # header ='angles,true,ours,AreTomo,Etomo'
+    # header ='angles,true,icetide,AreTomo,Etomo'
     # np.savetxt(os.path.join(config.path_save,'evaluation','inplane_angles.csv'),inplaneAngles,header=header,delimiter=",",comments='')
 
 
     # TODO: compute error of local deformations and display
-    # #######################################################################################
-    # ## Local deformation errror Estimation
-    # #######################################################################################
-    # grid_class = utils_sampling.grid_class(config.n1,config.n2,config.n3,config.torch_type,device)
-    # err_local_ours = np.zeros(config.Nangles)
-    # err_local_init = np.zeros(config.Nangles)
-    # err_local_AreTomo = np.zeros(config.Nangles)
+    #######################################################################################
+    ## Local deformation errror Estimation
+    #######################################################################################
+    x_lin1 = np.linspace(-1,1,n1_eval)*rays_scaling[0,0,0,0].item()/2+0.5
+    x_lin2 = np.linspace(-1,1,n2_eval)*rays_scaling[0,0,0,1].item()/2+0.5
+    XX, YY = np.meshgrid(x_lin1,x_lin2,indexing='ij')
+    grid2d = np.concatenate([XX.reshape(-1,1),YY.reshape(-1,1)],1)
+    grid2d_t = torch.tensor(grid2d).type(config.torch_type)
+    err_local_icetide = np.zeros(config.Nangles)
+    err_local_init = np.zeros(config.Nangles)
+    err_local_AreTomo = np.zeros(config.Nangles)
 
-    # for k in range(config.Nangles):
-    #     # Error in ours
-    #     grid_correction_true = local_tr[k](grid_class.grid2d_t).detach().cpu().numpy()
-    #     grid_correction_est_ours = config.deformationScale*implicit_deformation_ours[k](
-    #         grid_class.grid2d_t).detach().cpu().numpy()
-    #     tmp = np.abs(grid_correction_true-grid_correction_est_ours)
-    #     err_local_ours[k] = (0.5*config.n1*tmp[:,0]+0.5*config.n2*tmp[:,1]).mean()
-    #     # Finidng the magnitude for init
-    #     tmp = np.abs(grid_correction_true)
-    #     err_local_init[k] = (0.5*config.n1*tmp[:,0]+0.5*config.n2*tmp[:,1]).mean()
-    #     # Finding the error for AreTomo
-    #     if eval_AreTomo:
-    #         grid_correction_est_AreTomo = implicit_deformation_AreTomo[k](
-    #             grid_class.grid2d_t).detach().cpu().numpy()
-    #         tmp = np.abs(grid_correction_true-grid_correction_est_AreTomo)
-    #         err_local_AreTomo[k] = (0.5*config.n1*tmp[:,0]+0.5*config.n2*tmp[:,1]).mean()
-    #     else: 
-    #         err_local_AreTomo[k] = np.nan
-
-
-    # # Save the error in a csv file
-    # err_local_arr = np.zeros((config.Nangles,4))
-    # err_local_arr[:,0] = angles
-    # err_local_arr[:,1] = err_local_ours
-    # err_local_arr[:,2] = err_local_init
-    # err_local_arr[:,3] = err_local_AreTomo
-
-    # err_mean = np.nanmean(err_local_arr[:,1:],0)
-    # err_std = np.nanstd(err_local_arr[:,1:],0)
-
-    # err_local_arr = np.concatenate([np.array([err_mean,err_std])],0)
-
-    # HEADER ='ours,init,AreTomo'
-    # np.savetxt(os.path.join(config.path_save,'evaluation','local_deformation_error.csv'),err_local_arr,header=HEADER,delimiter=",",comments='')
+    for k in range(config.Nangles):
+        # Error in icetide
+        grid_correction_true = local_tr[k](grid2d_t).detach().cpu().numpy()
+        grid_correction_est_icetide = config.deformationScale*implicit_deformation_icetide[k](
+            grid2d_t).detach().cpu().numpy()
+        tmp = np.abs(grid_correction_true-grid_correction_est_icetide)
+        err_local_icetide[k] = (0.5*config.n1*tmp[:,0]+0.5*config.n2*tmp[:,1]).mean()
+        # Finidng the magnitude for init
+        tmp = np.abs(grid_correction_true)
+        err_local_init[k] = (0.5*config.n1*tmp[:,0]+0.5*config.n2*tmp[:,1]).mean()
+        # Finding the error for AreTomo
+        if eval_AreTomo:
+            grid_correction_est_AreTomo = implicit_deformation_AreTomo[k](
+                grid2d_t).detach().cpu().numpy()
+            tmp = np.abs(grid_correction_true-grid_correction_est_AreTomo)
+            err_local_AreTomo[k] = (0.5*config.n1*tmp[:,0]+0.5*config.n2*tmp[:,1]).mean()
+        else: 
+            err_local_AreTomo[k] = np.nan
 
 
-    # # Get the local deformation error plots 
-    # deformation_indeces = [0,1,2]
+    # Save the error in a csv file
+    err_local_arr = np.zeros((config.Nangles,4))
+    err_local_arr[:,0] = angles
+    err_local_arr[:,1] = err_local_icetide
+    err_local_arr[:,2] = err_local_init
+    err_local_arr[:,3] = err_local_AreTomo
 
-    # for index in deformation_indeces:
-    #     # Ours
-    #     savepath = os.path.join(config.path_save,'evaluation','deformations/ours','local_deformation_error_{}'.format(index))
-    #     utils_display.display_local(implicit_deformation_ours[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath,displacement_scale=config.deformationScale)
-    #     # Aretomo
+    err_mean = np.nanmean(err_local_arr[:,1:],0)
+    err_std = np.nanstd(err_local_arr[:,1:],0)
 
-    #     if eval_AreTomo:
-    #         savepath = os.path.join(config.path_save,'evaluation','deformations/AreTomo','local_deformation_error_{}'.format(index))
-    #         utils_display.display_local(implicit_deformation_AreTomo[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath )
+    err_local_arr = np.concatenate([np.array([err_mean,err_std])],0)
+
+    HEADER ='icetide,init,AreTomo'
+    np.savetxt(os.path.join(config.path_save,'evaluation','local_deformation_error.csv'),err_local_arr,header=HEADER,delimiter=",",comments='')
+
+
+    # Get the local deformation error plots 
+    for index in range(config.Nangles):
+        # icetide
+        savepath = os.path.join(config.path_save,'evaluation','deformations','icetide','local_deformation_error_{}'.format(index))
+        utils_display.display_local(implicit_deformation_icetide[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath,displacement_scale=config.deformationScale)
+        # Aretomo
+
+        if eval_AreTomo:
+            savepath = os.path.join(config.path_save,'evaluation','deformations/AreTomo','local_deformation_error_{}'.format(index))
+            utils_display.display_local(implicit_deformation_AreTomo[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath )
