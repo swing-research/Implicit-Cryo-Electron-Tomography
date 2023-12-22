@@ -650,9 +650,11 @@ def compare_results(config):
     projections_FBP_no_deformed = operator_ET(V_FBP_no_deformed_t).detach().cpu().numpy()
     projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
     if(eval_AreTomo):
-        projections_AreTomo = operator_ET(V_FBP_aretomo).detach().cpu().numpy()
+        V_FBP_aretomo_t = torch.tensor(V_FBP_aretomo).to(device)
+        projections_AreTomo = operator_ET(V_FBP_aretomo_t).detach().cpu().numpy()
     if(eval_Etomo):
-        projections_Etomo = operator_ET(V_FBP_etomo).detach().cpu().numpy()
+        V_FBP_etomo_t = torch.tensor(V_FBP_etomo).to(device)
+        projections_Etomo = operator_ET(V_FBP_etomo_t).detach().cpu().numpy()
 
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","icetide_projections.mrc"),projections_icetide.astype(np.float32),overwrite=True)
     out.close()

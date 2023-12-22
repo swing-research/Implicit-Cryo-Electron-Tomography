@@ -31,9 +31,9 @@ The structure of the folder should be 'datasets/model_X/grandmodel.mrc', where m
 
 ## How to use
 ### Simulations
-'''
+```
 python -m experiment_scripts.simulation_model0
-'''
+```
 
 ### Only data generation
 ```
