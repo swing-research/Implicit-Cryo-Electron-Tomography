@@ -788,10 +788,10 @@ def compare_results(config):
     # Get the local deformation error plots 
     for index in range(config.Nangles):
         # icetide
-        savepath = os.path.join(config.path_save,'evaluation','deformations','icetide','local_deformation_error_{}'.format(index))
+        savepath = os.path.join(config.path_save,'evaluation','deformations','ICETIDE','local_deformation_error_{}'.format(index))
         utils_display.display_local(implicit_deformation_icetide[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath)
         # Aretomo
 
         if eval_AreTomo:
-            savepath = os.path.join(config.path_save,'evaluation','deformations/AreTomo','local_deformation_error_{}'.format(index))
+            savepath = os.path.join(config.path_save,'evaluation','deformations','AreTomo','local_deformation_error_{}'.format(index))
             utils_display.display_local(implicit_deformation_AreTomo[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath )
