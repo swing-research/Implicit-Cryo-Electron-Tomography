@@ -80,14 +80,14 @@ def allign_volume(V_est,V,ds=4,s_max=16):
     for sx in shift_range:
         for sy in shift_range:
             for sz in shift_range:
-                shifts = torch.tensor([sx,sy,sz])[None].to(device)
-                V_shift = move_volume(torch.tensor(V_est_ds[None,None]).to(device).type(torch.float32), shifts,padding_mode="zeros")
+                shifts = torch.tensor([sx,sy,sz])[None].to(V.device)
+                V_shift = move_volume(torch.tensor(V_est_ds[None,None]).to(V.device).type(torch.float32), shifts,padding_mode="zeros")
                 loss = np.mean((V_shift[0,0].detach().cpu().numpy()-V_ds)**2)
                 if loss <= loss_min:
                     loss_min = loss
                     shift_min = shifts[0].detach().cpu().numpy()
 
-    V_est_shift = move_volume(torch.tensor(V_est[None,None]).to(device).type(torch.float32), torch.tensor(shift_min)[None].to(device),padding_mode="zeros")
+    V_est_shift = move_volume(torch.tensor(V_est[None,None]).to(V.device).type(torch.float32), torch.tensor(shift_min)[None].to(V.device),padding_mode="zeros")
     V_est_shift = V_est_shift[0,0].detach().cpu().numpy()
     return V_est_shift, shift_min
 
