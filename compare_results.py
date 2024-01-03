@@ -68,6 +68,34 @@ def extract_angle(rot_matrix):
         angle = np.arctan2(rot_matrix[1,0], rot_matrix[0,0])*180/np.pi
     return angle
 
+import torch.nn.functional as F
+def move_volume(X, shifts,padding_mode="border"):
+    """
+    This function shift the input X.
+    INPUT:
+        - X : (bacth x C x N1 x N2 x N3) batch of 3D images
+        - shifts : (batch,3) shift in pixel to apply to the image.
+    OUTPUT:
+        - shiftX : (bacth x C x N1 x N2 x N3) shifted versions of the inoput
+        - padding_mode : default is 'border' in order to prevent scaling down the intensity values when interpolating along the z-direction
+    """
+    sizeX = X.shape
+    theta = torch.zeros((sizeX[0],3,4)).to(X.device)
+    theta[:,0,0] = 1
+    theta[:,1,1] = 1
+    theta[:,2,2] = 1
+    # warning, affine_grid expect theta to be in order (W,H,D)
+    theta[:,0,3] = shifts[:,2]
+    theta[:,1,3] = shifts[:,1]
+    theta[:,2,3] = shifts[:,0]
+    theta[:,0,3] /= (sizeX[4]/2)
+    theta[:,1,3] /= (sizeX[3]/2)
+    theta[:,2,3] /= (sizeX[2]/2)
+    grid = F.affine_grid(theta,torch.Size(sizeX),align_corners=False)
+    Xshifted = F.grid_sample(X, grid,mode='bilinear',align_corners=False,padding_mode=padding_mode)
+    return Xshifted
+
+
 def allign_volume(V_est,V,ds=4,s_max=16):
     # Need to align estimated volume with the true one to compute a meaningful FSC
     # ds = 4: downsample the volume to be faster
