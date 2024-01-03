@@ -544,9 +544,9 @@ def compare_results(config):
     plt.plot(x_fsc,fsc_FBP_icetide,'--b',label="FBP with our deform. est. ")
     if(eval_AreTomo):
         for i, npatch in enumerate(config.nPatch):
-            col = ['r','k']
+            col = ['r','m']
             plt.plot(x_fsc,fsc_AreTomo_list[i],col[i],label=f"AreTomo patch {npatch}")
-            plt.plot(x_fsc,fsc_AreTomo_centered_list[i],col[i],linestyle='--',label=f"AreTomo centered patch {npatch}")
+            # plt.plot(x_fsc,fsc_AreTomo_centered_list[i],col[i],linestyle='--',label=f"AreTomo centered patch {npatch}")
     if(eval_Etomo):
         plt.plot(x_fsc,fsc_Etomo,'c',label="Etomo")
     plt.plot(x_fsc,fsc_FBP,'k',label="FBP")
@@ -562,13 +562,16 @@ def compare_results(config):
     fsc_arr[:,2] = fsc_FBP[:,0]
     fsc_arr[:,3] = fsc_FBP_no_deformed[:,0]
     if(eval_AreTomo):
-        fsc_arr[:,4] = fsc_AreTomo[:,0]
-        fsc_arr[:,7] = fsc_AreTomo[:,0]
+        for i, npatch in enumerate(config.nPatch):
+            if i==0:
+                fsc_arr[:,4] = fsc_AreTomo_list[i][:,0] 
+            if i==1:
+                fsc_arr[:,7] = fsc_AreTomo_list[i][:,0] 
     if(eval_Etomo):
         fsc_arr[:,5] = fsc_Etomo[:,0]
     fsc_arr[:,6] = fsc_FBP_icetide[:,0]
     # fsc_arr[:,6] = fsc_icetide_isonet[:,0]
-    header ='x,icetide,FBP,FBP_no_deformed,AreTomo,ETOMO,FBP_est_deformed,AreTomo_centered'
+    header ='x,icetide,FBP,FBP_no_deformed,AreTomo_patch0,ETOMO,FBP_est_deformed,AreTomo_patch1'
     np.savetxt(os.path.join(config.path_save,'evaluation','FSC.csv'),fsc_arr,header=header,delimiter=",",comments='')
 
 
