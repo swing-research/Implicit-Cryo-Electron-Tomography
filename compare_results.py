@@ -68,6 +68,29 @@ def extract_angle(rot_matrix):
         angle = np.arctan2(rot_matrix[1,0], rot_matrix[0,0])*180/np.pi
     return angle
 
+def allign_volume(V_est,V,ds=4,s_max=16):
+    # Need to align estimated volume with the true one to compute a meaningful FSC
+    # ds = 4: downsample the volume to be faster
+    # s_max = 16: max number of pixel to shift in each direction
+    V_est_ds = V_est[::ds,::ds,::ds]
+    V_ds = V[::ds,::ds,::ds]
+    loss_min = np.mean((V_est_ds-V_ds)**2)
+    shift_min = np.zeros(3)
+    shift_range = np.linspace(-s_max//ds,s_max//ds,20)
+    for sx in shift_range:
+        for sy in shift_range:
+            for sz in shift_range:
+                shifts = torch.tensor([sx,sy,sz])[None].to(device)
+                V_shift = move_volume(torch.tensor(V_est_ds[None,None]).to(device).type(torch.float32), shifts,padding_mode="zeros")
+                loss = np.mean((V_shift[0,0].detach().cpu().numpy()-V_ds)**2)
+                if loss <= loss_min:
+                    loss_min = loss
+                    shift_min = shifts[0].detach().cpu().numpy()
+
+    V_est_shift = move_volume(torch.tensor(V_est[None,None]).to(device).type(torch.float32), torch.tensor(shift_min)[None].to(device),padding_mode="zeros")
+    V_est_shift = V_est_shift[0,0].detach().cpu().numpy()
+    return V_est_shift, shift_min
+
 def compare_results(config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     if torch.cuda.device_count()>1:
@@ -178,10 +201,13 @@ def compare_results(config):
         if os.path.isfile(path_file):
             eval_AreTomo = True
             # load projections
-            V_aretomo = np.double(mrcfile.open(path_file).data)
+            V_aretomo = np.moveaxis(np.double(mrcfile.open(path_file).data),0,2)
+
+            # align volume for FSC
+            V_aretomo_shift, _ = allign_volume(V_aretomo,V,ds=4,s_max=16)
 
             # load estimated deformations
-            ARETOMO_FILENAME = f'projections-inv_{npatch}by{npatch}.aln'
+            ARETOMO_FILENAME = f'projections_{npatch}by{npatch}.aln'
             with open(os.path.join(config.path_save,'AreTomo',ARETOMO_FILENAME), 'r',encoding="utf-8") as file:
                 lines = file.readlines()
             comments = []
@@ -476,6 +502,7 @@ def compare_results(config):
     fsc_FBP_no_deformed = utils_FSC.FSC(V,V_FBP_no_deformed)
     if(eval_AreTomo):
         fsc_AreTomo = utils_FSC.FSC(V,V_FBP_aretomo)
+        fsc_AreTomo_shift = utils_FSC.FSC(V,V_aretomo_shift)
     if(eval_Etomo):
         fsc_Etomo = utils_FSC.FSC(V,V_FBP_etomo)
 
@@ -488,6 +515,7 @@ def compare_results(config):
     plt.plot(x_fsc,fsc_FBP_icetide,'--b',label="FBP with our deform. est. ")
     if(eval_AreTomo):
         plt.plot(x_fsc,fsc_AreTomo,'r',label="AreTomo")
+        plt.plot(x_fsc,fsc_AreTomo_shift,'--r',label="AreTomo centered")
     if(eval_Etomo):
         plt.plot(x_fsc,fsc_Etomo,'c',label="Etomo")
     plt.plot(x_fsc,fsc_FBP,'k',label="FBP")
@@ -497,18 +525,19 @@ def compare_results(config):
     plt.savefig(os.path.join(config.path_save,'evaluation','FSC.pdf'))
 
 
-    fsc_arr = np.zeros((x_fsc.shape[0],7))
+    fsc_arr = np.zeros((x_fsc.shape[0],8))
     fsc_arr[:,0] = x_fsc
     fsc_arr[:,1] = fsc_icetide[:,0]
     fsc_arr[:,2] = fsc_FBP[:,0]
     fsc_arr[:,3] = fsc_FBP_no_deformed[:,0]
     if(eval_AreTomo):
         fsc_arr[:,4] = fsc_AreTomo[:,0]
+        fsc_arr[:,7] = fsc_AreTomo[:,0]
     if(eval_Etomo):
         fsc_arr[:,5] = fsc_Etomo[:,0]
     fsc_arr[:,6] = fsc_FBP_icetide[:,0]
     # fsc_arr[:,6] = fsc_icetide_isonet[:,0]
-    header ='x,icetide,FBP,FBP_no_deformed,AreTomo,ETOMO,FBP_est_deformed'
+    header ='x,icetide,FBP,FBP_no_deformed,AreTomo,ETOMO,FBP_est_deformed,AreTomo_centered'
     np.savetxt(os.path.join(config.path_save,'evaluation','FSC.csv'),fsc_arr,header=header,delimiter=",",comments='')
 
 
@@ -584,15 +613,6 @@ def compare_results(config):
     #######################################################################################
     ## Save slices of volumes
     #######################################################################################
-    fsc_icetide = utils_FSC.FSC(V,V_icetide)
-    fsc_FBP_icetide = utils_FSC.FSC(V,V_FBP_icetide)
-    fsc_FBP = utils_FSC.FSC(V,V_FBP)
-    fsc_FBP_no_deformed = utils_FSC.FSC(V,V_FBP_no_deformed)
-    if(eval_AreTomo):
-        fsc_AreTomo = utils_FSC.FSC(V,V_FBP_aretomo)
-    if(eval_Etomo):
-        fsc_Etomo = utils_FSC.FSC(V,V_FBP_etomo)
-
 
     saveIndex = [n3_eval//4,n3_eval//2,int(3*n3_eval//4)] # The slices to save taken from previous plots
     for index in saveIndex:
