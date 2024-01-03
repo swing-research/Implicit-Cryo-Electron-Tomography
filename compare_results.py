@@ -194,6 +194,8 @@ def compare_results(config):
     # TODO shift array and error for each patches size
     # get the files
     eval_AreTomo = False
+    fsc_AreTomo_list = []
+    fsc_AreTomo_centered_list = []
     for npatch in config.nPatch:
         ARE_TOMO_FILE = f'projections_rec_aretomo_{npatch}by{npatch}.mrc'
         path_file = os.path.join(config.path_save,'AreTomo',ARE_TOMO_FILE)
@@ -202,9 +204,6 @@ def compare_results(config):
             eval_AreTomo = True
             # load projections
             V_aretomo = np.moveaxis(np.double(mrcfile.open(path_file).data),0,2)
-
-            # align volume for FSC
-            V_aretomo_shift, _ = allign_volume(V_aretomo,V,ds=4,s_max=16)
 
             # load estimated deformations
             ARETOMO_FILENAME = f'projections_{npatch}by{npatch}.aln'
@@ -273,6 +272,13 @@ def compare_results(config):
                 implicit_deformation_AreTomo.append(field)
 
             V_FBP_aretomo = reconstruct_FBP_volume(config, projections_aretomo_corrected_python).detach().cpu().numpy()
+            # align volume for FSC
+            V_aretomo_centered, _ = allign_volume(V_aretomo,V,ds=4,s_max=16)
+
+            fsc_AreTomo = utils_FSC.FSC(V,V_FBP_aretomo)
+            fsc_AreTomo_centered = utils_FSC.FSC(V,V_aretomo_centered)
+            fsc_AreTomo_list.append(fsc_AreTomo)
+            fsc_AreTomo_centered_list.append(fsc_AreTomo_centered)
 
             out = mrcfile.new(config.path_save_data+f"V_aretomo_{npatch}by{npatch}.mrc",np.moveaxis(V_aretomo.astype(np.float32),2,0),overwrite=True)
             out.close() 
@@ -500,22 +506,19 @@ def compare_results(config):
     fsc_FBP_icetide = utils_FSC.FSC(V,V_FBP_icetide)
     fsc_FBP = utils_FSC.FSC(V,V_FBP)
     fsc_FBP_no_deformed = utils_FSC.FSC(V,V_FBP_no_deformed)
-    if(eval_AreTomo):
-        fsc_AreTomo = utils_FSC.FSC(V,V_FBP_aretomo)
-        fsc_AreTomo_shift = utils_FSC.FSC(V,V_aretomo_shift)
     if(eval_Etomo):
         fsc_Etomo = utils_FSC.FSC(V,V_FBP_etomo)
-
     x_fsc = np.arange(fsc_FBP.shape[0])
-
 
     plt.figure(1)
     plt.clf()
     plt.plot(x_fsc,fsc_icetide,'b',label="icetide")
     plt.plot(x_fsc,fsc_FBP_icetide,'--b',label="FBP with our deform. est. ")
     if(eval_AreTomo):
-        plt.plot(x_fsc,fsc_AreTomo,'r',label="AreTomo")
-        plt.plot(x_fsc,fsc_AreTomo_shift,'--r',label="AreTomo centered")
+        for i, npatch in enumerate(config.nPatch):
+            col = ['r','k']
+            plt.plot(x_fsc,fsc_AreTomo_list[i],col[i],label=f"AreTomo patch {npatch}")
+            plt.plot(x_fsc,fsc_AreTomo_centered_list[i],col[i],linestyle='--',label=f"AreTomo centered patch {npatch}")
     if(eval_Etomo):
         plt.plot(x_fsc,fsc_Etomo,'c',label="Etomo")
     plt.plot(x_fsc,fsc_FBP,'k',label="FBP")
