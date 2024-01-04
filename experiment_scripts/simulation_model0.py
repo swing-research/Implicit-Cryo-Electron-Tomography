@@ -38,6 +38,7 @@ def main():
                 # TODO: keep track of GPU memory?
                 t0 = time.time()
                 try:
+                    import ipdb; idpb.set_trace()
                     delimiter = '|'
                     combined_input = f"{config.path_aretomo}{delimiter}{config.path_save}{delimiter}{config.n3}{delimiter}{config.n3}{delimiter}{npatch}"
                     subprocess.run(['bash', 'aretomo.sh'], input=combined_input.encode(), check=True)
