@@ -6,6 +6,7 @@ if [ "$#" -eq 0 ]; then
     VolZ=0
     AlignZ=180
     npatch=1
+    echo "$#"
 else
     IFS='|' read -r path_aretomo path_exp VolZ AlignZ npatch
     echo $path_aretomo
