@@ -13,3 +13,4 @@ conda install -y matplotlib
 pip install numexpr
 conda install -y -c conda-forge ml-collections
 conda install -y -c conda-forge ipdb
+conda install simpleitk::simpleitk
