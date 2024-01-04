@@ -223,6 +223,18 @@ def compare_results(config):
             registered_image = sitk.Resample(V_aretomo_sk, V_sk, final_transform, sitk.sitkLinear, 0.0, V_aretomo_sk.GetPixelID())
             V_aretomo_centered = sitk.GetArrayFromImage(registered_image)
 
+            # Get deformation matrix
+            num_transforms = final_transform.GetNumberOfTransforms()
+            composite_transform = final_transform.GetNthTransform(num_transforms - 1)
+            affine_transform = composite_transform.GetNthTransform(0)
+            translation_transform = composite_transform.GetNthTransform(1)
+            affine_matrix = affine_transform.GetMatrix()
+            affine_matrix_np = np.array(affine_matrix).reshape((V_sk.GetDimension(), V_sk.GetDimension()))
+            translation_matrix = translation_transform.GetParameters()
+            translation_matrix_np = np.array(translation_matrix)
+            cos_theta = (np.trace(affine_matrix_np[:3, :3]) - 1) / 2
+            rotation_angles_est = np.arccos(cos_theta) * 180 / np.pi  # Convert to degrees
+
             # Compute fsc
             fsc_AreTomo = utils_FSC.FSC(V,V_FBP_aretomo)
             fsc_AreTomo_centered = utils_FSC.FSC(V,V_aretomo_centered)
