@@ -1,5 +1,6 @@
-conda create --name ice-tide -y python=3.8
-conda activate ice-tide
+conda create --name ice-tide3 -y python=3.8
+conda activate ice-tide3
+sleep 10
 python -m pip install --upgrade pip
 pip install torch==2.0.1+cu117 torchvision==0.15.2+cu117 --extra-index-url https://download.pytorch.org/whl/cu117
 conda install -y -c "nvidia/label/cuda-11.7.1" cuda-toolkit
