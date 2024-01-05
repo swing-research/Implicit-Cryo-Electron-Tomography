@@ -215,8 +215,11 @@ def compare_results(config):
         shift_aretomo = np.zeros((config.Nangles,2))
         if os.path.isfile(path_file):
             eval_AreTomo = True
-            # load projections
+            # load projections # need to be reorder and there seem to be a shift in intensity, so we match the mean on the noisy one 
             proj_aligned_aretomo = np.moveaxis(np.float32(mrcfile.open(path_file,permissive=True).data),1,0)
+            proj_aligned_aretomo = np.swapaxes(proj_aligned_aretomo,1,2)
+            proj_aligned_aretomo = np.rot90(proj_aligned_aretomo,axes=(1,2))*1
+            proj_aligned_aretomo = proj_aligned_aretomo + (projections_noisy.detach().cpu().numpy().mean()-proj_aligned_aretomo.mean())
 
             # Reconstruct with accurate FBP operator
             V_FBP_aretomo = reconstruct_FBP_volume(config, torch.tensor(proj_aligned_aretomo).to(device)).detach().cpu().numpy()
