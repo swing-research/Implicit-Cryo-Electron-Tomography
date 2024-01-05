@@ -38,9 +38,7 @@ def main():
                 # TODO: keep track of GPU memory?
                 t0 = time.time()
                 try:
-                    delimiter = '|'
-                    combined_input = f"{config.path_aretomo}{delimiter}{config.path_save}{delimiter}{config.n3}{delimiter}{config.n3}{delimiter}{npatch}"
-                    subprocess.run(['bash', 'aretomo.sh'], input=combined_input.encode(), check=True)
+                    subprocess.run(['bash', 'aretomo.sh',config.path_aretomo,config.path_save,str(config.n3),str(config.n3),str(npatch)])
                 except subprocess.CalledProcessError as e:
                     print(f"Error: {e}")
                 t = time.time()-t0

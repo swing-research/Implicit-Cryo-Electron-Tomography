@@ -68,56 +68,34 @@ def extract_angle(rot_matrix):
         angle = np.arctan2(rot_matrix[1,0], rot_matrix[0,0])*180/np.pi
     return angle
 
-import torch.nn.functional as F
-def move_volume(X, shifts,padding_mode="border"):
-    """
-    This function shift the input X.
-    INPUT:
-        - X : (bacth x C x N1 x N2 x N3) batch of 3D images
-        - shifts : (batch,3) shift in pixel to apply to the image.
-    OUTPUT:
-        - shiftX : (bacth x C x N1 x N2 x N3) shifted versions of the inoput
-        - padding_mode : default is 'border' in order to prevent scaling down the intensity values when interpolating along the z-direction
-    """
-    sizeX = X.shape
-    theta = torch.zeros((sizeX[0],3,4)).to(X.device)
-    theta[:,0,0] = 1
-    theta[:,1,1] = 1
-    theta[:,2,2] = 1
-    # warning, affine_grid expect theta to be in order (W,H,D)
-    theta[:,0,3] = shifts[:,2]
-    theta[:,1,3] = shifts[:,1]
-    theta[:,2,3] = shifts[:,0]
-    theta[:,0,3] /= (sizeX[4]/2)
-    theta[:,1,3] /= (sizeX[3]/2)
-    theta[:,2,3] /= (sizeX[2]/2)
-    grid = F.affine_grid(theta,torch.Size(sizeX),align_corners=False)
-    Xshifted = F.grid_sample(X, grid,mode='bilinear',align_corners=False,padding_mode=padding_mode)
-    return Xshifted
+
+import SimpleITK as sitk
+def perform_3d_registration(fixed_image, moving_image):
+    # Create an instance of the ImageRegistrationMethod class
+    registration_method = sitk.ImageRegistrationMethod()
+
+    # Set the similarity metric (e.g., mutual information)
+    registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
+
+    # Set the optimizer (e.g., gradient descent)
+    registration_method.SetOptimizerAsGradientDescent(learningRate=1.0, numberOfIterations=100, convergenceMinimumValue=1e-6, convergenceWindowSize=10)
+
+    # Set the interpolator (e.g., linear interpolation)
+    registration_method.SetInterpolator(sitk.sitkLinear)
+
+    # Set the transform type to AffineTransform for translation, rotation, and scaling
+    transform_type = sitk.AffineTransform(fixed_image.GetDimension())
+    registration_method.SetInitialTransform(transform_type, inPlace=False)
+
+    # Set the scale parameters for the optimizer (translation, rotation, scaling)
+    registration_method.SetOptimizerScalesFromPhysicalShift()
+
+    # Perform the registration
+    final_transform = registration_method.Execute(fixed_image, moving_image)
+
+    return final_transform
 
 
-def allign_volume(V_est,V,ds=4,s_max=16):
-    # Need to align estimated volume with the true one to compute a meaningful FSC
-    # ds = 4: downsample the volume to be faster
-    # s_max = 16: max number of pixel to shift in each direction
-    V_est_ds = V_est[::ds,::ds,::ds]
-    V_ds = V[::ds,::ds,::ds]
-    loss_min = np.mean((V_est_ds-V_ds)**2)
-    shift_min = np.zeros(3)
-    shift_range = np.linspace(-s_max//ds,s_max//ds,20)
-    for sx in shift_range:
-        for sy in shift_range:
-            for sz in shift_range:
-                shifts = torch.tensor([sx,sy,sz])[None]
-                V_shift = move_volume(torch.tensor(V_est_ds[None,None]).type(torch.float32), shifts,padding_mode="zeros")
-                loss = np.mean((V_shift[0,0].detach().cpu().numpy()-V_ds)**2)
-                if loss <= loss_min:
-                    loss_min = loss
-                    shift_min = shifts[0].detach().cpu().numpy()
-
-    V_est_shift = move_volume(torch.tensor(V_est[None,None]).type(torch.float32), torch.tensor(shift_min)[None],padding_mode="zeros")
-    V_est_shift = V_est_shift[0,0].detach().cpu().numpy()
-    return V_est_shift, shift_min
 
 def compare_results(config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
@@ -225,13 +203,43 @@ def compare_results(config):
     fsc_AreTomo_list = []
     fsc_AreTomo_centered_list = []
     for npatch in config.nPatch:
-        ARE_TOMO_FILE = f'projections_rec_aretomo_{npatch}by{npatch}.mrc'
+        ARE_TOMO_FILE = f'projections_aligned_aretomo_{npatch}by{npatch}.mrc'
         path_file = os.path.join(config.path_save,'AreTomo',ARE_TOMO_FILE)
         shift_aretomo = np.zeros((config.Nangles,2))
         if os.path.isfile(path_file):
             eval_AreTomo = True
             # load projections
-            V_aretomo = np.moveaxis(np.double(mrcfile.open(path_file).data),0,2)
+            proj_aligned_aretomo = np.moveaxis(np.float32(mrcfile.open(path_file,permissive=True).data),1,0)
+
+            # Reconstruct with accurate FBP operator
+            V_FBP_aretomo = reconstruct_FBP_volume(config, torch.tensor(proj_aligned_aretomo).to(device)).detach().cpu().numpy()
+            V_FBP_aretomo /= np.linalg.norm(V_FBP_aretomo)
+
+            # Find best affine transformation between volumes
+            V_sk = sitk.GetImageFromArray(V/np.linalg.norm(V))
+            V_aretomo_sk = sitk.GetImageFromArray(V_FBP_aretomo)
+            final_transform = perform_3d_registration(V_sk, V_aretomo_sk)
+            # Apply the final transform to the moving image
+            registered_image = sitk.Resample(V_aretomo_sk, V_sk, final_transform, sitk.sitkLinear, 0.0, V_aretomo_sk.GetPixelID())
+            V_aretomo_centered = sitk.GetArrayFromImage(registered_image)
+
+            # Get deformation matrix
+            num_transforms = final_transform.GetNumberOfTransforms()
+            composite_transform = final_transform.GetNthTransform(num_transforms - 1)
+            affine_transform = composite_transform.GetNthTransform(0)
+            translation_transform = composite_transform.GetNthTransform(1)
+            affine_matrix = affine_transform.GetMatrix()
+            affine_matrix_np = np.array(affine_matrix).reshape((V_sk.GetDimension(), V_sk.GetDimension()))
+            translation_matrix = translation_transform.GetParameters()
+            translation_matrix_np = np.array(translation_matrix)
+            cos_theta = (np.trace(affine_matrix_np[:3, :3]) - 1) / 2
+            rotation_angles_est = np.arccos(cos_theta) * 180 / np.pi  # Convert to degrees
+
+            # Compute fsc
+            fsc_AreTomo = utils_FSC.FSC(V,V_FBP_aretomo)
+            fsc_AreTomo_centered = utils_FSC.FSC(V,V_aretomo_centered)
+            fsc_AreTomo_list.append(fsc_AreTomo)
+            fsc_AreTomo_centered_list.append(fsc_AreTomo_centered)
 
             # load estimated deformations
             ARETOMO_FILENAME = f'projections_{npatch}by{npatch}.aln'
@@ -299,15 +307,6 @@ def compare_results(config):
                 field = utils_deformation.deformation_field(depl_ctr_pts_net.clone())
                 implicit_deformation_AreTomo.append(field)
 
-            V_FBP_aretomo = reconstruct_FBP_volume(config, projections_aretomo_corrected_python).detach().cpu().numpy()
-            # align volume for FSC
-            V_aretomo_centered, _ = allign_volume(V_aretomo,V,ds=4,s_max=16)
-
-            fsc_AreTomo = utils_FSC.FSC(V,V_FBP_aretomo)
-            fsc_AreTomo_centered = utils_FSC.FSC(V,V_aretomo_centered)
-            fsc_AreTomo_list.append(fsc_AreTomo)
-            fsc_AreTomo_centered_list.append(fsc_AreTomo_centered)
-
             out = mrcfile.new(config.path_save_data+f"V_aretomo_{npatch}by{npatch}.mrc",np.moveaxis(V_aretomo.astype(np.float32),2,0),overwrite=True)
             out.close() 
             out = mrcfile.new(config.path_save_data+f"V_FBP_aretomo_{npatch}by{npatch}_corrected.mrc",np.moveaxis(V_FBP_aretomo.astype(np.float32),2,0),overwrite=True)
@@ -345,35 +344,6 @@ def compare_results(config):
             inplane_rotation_etomo[index] = extract_angle(etomo_rotation_matrix)
 
 
-
-    # # If the file exist evaluate the reconstruction
-    # eval_AreTomo = False
-    # eval_ETOMO = False
-    # if os.path.exists(config.path_save_data+"areTomo_reconstruction.mrc"):
-    #     eval_AreTomo = True
-    # if(os.path.exists(config.path_save_data+"etomo_reconstruction.mrc")):
-    #     eval_ETOMO = True
-
-    # if(eval_AreTomo):
-    #     V_AreTomo = np.flip(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"areTomo_reconstruction.mrc").data),1,2),2).copy()
-    #     V_AreTomo_t = torch.tensor(V_AreTomo).type(config.torch_type).to(device)
-    # if(eval_ETOMO):
-    #     V_Etomo = np.flip(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"etomo_reconstruction.mrc").data),1,2),2).copy()
-    #     V_Etomo_t = torch.tensor(V_Etomo).type(config.torch_type).to(device)
-
-
-    # if(eval_AreTomo):
-    #     V_AreTomo_t =  torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_aretomo.mrc").data),0,2)).type(config.torch_type).to(device)
-    # if(eval_ETOMO):
-    #     V_Etomo_t  = torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_etomo.mrc").data),0,2)).type(config.torch_type).to(device)
-    # # V_icetide_isonet = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_icetide+Isonet.mrc").data),0,2)
-    # # V_AreTomo_isonet = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_AreTomo+Isonet.mrc").data),0,2)
-
-
-    # if(eval_AreTomo):
-    #     V_AreTomo = V_AreTomo_t.detach().cpu().numpy()
-    # if(eval_ETOMO):
-    #     V_Etomo = V_Etomo_t.detach().cpu().numpy()
 
     ######################################################################################################
     ## Load and estimate our volume
@@ -546,7 +516,7 @@ def compare_results(config):
         for i, npatch in enumerate(config.nPatch):
             col = ['r','m']
             plt.plot(x_fsc,fsc_AreTomo_list[i],col[i],label=f"AreTomo patch {npatch}")
-            # plt.plot(x_fsc,fsc_AreTomo_centered_list[i],col[i],linestyle='--',label=f"AreTomo centered patch {npatch}")
+            plt.plot(x_fsc,fsc_AreTomo_centered_list[i],col[i],linestyle='--',label=f"AreTomo centered patch {npatch}")
     if(eval_Etomo):
         plt.plot(x_fsc,fsc_Etomo,'c',label="Etomo")
     plt.plot(x_fsc,fsc_FBP,'k',label="FBP")
@@ -566,7 +536,7 @@ def compare_results(config):
             if i==0:
                 fsc_arr[:,4] = fsc_AreTomo_list[i][:,0] 
             if i==1:
-                fsc_arr[:,7] = fsc_AreTomo_list[i][:,0] 
+                fsc_arr[:,7] = fsc_AreTomo_centered_list[i][:,0] 
     if(eval_Etomo):
         fsc_arr[:,5] = fsc_Etomo[:,0]
     fsc_arr[:,6] = fsc_FBP_icetide[:,0]
