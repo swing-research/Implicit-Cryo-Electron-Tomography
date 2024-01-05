@@ -314,7 +314,7 @@ def compare_results(config):
                 field = utils_deformation.deformation_field(depl_ctr_pts_net.clone())
                 implicit_deformation_AreTomo.append(field)
 
-            out = mrcfile.new(config.path_save_data+f"V_aretomo_{npatch}by{npatch}.mrc",np.moveaxis(V_aretomo.astype(np.float32),2,0),overwrite=True)
+            out = mrcfile.new(config.path_save_data+f"V_aretomo_{npatch}by{npatch}.mrc",np.moveaxis(V_aretomo_centered.astype(np.float32),2,0),overwrite=True)
             out.close() 
             out = mrcfile.new(config.path_save_data+f"V_FBP_aretomo_{npatch}by{npatch}_corrected.mrc",np.moveaxis(V_FBP_aretomo.astype(np.float32),2,0),overwrite=True)
             out.close() 
