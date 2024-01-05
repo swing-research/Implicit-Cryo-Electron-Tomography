@@ -74,7 +74,7 @@ def perform_3d_registration(fixed_image, moving_image):
     # Create an instance of the ImageRegistrationMethod class
     registration_method = sitk.ImageRegistrationMethod()
 
-    # Set the similarity metric (e.g., mutual information)
+    # Set the metric (e.g., mutual information)
     registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
 
     # Set the optimizer (e.g., gradient descent)
@@ -83,9 +83,17 @@ def perform_3d_registration(fixed_image, moving_image):
     # Set the interpolator (e.g., linear interpolation)
     registration_method.SetInterpolator(sitk.sitkLinear)
 
-    # Set the transform type to AffineTransform for translation, rotation, and scaling
-    transform_type = sitk.AffineTransform(fixed_image.GetDimension())
-    registration_method.SetInitialTransform(transform_type, inPlace=False)
+    # Create an affine transformation (rotation and scaling)
+    affine_transform = sitk.AffineTransform(fixed_image.GetDimension())
+
+    # Create a translation transform
+    translation_transform = sitk.TranslationTransform(fixed_image.GetDimension())
+
+    # Create a composite transform
+    composite_transform = sitk.CompositeTransform([affine_transform, translation_transform])
+
+    # Set the initial transform
+    registration_method.SetInitialTransform(composite_transform, inPlace=False)
 
     # Set the scale parameters for the optimizer (translation, rotation, scaling)
     registration_method.SetOptimizerScalesFromPhysicalShift()
@@ -94,7 +102,6 @@ def perform_3d_registration(fixed_image, moving_image):
     final_transform = registration_method.Execute(fixed_image, moving_image)
 
     return final_transform
-
 
 
 def compare_results(config):
