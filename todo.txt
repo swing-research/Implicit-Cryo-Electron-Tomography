@@ -1,8 +1,10 @@
 - remove useless function in the utils script (reconstruction)
 - handle the __main__ in utils_sampling.py
 - define other model for implicit net or remove it
-- provide script for AreTomo, must save aligned tilt_series as areTomo_alligned.mrc
+- Time and memory XP
+- multi shrec XP
+- real data XP
+
 
 @Vinith
--try to use AreTomo, using the file aretomo.sh
--keep track of memory of AreTomo, see simulation_model0.py
+-etomo on shrec 0

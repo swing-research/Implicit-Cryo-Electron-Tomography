@@ -5,7 +5,7 @@ It creates the dataset (projections, FBP), train ICE-TIDE and compare the result
 """
 
 import argparse
-import configs.config_shrec_dataset as config_file
+import configs.shrec_model0 as config_file
 import subprocess
 import time
 
