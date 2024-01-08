@@ -54,8 +54,8 @@ def get_config():
     config.N_ctrl_pts_local_def = (5,5) # number of different interpolation to interpolate
     
     # # Parameters for the data generation
-    config.path_save_data = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
-    config.path_save = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
+    config.path_save_data = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"_implicit/"
+    config.path_save = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"_implicit/"
 
     #############################
     ## Parameters for training ##
@@ -65,7 +65,7 @@ def get_config():
     config.train_local_def = True
     config.train_global_def = True
     config.volume_model = "multi-resolution" # multi-resolution, Fourier-features, grid, MLP
-    config.local_model = 'interp' #  'implicit' or 'interp'
+    config.local_model = 'implicit' #  'implicit' or 'interp'
 
     # Training schedule
     config.epochs = 1000
