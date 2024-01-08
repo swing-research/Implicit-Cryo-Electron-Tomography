@@ -108,7 +108,8 @@ def train(config):
                 out_features=config.local_deformation.output_size,
                 hidden_features=config.local_deformation.hidden_size,
                 hidden_blocks=config.local_deformation.num_layers,
-                L = config.local_deformation.L).to(device)
+                L = config.local_deformation.L,
+                scale = config.deformationScale).to(device)
             implicit_deformation_list.append(implicit_deformation)
 
         num_param = sum(p.numel() for p in implicit_deformation_list[0].parameters() if p.requires_grad)
@@ -150,7 +151,6 @@ def train(config):
         depl_ctr_pts_net = torch.zeros((2,config.local_deformation.N_ctrl_pts_net,config.local_deformation.N_ctrl_pts_net)).to(device).type(config.torch_type)/max([config.n1,config.n2,config.n3])/10
         implicit_deformation_list = []
         for k in range(config.Nangles):
-            # depl_ctr_pts_net = local_tr[k].depl_ctr_pts.clone().detach()[0].cuda()/deformationScale
             field = utils_deformation.deformation_field(depl_ctr_pts_net.clone(),maskBoundary=2)
             implicit_deformation_list.append(field)
         num_param = sum(p.numel() for p in implicit_deformation_list[0].parameters() if p.requires_grad)
@@ -302,7 +302,7 @@ def train(config):
             raysSet = raysSet*rays_scaling
             outputValues,support = sample_implicit_batch_lowComp(impl_volume,raysSet,angle,
                 rot_deformSet=rot_deformSet,shift_deformSet=shift_deformSet,local_deformSet=local_deformSet,
-                scale=config.deformationScale,grid_positive=config.grid_positive,zlimit=config.n3/max(config.n1,config.n2))
+                scale=1,grid_positive=config.grid_positive,zlimit=config.n3/max(config.n1,config.n2))
             outputValues = outputValues.type(config.torch_type)
             support = support.reshape(outputValues.shape[0],outputValues.shape[1],-1)
             projEstimate = torch.sum(support*outputValues,2)/config.n3
@@ -322,7 +322,7 @@ def train(config):
             if train_local_def and config.lamb_local_ampl!=0:
                 # Using only the x and y coordinates
                 for ii_ in idx_loader:
-                    depl = torch.abs(config.deformationScale*implicit_deformation_list[ii](raysSet[:,:,0,:2].reshape(-1,2))*config.n1)
+                    depl = torch.abs(implicit_deformation_list[ii](raysSet[:,:,0,:2].reshape(-1,2))*config.n1)
                     loss += config.lamb_local_ampl*(depl.mean())
                     loss_regul_local_ampl.append(config.lamb_local_ampl*depl.mean().item())
             if train_global_def and (config.lamb_rot!=0 or config.lamb_shifts!=0):
@@ -380,7 +380,7 @@ def train(config):
                 ## Save local deformation
                 utils_display.display_local_movie(implicit_deformation_list,field_true=local_tr,Npts=(20,20),
                                             img_path=config.path_save+"/training/deformations/local_deformations_",img_type='.png',
-                                            scale=1,alpha=0.8,width=0.0015,weights_est=config.deformationScale)
+                                            scale=1,alpha=0.8,width=0.0015,weights_est=1)
                     
                 ## Save global deformation
                 shiftEstimate, rotEstimate = globalDeformationValues(shift_est,rot_est)

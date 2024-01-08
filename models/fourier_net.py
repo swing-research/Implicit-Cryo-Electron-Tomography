@@ -166,9 +166,11 @@ class FourierNet(nn.Module):
          hidden_features,
          hidden_blocks,
          out_features,
-         L = 10):
+         L = 10,
+         scale=1):
     super().__init__()
 
+    self.scale = scale
     self.ffm = FFMLayer_v2(in_features, L)
     ffm_expansion_size = 2*in_features*L
 
@@ -215,7 +217,7 @@ class FourierNet(nn.Module):
     x = F.relu(x)
     x = self.final_block[2](x)
 
-    return x
+    return x*self.scale
   
 class FourierNet_Features(nn.Module):
   def __init__(self,
