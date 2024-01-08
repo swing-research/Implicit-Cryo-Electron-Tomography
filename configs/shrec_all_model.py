@@ -13,14 +13,13 @@ def get_config():
     #######################
     config = ml_collections.ConfigDict()
     config.seed = 42
-    config.device_num = 2
+    config.device_num = 0
     config.torch_type = torch.float
     config.track_memory = False
 
     ########################################
     ## Parameters for the data generation ##
     ########################################
-    config.volume_name = 'model_0'
     # Size of the volume to use to generate the tilt-series
     config.n1 = 512
     config.n2 = 512
@@ -53,9 +52,6 @@ def get_config():
     config.sigma_local_def = 4*deformation_scale # max amplitude of local deformations in pixel
     config.N_ctrl_pts_local_def = (5,5) # number of different interpolation to interpolate
     
-    # # Parameters for the data generation
-    config.path_save_data = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"_implicit/"
-    config.path_save = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"_implicit/"
 
     #############################
     ## Parameters for training ##
@@ -65,7 +61,7 @@ def get_config():
     config.train_local_def = True
     config.train_global_def = True
     config.volume_model = "multi-resolution" # multi-resolution, Fourier-features, grid, MLP
-    config.local_model = 'implicit' #  'implicit' or 'interp'
+    config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
     config.epochs = 1000
@@ -92,7 +88,7 @@ def get_config():
     config.lr_volume = 1e-2
     config.lr_shift = 1e-3
     config.lr_rot = 1e-3
-    config.lr_local_def = 1e-3
+    config.lr_local_def = 1e-4
 
     # Training regularization
     config.lamb_volume = 0 # regul parameters on volume regularization
@@ -102,7 +98,7 @@ def get_config():
     config.wd = 5e-6 # weights decay
 
     # Params for implicit deformation
-    config.deformationScale = 1e-3
+    config.deformationScale = 1
     config.grid_positive = True
 
     # params of implicit volume

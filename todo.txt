@@ -3,7 +3,22 @@
 - define other model for implicit net or remove it
 - Time and memory XP
 - multi shrec XP
+   Davinci
+   python -m experiment_scripts.simulation_all_shrec_models --no_aretomo --no_comparison
+   DGX:
+   python -m experiment_scripts.simulation_all_shrec_models --no_gen_data --no_train --no_comparison
+   scp + Davinci
+   python -m experiment_scripts.simulation_all_shrec_models --no_gen_data --no_train --no_aretomo
+   TODO: compare results inot the one bar plot
 - real data XP
+- different SNR
+   Davinci
+   python -m experiment_scripts.simulation_SNR_influence --no_aretomo --no_comparison
+   DGX:
+   python -m experiment_scripts.simulation_SNR_influence --no_gen_data --no_train --no_comparison
+   scp + Davinci
+   python -m experiment_scripts.simulation_SNR_influence --no_gen_data --no_train --no_aretomo
+   TODO: compare results inot the one line plot
 
 
 @Vinith
