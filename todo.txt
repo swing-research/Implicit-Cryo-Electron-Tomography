@@ -2,6 +2,7 @@
 - handle the __main__ in utils_sampling.py
 - define other model for implicit net or remove it
 - Time and memory XP
+    python -m experiment_scripts.simulation_shrec_timing 
 - multi shrec XP
    Davinci
    python -m experiment_scripts.simulation_all_shrec_models --no_aretomo --no_comparison

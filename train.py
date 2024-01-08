@@ -29,6 +29,8 @@ def train(config):
         os.makedirs(config.path_save+"training/volume/")
     if not os.path.exists(config.path_save+"training/deformations/"):
         os.makedirs(config.path_save+"training/deformations/")
+    if not os.path.exists(config.path_save+"training/deformations_x10/"):
+        os.makedirs(config.path_save+"training/deformations_x10/")
 
     ## Load data that was previously saved
     data = np.load(config.path_save_data+"volume_and_projections.npz")
@@ -381,6 +383,10 @@ def train(config):
                 utils_display.display_local_movie(implicit_deformation_list,field_true=local_tr,Npts=(20,20),
                                             img_path=config.path_save+"/training/deformations/local_deformations_",img_type='.png',
                                             scale=1,alpha=0.8,width=0.0015,weights_est=1)
+                for index in range(len(implicit_deformation_list)):
+                    utils_display.display_local_est_and_true(implicit_deformation_list[index],local_tr[index],Npts=(20,20),scale=0.1,
+                                                img_path=config.path_save+"/training/deformations_x10/local_deformations_",img_type='.png')
+
                     
                 ## Save global deformation
                 shiftEstimate, rotEstimate = globalDeformationValues(shift_est,rot_est)
