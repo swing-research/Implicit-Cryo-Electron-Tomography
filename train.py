@@ -385,7 +385,7 @@ def train(config):
                                             scale=1,alpha=0.8,width=0.0015,weights_est=1)
                 for index in range(len(implicit_deformation_list)):
                     utils_display.display_local_est_and_true(implicit_deformation_list[index],local_tr[index],Npts=(20,20),scale=0.1,
-                                                img_path=config.path_save+"/training/deformations_x10/local_deformations_",img_type='.png')
+                                                img_path=config.path_save+"/training/deformations_x10/local_deformations_"+str(index),img_type='.png')
 
                     
                 ## Save global deformation
