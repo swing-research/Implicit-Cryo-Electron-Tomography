@@ -102,7 +102,7 @@ def get_config():
     config.wd = 5e-6 # weights decay
 
     # Params for implicit deformation
-    config.deformationScale = 1e-1
+    config.deformationScale = 1e-2
     config.grid_positive = True
 
     # params of implicit volume
