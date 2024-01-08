@@ -70,6 +70,37 @@ def display_local(field,field_true=None,Npts=(10,10),img_path='',img_type='.pdf'
                 plt.savefig(img_path+'_true'+img_type)
 
 
+# save only est and true plot
+def display_local_est_and_true(field,field_true=None,Npts=(10,10),img_path='',img_type='.pdf',scale=3,alpha=0.8,width=0.002,device='cuda',wx=1,wy=1):
+    ## Display quiver
+    xx1 = torch.linspace(-1,1,Npts[0],device=device)
+    xx2 = torch.linspace(-1,1,Npts[1],device=device)
+    XX_t, YY_t = torch.meshgrid(xx1,xx2,indexing='ij')
+    XX_t = torch.unsqueeze(XX_t, dim = 2)
+    YY_t = torch.unsqueeze(YY_t, dim = 2)
+    coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
+    displacement = field(coordinates)
+    x2 = coordinates[:,0].detach().cpu().numpy()*wx
+    y2 = coordinates[:,1].detach().cpu().numpy()*wy
+    u2 = displacement[:,0].detach().cpu().numpy()
+    v2 = displacement[:,1].detach().cpu().numpy()
+    plt.figure(1)
+    plt.clf()
+    plt.tight_layout()
+    ax = plt.gca()
+    ax.quiver(x2,y2,u2,v2,angles='xy',scale=scale,alpha=alpha,color='r',width=width,label='Estimation')
+    if field_true is not None:
+        displacement = field_true(coordinates)
+        x2 = coordinates[:,0].detach().cpu().numpy()*wx
+        y2 = coordinates[:,1].detach().cpu().numpy()*wy
+        u2 = displacement[:,0].detach().cpu().numpy()
+        v2 = displacement[:,1].detach().cpu().numpy()
+        ax = plt.gca()
+        ax.quiver(x2,y2,u2,v2,angles='xy',scale=scale,alpha=alpha,color='b',width=width,label='True')
+        plt.legend()
+        if img_path!='' and field_true is not None:
+            plt.savefig(img_path+'_est_and_true'+img_type)
+
 def display_local_movie(field,field_true=None,Npts=(10,10),img_path='',img_type='.pdf',scale=3,alpha=0.8,width=0.002,
                         device='cuda',loc='upper right',legend1='Estimation', legend2='True',weights_est=1):
     xx1 = torch.linspace(-1,1,Npts[0],device=device)

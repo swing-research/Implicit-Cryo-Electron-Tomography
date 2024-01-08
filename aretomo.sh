@@ -21,7 +21,7 @@ path_save="${path_exp}AreTomo/"
 mkdir -p "$path_save"
 
 # return aligned tilt-series
-$path_aretomo -InMrc "${path_exp}projections.mrc" -OutMrc "${path_save}projections_aligned_aretomo_${npatch}by$npatch.mrc" -VolZ 0 -AlignZ $AlignZ -OutBin 1 -AngFile "${path_exp}angles.txt" -Patch $npatch $npatch -OutImod 1 -DarkTol 0.000001 -FlipVol 1 -TiltAxis 0.00000001 1 -TiltCor -1
+$path_aretomo -InMrc "${path_exp}projections.mrc" -OutMrc "${path_save}projections_aligned_aretomo_${npatch}by$npatch.mrc" -VolZ 0 -AlignZ $AlignZ -OutBin 1 -AngFile "${path_exp}angles.txt" -Patch $npatch $npatch -OutImod 3 -DarkTol 0.000001 -FlipVol 1 -TiltAxis 0.00000001 1 -TiltCor -1
 mv "${path_save}projections.aln" "${path_save}projections_${npatch}by$npatch.aln"
 # FBP with AreTomo
 $path_aretomo -InMrc "${path_exp}projections.mrc" -OutMrc "${path_save}projections_rec_aretomo_${npatch}by$npatch.mrc"  -VolZ $VolZ -AlignZ 0 -OutBin 1 -AngFile "${path_exp}angles.txt" -AlnFile "${path_save}projections_${npatch}by$npatch.aln" -Wbp 1 -Patch $npatch $npatch -OutImod 1 -DarkTol 0.000001 -FlipVol 1 -TiltAxis 0.00000001 1 -TiltCor -1

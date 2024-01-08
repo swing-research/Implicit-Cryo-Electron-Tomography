@@ -204,7 +204,6 @@ def compare_results(config):
     V_FBP_no_deformed = V_FBP_no_deformed_t.detach().cpu().numpy()    
 
     ## Aretomo
-    # TODO shift array and error for each patches size
     # get the files
     eval_AreTomo = False
     fsc_AreTomo_list = []
@@ -244,6 +243,12 @@ def compare_results(config):
             translation_matrix_np = np.array(translation_matrix)
             cos_theta = (np.trace(affine_matrix_np[:3, :3]) - 1) / 2
             rotation_angles_est = np.arccos(cos_theta) * 180 / np.pi  # Convert to degrees
+
+            # Save volumes
+            out = mrcfile.new(config.path_save_data+f"V_aretomo_centered{npatch}by{npatch}.mrc",np.moveaxis(V_aretomo_centered.astype(np.float32),2,0),overwrite=True)
+            out.close() 
+            out = mrcfile.new(config.path_save_data+f"V_aretomo_{npatch}by{npatch}_corrected.mrc",np.moveaxis(V_FBP_aretomo.astype(np.float32),2,0),overwrite=True)
+            out.close() 
 
             # Compute fsc
             fsc_AreTomo = utils_FSC.FSC(V,V_FBP_aretomo)
@@ -287,12 +292,11 @@ def compare_results(config):
                 local_AreTomo[angle_index,patch_index,0] = float(local_est[2])
                 local_AreTomo[angle_index,patch_index,1] = float(local_est[3])
                 local_AreTomo[angle_index,patch_index,2] = float(local_est[4])
-
             shift_aretomo[:,1] = -x_shifts_aretomo
             shift_aretomo[:,0] = -y_shifts_aretomo
-            # correct the mean shitfs
-            shift_aretomo[:,0] = shift_aretomo[:,0] - np.mean(shift_aretomo[:,0])
-            shift_aretomo[:,1] = shift_aretomo[:,1] - np.mean(shift_aretomo[:,1])
+            # # correct the mean shitfs
+            # shift_aretomo[:,0] = shift_aretomo[:,0] - np.mean(shift_aretomo[:,0])
+            # shift_aretomo[:,1] = shift_aretomo[:,1] - np.mean(shift_aretomo[:,1])
             shift_aretomo_t = torch.from_numpy(shift_aretomo).to(device).type(config.torch_type)/config.n1*2
             inplane_rotation_aretomo_t = -torch.from_numpy(inplane_rotation_aretomo).to(device).type(config.torch_type)*np.pi/180
             projections_aretomo_corrected_python = correct_deformations(projections_noisy, shift_aretomo_t, inplane_rotation_aretomo_t, config)
@@ -317,10 +321,7 @@ def compare_results(config):
                 field = utils_deformation.deformation_field(depl_ctr_pts_net.clone())
                 implicit_deformation_AreTomo.append(field)
 
-            out = mrcfile.new(config.path_save_data+f"V_aretomo_{npatch}by{npatch}.mrc",np.moveaxis(V_aretomo_centered.astype(np.float32),2,0),overwrite=True)
-            out.close() 
-            out = mrcfile.new(config.path_save_data+f"V_FBP_aretomo_{npatch}by{npatch}_corrected.mrc",np.moveaxis(V_FBP_aretomo.astype(np.float32),2,0),overwrite=True)
-            out.close() 
+
 
     ETOMO_FILE = 'projections_ali.mrc'
     path_file = os.path.join(config.path_save,'Etomo',ETOMO_FILE)
@@ -480,7 +481,7 @@ def compare_results(config):
                                                 ).mean(),decimals=4)
 
     # Compute the error between the true and AreTomo estimated deformation
-    error_x_shifts_aretomo = np.around(np.abs(x_shifts*n1_eval-shift_aretomo[:,0]).mean(),decimals=4)
+    error_x_shifts_aretomo = np.around(np.abs(x_shifts*n1_eval-shift_aretomo[:,0]-translation_matrix_np[1]).mean(),decimals=4)
     error_y_shifts_aretomo = np.around(np.abs(y_shifts*n1_eval-shift_aretomo[:,1]).mean(),decimals=4)
     error_inplane_rotation_aretomo =np.around( np.abs(inplane_rotation-inplane_rotation_aretomo
                                                 ).mean(),decimals=4)
@@ -555,7 +556,8 @@ def compare_results(config):
     np.savetxt(os.path.join(config.path_save,'evaluation','FSC.csv'),fsc_arr,header=header,delimiter=",",comments='')
 
 
-    # -compute error between local deformations
+
+    ## Compute error between local deformations
 
 
     # if eval_AreTomo:
@@ -770,7 +772,6 @@ def compare_results(config):
     # np.savetxt(os.path.join(config.path_save,'evaluation','inplane_angles.csv'),inplaneAngles,header=header,delimiter=",",comments='')
 
 
-    # TODO: compute error of local deformations and display
     #######################################################################################
     ## Local deformation errror Estimation
     #######################################################################################
@@ -812,20 +813,17 @@ def compare_results(config):
 
     err_mean = np.nanmean(err_local_arr[:,1:],0)
     err_std = np.nanstd(err_local_arr[:,1:],0)
-
     err_local_arr = np.concatenate([np.array([err_mean,err_std])],0)
 
     HEADER ='icetide,init,AreTomo'
     np.savetxt(os.path.join(config.path_save,'evaluation','local_deformation_error.csv'),err_local_arr,header=HEADER,delimiter=",",comments='')
 
-
     # Get the local deformation error plots 
     for index in range(config.Nangles):
         # icetide
-        savepath = os.path.join(config.path_save,'evaluation','deformations','ICETIDE','local_deformation_error_{}'.format(index))
-        utils_display.display_local(implicit_deformation_icetide[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath)
+        savepath = os.path.join(config.path_save,'evaluation','deformations','ICETIDE','local_deformation_factor10_error_{}'.format(index))
+        utils_display.display_local_est_and_true(implicit_deformation_icetide[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath)
         # Aretomo
-
         if eval_AreTomo:
-            savepath = os.path.join(config.path_save,'evaluation','deformations','AreTomo','local_deformation_error_{}'.format(index))
-            utils_display.display_local(implicit_deformation_AreTomo[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath )
+            savepath = os.path.join(config.path_save,'evaluation','deformations','AreTomo','local_deformation_factor10_error_{}'.format(index))
+            utils_display.display_local_est_and_true(implicit_deformation_AreTomo[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath )
