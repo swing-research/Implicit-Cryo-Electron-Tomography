@@ -139,25 +139,23 @@ def get_config():
     elif config.local_model == 'interp':
         config.local_deformation.N_ctrl_pts_net = 10
     elif config.local_model == 'tcnn':
-        config.local_model.input_size_volume = 2 # always 3 for 3d tomography
-        config.local_model.output_size_volume = 2 # always 1 for 3d tomography
-        config.local_model.num_layers_volume = 2
-        config.local_model.hidden_size_volume = 16
-        config.local_model.L_volume = 3
-        config.local_model.encoding = ml_collections.ConfigDict()
-        config.local_model.encoding.otype = 'Grid'
-        config.local_model.encoding.type = 'Hash'
-        config.local_model.encoding.n_levels = 5#
-        config.local_model.encoding.n_features_per_level = 2
-        config.local_model.encoding.log2_hashmap_size = 22
-        config.local_model.encoding.base_resolution = 32
-        config.local_model.encoding.per_level_scale = 2
-        config.local_model.encoding.interpolation = 'Smoothstep'
+        config.local_deformation.num_layers_volume = 2
+        config.local_deformation.hidden_size_volume = 16
+        config.local_deformation.L_volume = 3
+        config.local_deformation.encoding = ml_collections.ConfigDict()
+        config.local_deformation.encoding.otype = 'Grid'
+        config.local_deformation.encoding.type = 'Hash'
+        config.local_deformation.encoding.n_levels = 5#
+        config.local_deformation.encoding.n_features_per_level = 2
+        config.local_deformation.encoding.log2_hashmap_size = 22
+        config.local_deformation.encoding.base_resolution = 32
+        config.local_deformation.encoding.per_level_scale = 2
+        config.local_deformation.encoding.interpolation = 'Smoothstep'
         # params specific to Tiny cuda network
-        config.local_model.network = ml_collections.ConfigDict()
-        config.local_model.network.otype = 'FullyFusedMLP'
-        config.local_model.network.activation = 'ReLU'
-        config.local_model.network.output_activation = 'None'
+        config.local_deformation.network = ml_collections.ConfigDict()
+        config.local_deformation.network.otype = 'FullyFusedMLP'
+        config.local_deformation.network.activation = 'ReLU'
+        config.local_deformation.network.output_activation = 'None'
 
     #######################
     ## AreTomo ##
