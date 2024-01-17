@@ -139,6 +139,8 @@ def get_config():
     elif config.local_model == 'interp':
         config.local_deformation.N_ctrl_pts_net = 10
     elif config.local_model == 'tcnn':
+        config.local_deformation.input_size = 2 # fixed
+        config.local_deformation.output_size = 2 # fixed
         config.local_deformation.num_layers = 2
         config.local_deformation.hidden_size = 16
         config.local_deformation.encoding = ml_collections.ConfigDict()
