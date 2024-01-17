@@ -146,10 +146,10 @@ def get_config():
         config.local_deformation.encoding = ml_collections.ConfigDict()
         config.local_deformation.encoding.otype = 'Grid'
         config.local_deformation.encoding.type = 'Hash'
-        config.local_deformation.encoding.n_levels = 5#
+        config.local_deformation.encoding.n_levels = 2#
         config.local_deformation.encoding.n_features_per_level = 2
         config.local_deformation.encoding.log2_hashmap_size = 22
-        config.local_deformation.encoding.base_resolution = 32
+        config.local_deformation.encoding.base_resolution = 4
         config.local_deformation.encoding.per_level_scale = 2
         config.local_deformation.encoding.interpolation = 'Smoothstep'
         # params specific to Tiny cuda network

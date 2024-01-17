@@ -453,6 +453,37 @@ def train(config):
                     'ep': ep,
                 }, os.path.join(config.path_save,'training','model_trained.pt'))
 
+        if (ep%config.Ntest==0) and check_point_training and config.compute_fsc:
+            fsc_arr = np.zeros((x_fsc.shape[0],8))
+            os.path.join(config.path_save,'training','fsc')
+            with torch.no_grad():
+                V = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V.mrc").data),0,2)
+                ## Compute our model at same resolution than other volume
+                rays_scaling = torch.tensor(np.array(config.rays_scaling))[None,None,None].type(config.torch_type).to(device)
+                n1_eval, n2_eval, n3_eval = V.shape
+                # Compute estimated volumex
+                x_lin1 = np.linspace(-1,1,n1_eval)*rays_scaling[0,0,0,0].item()/2+0.5
+                x_lin2 = np.linspace(-1,1,n2_eval)*rays_scaling[0,0,0,1].item()/2+0.5
+                XX, YY = np.meshgrid(x_lin1,x_lin2,indexing='ij')
+                grid2d = np.concatenate([XX.reshape(-1,1),YY.reshape(-1,1)],1)
+                grid2d_t = torch.tensor(grid2d).type(config.torch_type)
+                z_range = np.linspace(-1,1,n3_eval)*rays_scaling[0,0,0,2].item()*(n3_eval/n1_eval)/2+0.5
+                V_icetide = np.zeros_like(V)
+                for zz, zval in enumerate(z_range):
+                    grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
+                    grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
+                    estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1,config.n2)
+                    V_icetide[:,:,zz] = estSlice
+                fsc_icetide = utils_FSC.FSC(V,V_icetide)
+                x_fsc = np.arange(fsc_icetide.shape[0])
+
+                # TODO: save and load fsc along iteration, in npy and txt and check that it works
+                dat = np.load(os.path.join(config.path_save,'training','fsc_iter.npy'))
+                fsc_iter = dat['fsc_iter']
+
+            
+
+
     print("Saving final state after training...")
     torch.save({
         'shift_est': shift_est,

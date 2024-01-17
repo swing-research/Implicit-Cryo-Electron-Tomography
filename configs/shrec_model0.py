@@ -71,6 +71,7 @@ def get_config():
     config.epochs = 1000
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
+    config.compute_fsc = True # save fsc, takes more time
     config.scheduler_step_size = 200
     config.scheduler_gamma = 0.6
 
