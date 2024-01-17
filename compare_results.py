@@ -212,7 +212,8 @@ def compare_results(config):
         ARE_TOMO_FILE = f'projections_aligned_aretomo_{npatch}by{npatch}.mrc'
         path_file = os.path.join(config.path_save,'AreTomo',ARE_TOMO_FILE)
         shift_aretomo = np.zeros((config.Nangles,2))
-        translation_matrix_np = np.zeros((2))        
+        translation_matrix_np = np.zeros((2))       
+        inplane_rotation_aretomo = np.zeros(config.Nangles) 
         if os.path.isfile(path_file):
             eval_AreTomo = True
             # load projections # need to be reorder and there seem to be a shift in intensity, so we match the mean on the noisy one 
