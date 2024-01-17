@@ -31,5 +31,4 @@
 
 
 -check mutlires et multi SNR display results
-- save per iter the fsc, ipdb
-- debug for  impliit net
+- debug for  implicit net

@@ -25,9 +25,9 @@ from utils.utils_deformation import cropper
 
 
 
-# TODO: Remove
-import configs.config_shrec_dataset as config_file
-config = config_file.get_config()
+# # TODO: Remove
+# import configs.config_shrec_dataset as config_file
+# config = config_file.get_config()
 
 
 """ 
