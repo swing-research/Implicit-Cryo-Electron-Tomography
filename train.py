@@ -241,6 +241,9 @@ def train(config):
     if config.track_memory:
         memory_used = []
         check_point_training = False # Do not stop for display when keeping track of the memory
+    if config.compute_fsc:
+        fsc_icetide_tot = []
+        resolution_icetide_tot = []
     t0 = time.time()
     print("Training the network(s)...")
     for ep in range(config.epochs):
@@ -454,8 +457,6 @@ def train(config):
                 }, os.path.join(config.path_save,'training','model_trained.pt'))
 
         if (ep%config.Ntest==0) and check_point_training and config.compute_fsc:
-            fsc_arr = np.zeros((x_fsc.shape[0],8))
-            os.path.join(config.path_save,'training','fsc')
             with torch.no_grad():
                 V = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V.mrc").data),0,2)
                 ## Compute our model at same resolution than other volume
@@ -475,11 +476,25 @@ def train(config):
                     estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1,config.n2)
                     V_icetide[:,:,zz] = estSlice
                 fsc_icetide = utils_FSC.FSC(V,V_icetide)
-                x_fsc = np.arange(fsc_icetide.shape[0])
+                fsc_icetide_tot.append(fsc_icetide)
+                import ipdb; ipdb.set_trace()
+                # x_fsc = np.arange(fsc_icetide.shape[0])
+                indeces = np.where(fsc<0.5)[0]
+                choosenIndex = np.where(indeces>2)[0][0]
+                resolution_icetide = indeces[choosenIndex]
+                resolution_icetide_tot.append(resolution_icetide)
+                np.save(os.path.join(config.path_save,'training','fsc_iter.npy'),np.array(resolution_icetide_tot))
 
-                # TODO: save and load fsc along iteration, in npy and txt and check that it works
-                dat = np.load(os.path.join(config.path_save,'training','fsc_iter.npy'))
-                fsc_iter = dat['fsc_iter']
+                header ='x,icetide,FBP,FBP_no_deformed,AreTomo_patch0,ETOMO,FBP_est_deformed,AreTomo_patch1'
+                np.savetxt(os.path.join(config.path_save,'evaluation','FSC.csv'),fsc_arr,header=header,delimiter=",",comments='')
+
+
+
+
+
+                # # TODO: save and load fsc along iteration, in npy and txt and check that it works
+                # dat = np.load(os.path.join(config.path_save,'training','fsc_iter.npy'))
+                # fsc_iter = dat['fsc_iter']
 
             
 
