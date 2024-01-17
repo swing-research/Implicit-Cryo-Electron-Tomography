@@ -242,7 +242,7 @@ def train(config):
         memory_used = []
         check_point_training = False # Do not stop for display when keeping track of the memory
     if config.compute_fsc:
-        fsc_icetide_tot = []
+        ep_tot = []
         resolution_icetide_tot = []
     t0 = time.time()
     print("Training the network(s)...")
@@ -477,28 +477,14 @@ def train(config):
                     estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1,config.n2)
                     V_icetide[:,:,zz] = estSlice
                 fsc_icetide = utils_FSC.FSC(V,V_icetide)
-                fsc_icetide_tot.append(fsc_icetide)
-                import ipdb; ipdb.set_trace()
-                # x_fsc = np.arange(fsc_icetide.shape[0])
-                indeces = np.where(fsc<0.5)[0]
+                indeces = np.where(fsc_icetide<0.5)[0]
                 choosenIndex = np.where(indeces>2)[0][0]
                 resolution_icetide = indeces[choosenIndex]
                 resolution_icetide_tot.append(resolution_icetide)
-                np.save(os.path.join(config.path_save,'training','fsc_iter.npy'),np.array(resolution_icetide_tot))
-
-                header ='x,icetide,FBP,FBP_no_deformed,AreTomo_patch0,ETOMO,FBP_est_deformed,AreTomo_patch1'
-                np.savetxt(os.path.join(config.path_save,'evaluation','FSC.csv'),fsc_arr,header=header,delimiter=",",comments='')
-
-
-
-
-
-                # # TODO: save and load fsc along iteration, in npy and txt and check that it works
-                # dat = np.load(os.path.join(config.path_save,'training','fsc_iter.npy'))
-                # fsc_iter = dat['fsc_iter']
-
-            
-
+                ep_tot.append(ep)
+                np.save(os.path.join(config.path_save,'training','resolution05_iter.npy'),np.array(resolution_icetide_tot))
+                header ='ep,icetide'
+                np.savetxt(os.path.join(config.path_save,'training','resolution05_iter.csv'),np.array([ep_tot,resolution_icetide_tot]).T,header=header,delimiter=",",comments='')
 
     print("Saving final state after training...")
     torch.save({
