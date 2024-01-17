@@ -139,9 +139,8 @@ def get_config():
     elif config.local_model == 'interp':
         config.local_deformation.N_ctrl_pts_net = 10
     elif config.local_model == 'tcnn':
-        config.local_deformation.num_layers_volume = 2
-        config.local_deformation.hidden_size_volume = 16
-        config.local_deformation.L_volume = 3
+        config.local_deformation.num_layers = 2
+        config.local_deformation.hidden_size = 16
         config.local_deformation.encoding = ml_collections.ConfigDict()
         config.local_deformation.encoding.otype = 'Grid'
         config.local_deformation.encoding.type = 'Hash'
