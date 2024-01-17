@@ -1,4 +1,3 @@
-- remove useless function in the utils script (reconstruction)
 - multi shrec XP
    Davinci (running)
    python -m experiment_scripts.simulation_all_shrec_models --no_aretomo --no_comparison
@@ -14,8 +13,6 @@
    python -m experiment_scripts.simulation_SNR_influence --no_gen_data --no_train --no_comparison
    scp + Davinci
    python -m experiment_scripts.simulation_SNR_influence --no_gen_data --no_train --no_aretomo
-- Timing (re run to tr the new command max_memory)
-   python -m experiment_scripts.simulation_shrec_timing 
 - Run timing on a single GPU that is free
     python -m experiment_scripts.simulation_shrec_timing
 
@@ -26,5 +23,8 @@
 -etomo on shrec 0
 
 
+
+- real data
+- etomo script batch
 
 

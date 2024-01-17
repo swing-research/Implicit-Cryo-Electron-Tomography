@@ -20,11 +20,7 @@ def get_config():
     ########################################
     ## Parameters for the data generation ##
     ########################################
-    config.volume_name = 'model_0'
-    # Size of the volume to use to generate the tilt-series
-    config.n1 = 512
-    config.n2 = 512
-    config.n3 = 180
+
     # Size of the patch to crop in the raw volume
     config.n1_patch = 512
     config.n2_patch = 512
@@ -34,8 +30,6 @@ def get_config():
     config.view_angle_min = -60
     config.view_angle_max = 60
     config.number_sub_projections = 1
-    # Noise
-    config.SNR_value = 10
     # Deformations operators
     deformation_scale = 0.5
     config.scale_min = 1.0
@@ -54,8 +48,15 @@ def get_config():
     config.N_ctrl_pts_local_def = (5,5) # number of different interpolation to interpolate
     
     # # Parameters for the data generation
-    config.path_save_data = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
-    config.path_save = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
+    config.volume_name = 'tomo2_L1G1_ODD'
+    config.path_load = "./results/tkiuv/"
+    config.path_save_data = "./results/tkiuv_"+str(config.volume_name)+"/"
+    config.path_save = "./results/tkiuv_"+str(config.volume_name)+"/"
+
+    config.multiresolution = True
+    config.multires_params.startResolution = 2
+    config.multires_params.ray_change_epoch = [100, 200, 400, 800, 1200 ]
+    config.multires_params.batch_set = [10, 5, 4, 3, 2]
 
     #############################
     ## Parameters for training ##
@@ -71,7 +72,6 @@ def get_config():
     config.epochs = 1000
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
-    config.compute_fsc = True # save fsc, takes more time
     config.scheduler_step_size = 100
     config.scheduler_gamma = 0.5
 

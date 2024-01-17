@@ -348,7 +348,7 @@ LEARN_DEFORMATIONS = False
 
 
 if config.multiresolution:
-    batch_set =  config.multires_params.batch_size
+    batch_set =  config.batch_size
     proj_len = len_set.index(config.multires_params.startResolution)
     proj_set_Data = torch.FloatTensor(proj_pyramid_set[proj_len]).to(device) 
 
