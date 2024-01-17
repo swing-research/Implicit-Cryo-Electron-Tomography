@@ -20,6 +20,7 @@
    TODO: compare results inot the one line plot
 - Timing (re run to tr the new command max_memory)
    python -m experiment_scripts.simulation_shrec_timing 
+- FSC per epoch
 
 
 
