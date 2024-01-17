@@ -82,32 +82,60 @@ def main():
             model_name.append('model '+str(i))
 
 
-        config.path_save_data = "./results/SNR_exp_"+str(config.volume_name)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
+        config.path_save = "./results/SNR_exp_"+str(config.volume_name)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
         if not os.path.exists(config.path_save):
             os.makedirs(config.path_save)
         if not os.path.exists(config.path_save+"evaluation/"):
             os.makedirs(config.path_save+"evaluation/")
 
+
+
         plt.figure()
-        plt.bar(x_val,resolution05[3,:],width=0.2, label='FBP')
-        plt.bar(x_val+0.2,resolution05[4,:],width=0.2, label='FBP undeformed')
-        plt.bar(x_val+0.4,resolution05[0,:],width=0.2,label='ICETIDE')
-        plt.bar(x_val+0.6,resolution05[5,:],width=0.2,label='FBP est deformation')
-        plt.xticks(x_val+0.3, model_name,rotation=45)
+        plt.plot(v_SNR_list,resolution05[3,:],width=0.2, label='FBP')
+        plt.plot(v_SNR_list,resolution05[4,:],width=0.2, label='FBP undeformed')
+        plt.plot(v_SNR_list,resolution05[0,:],width=0.2,label='ICETIDE')
+        plt.plot(v_SNR_list,resolution05[5,:],width=0.2,label='FBP est deformation')
+        # plt.xticks(x_val+0.3, model_name,rotation=45)
         plt.ylabel('Resolution (1/pixel size)')
+        plt.ylabel('SNR (dB)')
         plt.legend()
         plt.savefig(os.path.join(config.path_save,'evaluation','resolution05.pdf'))
-        plt.close()        
-        
+        plt.close() 
+
         plt.figure()
-        plt.bar(x_val,resolution0143[3,:],width=0.2, label='FBP')
-        plt.bar(x_val+0.2,resolution0143[4,:],width=0.2, label='FBP undeformed')
-        plt.bar(x_val+0.4,resolution0143[0,:],width=0.2,label='ICETIDE')
-        plt.bar(x_val+0.6,resolution0143[5,:],width=0.2,label='FBP est deformation')
-        plt.xticks(x_val+0.3, model_name,rotation=45)
+        plt.plot(v_SNR_list,resolution0143[3,:],width=0.2, label='FBP')
+        plt.plot(v_SNR_list,resolution0143[4,:],width=0.2, label='FBP undeformed')
+        plt.plot(v_SNR_list,resolution0143[0,:],width=0.2,label='ICETIDE')
+        plt.plot(v_SNR_list,resolution0143[5,:],width=0.2,label='FBP est deformation')
+        # plt.xticks(x_val+0.3, model_name,rotation=45)
         plt.ylabel('Resolution (1/pixel size)')
+        plt.ylabel('SNR (dB)')
         plt.legend()
         plt.savefig(os.path.join(config.path_save,'evaluation','resolution0143.pdf'))
+        plt.close() 
+
+
+
+        # plt.figure()
+        # plt.bar(x_val,resolution05[3,:],width=0.2, label='FBP')
+        # plt.bar(x_val+0.2,resolution05[4,:],width=0.2, label='FBP undeformed')
+        # plt.bar(x_val+0.4,resolution05[0,:],width=0.2,label='ICETIDE')
+        # plt.bar(x_val+0.6,resolution05[5,:],width=0.2,label='FBP est deformation')
+        # plt.xticks(x_val+0.3, model_name,rotation=45)
+        # plt.ylabel('Resolution (1/pixel size)')
+        # plt.legend()
+        # plt.savefig(os.path.join(config.path_save,'evaluation','resolution05.pdf'))
+        # plt.close()        
+        
+        # plt.figure()
+        # plt.bar(x_val,resolution0143[3,:],width=0.2, label='FBP')
+        # plt.bar(x_val+0.2,resolution0143[4,:],width=0.2, label='FBP undeformed')
+        # plt.bar(x_val+0.4,resolution0143[0,:],width=0.2,label='ICETIDE')
+        # plt.bar(x_val+0.6,resolution0143[5,:],width=0.2,label='FBP est deformation')
+        # plt.xticks(x_val+0.3, model_name,rotation=45)
+        # plt.ylabel('Resolution (1/pixel size)')
+        # plt.legend()
+        # plt.savefig(os.path.join(config.path_save,'evaluation','resolution0143.pdf'))
 
         #save as csv file with header and SNR values as columns
         resolution05 = np.vstack((model_name,resolution05))

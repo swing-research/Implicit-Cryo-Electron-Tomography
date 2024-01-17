@@ -76,6 +76,7 @@ def main():
         x_val = np.zeros(len(volume_name_list))
         model_name = []
         for i, v_name in enumerate(volume_name_list):
+            config.volume_name = v_name
             config.path_save_data = "./results/all_models_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
             config.path_save = "./results/all_models_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
 
