@@ -7,6 +7,7 @@ It creates the dataset (projections, FBP), train ICE-TIDE and compare the result
 import numpy as np
 import argparse
 import configs.shrec_all_model as config_file
+import matplotlib.pyplot as plt
 import subprocess
 import time
 import os
@@ -73,6 +74,7 @@ def main():
         resolution05 = np.zeros((6,len(volume_name_list)))
         resolution0143 = np.zeros((6,len(volume_name_list)))
         x_val = np.zeros(len(volume_name_list))
+        model_name = []
         for i, v_name in enumerate(volume_name_list):
             config.path_save_data = "./results/all_models_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
             config.path_save = "./results/all_models_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"

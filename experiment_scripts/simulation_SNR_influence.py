@@ -7,6 +7,7 @@ It creates the dataset (projections, FBP), train ICE-TIDE and compare the result
 import numpy as np
 import argparse
 import configs.shrec_all_SNR as config_file
+import matplotlib.pyplot as plt
 import subprocess
 import time
 import os

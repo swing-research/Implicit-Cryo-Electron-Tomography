@@ -500,7 +500,6 @@ def train(config):
                 ep_tot.append(ep)
                 np.save(os.path.join(config.path_save,'training','resolution05_iter.npy'),np.array(resolution_icetide_tot))
                 header ='ep,icetide,FBP,FBP_no_deformed'
-                import ipdb; ipdb.set_trace()
                 np.savetxt(os.path.join(config.path_save,'training','resolution05_iter.csv'),np.array([ep_tot,resolution_icetide_tot,resolution_FBP_tot,resolution_FBP_no_deformed_tot]).T,header=header,delimiter=",",comments='')
 
     print("Saving final state after training...")
