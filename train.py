@@ -457,6 +457,7 @@ def train(config):
                 }, os.path.join(config.path_save,'training','model_trained.pt'))
 
         if (ep%config.Ntest==0) and check_point_training and config.compute_fsc:
+            from utils import utils_FSC 
             with torch.no_grad():
                 V = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V.mrc").data),0,2)
                 ## Compute our model at same resolution than other volume

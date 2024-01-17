@@ -26,3 +26,10 @@
 
 @Vinith
 -etomo on shrec 0
+
+
+
+
+-check mutlires et multi SNR display results
+- save per iter the fsc, ipdb
+- debug for  impliit net
