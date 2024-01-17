@@ -76,8 +76,8 @@ def main():
             resolutions = getReolution(fsc)
             resolution05[:,i] = resolutions[0]
             resolution0143[:,i] = resolutions[1]
-            x_val[i] = int(f.split('_')[1])
-            model_name.append('model'+str(i))
+            x_val[i] = i
+            model_name.append('model '+str(i))
 
 
         config.path_save_data = "./results/SNR_exp_"+str(config.volume_name)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"

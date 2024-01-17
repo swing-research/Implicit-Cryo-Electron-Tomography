@@ -82,8 +82,8 @@ def main():
             resolutions = getReolution(fsc)
             resolution05[:,i] = resolutions[0]
             resolution0143[:,i] = resolutions[1]
-            x_val[i] = int(f.split('_')[1])
-            model_name.append('model'+str(i))
+            x_val[i] = i
+            model_name.append('model '+str(i))
 
         config.path_save = "./results/all_models"+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
         if not os.path.exists(config.path_save):
