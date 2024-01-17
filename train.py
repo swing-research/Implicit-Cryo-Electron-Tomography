@@ -547,8 +547,8 @@ def train(config):
     plt.savefig(os.path.join(config.path_save,'training','loss.pdf'))
     print("Training is over.")
 
-    import ipdb; ipdb.set_trace()
     if config.compute_fsc:
+        import ipdb; ipdb.set_trace()
         plt.figure(figsize=(10,10))
         plt.plot(resolution_icetide_tot,label='ICETIDE')
         plt.plot(resolution_FBP_tot,label='FBP')

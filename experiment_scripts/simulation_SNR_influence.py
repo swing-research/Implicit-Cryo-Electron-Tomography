@@ -9,6 +9,7 @@ import argparse
 import configs.shrec_all_SNR as config_file
 import subprocess
 import time
+import os
 
 
 def main():   
