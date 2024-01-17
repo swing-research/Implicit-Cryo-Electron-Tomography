@@ -382,17 +382,6 @@ def train(config):
                 ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
         if config.track_memory:
             memory_used.append(torch.cuda.memory_allocated())
-        training_time = time.time()-t0
-        # Saving the training time and the memory used
-        if config.track_memory:
-            max_memory_allocated_bytes = torch.cuda.max_memory_allocated()
-            # Convert bytes to gigabytes
-            max_memory_allocated_gb = max_memory_allocated_bytes / (1024**3)
-            np.save(os.path.join(config.path_save,'training','memory_used.npy'),memory_used)
-            np.savetxt(os.path.join(config.path_save,'training','memory_used.txt'),np.array([np.max(memory_used)/ (1024**3),max_memory_allocated_gb])) # Conversion in Gb
-        np.save(os.path.join(config.path_save,'training','training_time.npy'),training_time)
-        np.savetxt(os.path.join(config.path_save,'training','training_time.txt'),np.array([training_time]))
-
 
         # Save and display some results
         if (ep%config.Ntest==0) and check_point_training:
