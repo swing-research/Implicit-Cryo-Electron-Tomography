@@ -79,7 +79,8 @@ def get_config():
     # Sampling strategy
     config.batch_size = 4 # number of viewing direction per iteration
     config.nRays =  1500 # number of sampling rays per viewing direction
-    config.z_max = 2*config.n3/max(config.n1,config.n2)/np.cos((90-np.max([config.view_angle_min,config.view_angle_max]))*np.pi/180)
+    # config.z_max = 2*config.n3/max(config.n1,config.n2)/np.cos((90-np.max([config.view_angle_min,config.view_angle_max]))*np.pi/180)
+    config.z_max = 1.5
     config.ray_length = 500 #int(np.floor(n1*z_max))
     config.rays_scaling = [1.,1.,1.] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
 
