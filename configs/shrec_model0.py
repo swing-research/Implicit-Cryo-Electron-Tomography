@@ -99,6 +99,7 @@ def get_config():
     config.lamb_rot = 1e-5 # regul parameters on inplane rotations
     config.lamb_shifts = 1e-5 # regul parameters on shifts
     config.lamb_local_ampl = 1e-5 # regul on amplitude of local def.
+    config.lamb_local_mean = 1e-5 # regul on mean of local def.
     config.wd = 5e-6 # weights decay
 
     # Params for implicit deformation
