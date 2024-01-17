@@ -67,7 +67,10 @@ put your tilt-series here ... and run ...
 python -m experiment_scripts.simulation_shrec_timing 
 ```
 
-
+### Only training ICE-TIDE for real data
+```
+python -m experiment_scriptsreal_data_tkiuv --no_gen_data --no_aretomo --no_comparison
+```
 
 
 
