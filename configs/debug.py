@@ -102,7 +102,7 @@ def get_config():
     config.wd = 5e-6 # weights decay
 
     # Params for implicit deformation
-    config.deformationScale = 1e-2
+    config.deformationScale = 5e-3
     config.grid_positive = True
 
     # params of implicit volume
@@ -134,7 +134,7 @@ def get_config():
         config.local_deformation.output_size = 2 # fixed
         config.local_deformation.num_layers = 3
         config.local_deformation.hidden_size = 32
-        config.local_deformation.L = 10
+        config.local_deformation.L = 30
     elif config.local_model == 'interp':
         config.local_deformation.N_ctrl_pts_net = 10
 

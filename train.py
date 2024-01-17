@@ -471,7 +471,9 @@ def train(config):
     # Saving the training time and the memory used
     if config.track_memory:
         np.save(os.path.join(config.path_save,'training','memory_used.npy'),memory_used)
+        np.savetxt(os.path.join(config.path_save,'training','memory_used.txt'),np.array([memory_used.max()/ (1024**3)])) # Conversion in Gb
     np.save(os.path.join(config.path_save,'training','training_time.npy'),training_time)
+    np.savetxt(os.path.join(config.path_save,'training','training_time.txt'),np.array([training_time]))
 
     with torch.no_grad():
         z_range = np.linspace(-1,1,config.n3)*rays_scaling[0,0,0,2].item()*(config.n3/config.n1)/2+0.5

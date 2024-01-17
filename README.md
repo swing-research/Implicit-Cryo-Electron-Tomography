@@ -62,6 +62,10 @@ python -m experiment_scripts.simulation_model0 --no_gen_data --no_train --no_are
 put your tilt-series here ... and run ...
 
 
+### Reproduce the timing 
+```
+python -m experiment_scripts.simulation_shrec_timing 
+```
 
 
 
