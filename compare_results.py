@@ -829,3 +829,48 @@ def compare_results(config):
         if eval_AreTomo:
             savepath = os.path.join(config.path_save,'evaluation','deformations','AreTomo','local_deformation_factor10_error_{}'.format(index))
             utils_display.display_local_est_and_true(implicit_deformation_AreTomo[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath )
+
+
+
+# Computing the resolution
+def resolution(fsc,cutt_off=0.5,minIndex=2):
+    """
+    The function returns the resolution of the volume
+    """
+    resolution_Set = np.zeros(fsc.shape[0])         
+    for i in range(fsc.shape[0]):
+        indeces = np.where(fsc[i]<cutt_off)[0]
+        choosenIndex = np.where(indeces>minIndex)[0][0]
+        resolution_Set[i] = indeces[choosenIndex]
+    return resolution_Set
+
+def getReolution(dataframe,cutoffs=[0.5,0.143]):
+    """
+    Uses the pandas dataframe extracts the fsc for each method and outputs the resolution for two values
+    """
+    fsc_ours = dataframe['icetide'].values
+    if('ETOMO' in dataframe.columns):
+        fsc_etomo = dataframe['ETOMO'].values
+    else:
+        fsc_etomo = np.zeros(len(fsc_ours))
+    if('AreTomo' in dataframe.columns):
+        fsc_areTomo = dataframe['AreTomo'].values
+    else:
+        fsc_areTomo = np.zeros(len(fsc_ours))
+    fsc_FBP = dataframe['FBP'].values
+    fsc_FBP_undeformed = dataframe['FBP_no_deformed'].values
+    fsc_FBP_est_deformed = dataframe['FBP_est_deformed'].values
+
+    fscSet = np.zeros((6, len(fsc_ours)))
+    fscSet[0] = fsc_ours
+    fscSet[1] = fsc_etomo
+    fscSet[2] = fsc_areTomo
+    fscSet[3] = fsc_FBP
+    fscSet[4] = fsc_FBP_undeformed
+    fscSet[5] = fsc_FBP_est_deformed
+
+    res_set = np.zeros((len(cutoffs),6))
+    for i,cutoff in enumerate(cutoffs):
+        res_set[i] = resolution(fscSet,cutoff)
+
+    return res_set

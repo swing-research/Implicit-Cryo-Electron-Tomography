@@ -62,6 +62,7 @@ def main():
 
     if args.no_comparison:
         import pandas as pd
+        from compare_results import getReolution
         resolution05 = np.zeros((6,len(v_SNR_list)))
         resolution0143 = np.zeros((6,len(v_SNR_list)))
         x_val = np.zeros(len(v_SNR_list))
@@ -109,7 +110,7 @@ def main():
         #save as csv file with header and SNR values as columns
         resolution05 = np.vstack((model_name,resolution05))
         resolution0143 = np.vstack((model_name,resolution0143))
-        header = ['ours','ETOMO','AreTomo','FBP','FBP_no_deformed','FBP_est_deformed']
+        header = ['icetide','ETOMO','AreTomo','FBP','FBP_no_deformed','FBP_est_deformed']
         header= 'MODEL_NAME'+','+','.join(header)
         pd_resoluton05 = pd.DataFrame(resolution05.T,columns=header.split(','))
         pd_resoluton0143 = pd.DataFrame(resolution0143.T,columns=header.split(','))

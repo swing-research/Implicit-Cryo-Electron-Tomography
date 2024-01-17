@@ -12,50 +12,6 @@ import time
 import os
 
 
-
-# Computing the resolution
-def resolution(fsc,cutt_off=0.5,minIndex=2):
-    """
-    The function returns the resolution of the volume
-    """
-    resolution_Set = np.zeros(fsc.shape[0])         
-    for i in range(fsc.shape[0]):
-        indeces = np.where(fsc[i]<cutt_off)[0]
-        choosenIndex = np.where(indeces>minIndex)[0][0]
-        resolution_Set[i] = indeces[choosenIndex]
-    return resolution_Set
-
-def getReolution(dataframe,cutoffs=[0.5,0.143]):
-    """
-    Uses the pandas dataframe extracts the fsc for each method and outputs the resolution for two values
-    """
-    fsc_ours = dataframe['ours'].values
-    if('ETOMO' in dataframe.columns):
-        fsc_etomo = dataframe['ETOMO'].values
-    else:
-        fsc_etomo = np.zeros(len(fsc_ours))
-    if('AreTomo' in dataframe.columns):
-        fsc_areTomo = dataframe['AreTomo'].values
-    else:
-        fsc_areTomo = np.zeros(len(fsc_ours))
-    fsc_FBP = dataframe['FBP'].values
-    fsc_FBP_undeformed = dataframe['FBP_no_deformed'].values
-    fsc_FBP_est_deformed = dataframe['FBP_est_deformed'].values
-
-    fscSet = np.zeros((6, len(fsc_ours)))
-    fscSet[0] = fsc_ours
-    fscSet[1] = fsc_etomo
-    fscSet[2] = fsc_areTomo
-    fscSet[3] = fsc_FBP
-    fscSet[4] = fsc_FBP_undeformed
-    fscSet[5] = fsc_FBP_est_deformed
-
-    res_set = np.zeros((len(cutoffs),6))
-    for i,cutoff in enumerate(cutoffs):
-        res_set[i] = resolution(fscSet,cutoff)
-
-    return res_set
-
 def main():   
     parser = argparse.ArgumentParser(description='Run experiement for the SHREC dataset.')
     parser.add_argument('--no_gen_data', action='store_false', help='Generate the data, default is True.')
@@ -113,6 +69,7 @@ def main():
 
     if args.no_comparison:
         import pandas as pd
+        from compare_results import getReolution
         resolution05 = np.zeros((6,len(volume_name_list)))
         resolution0143 = np.zeros((6,len(volume_name_list)))
         x_val = np.zeros(len(volume_name_list))
@@ -158,7 +115,7 @@ def main():
         #save as csv file with header and SNR values as columns
         resolution05 = np.vstack((model_name,resolution05))
         resolution0143 = np.vstack((model_name,resolution0143))
-        header = ['ours','ETOMO','AreTomo','FBP','FBP_no_deformed','FBP_est_deformed']
+        header = ['icetide','ETOMO','AreTomo','FBP','FBP_no_deformed','FBP_est_deformed']
         header= 'MODEL_NAME'+','+','.join(header)
         pd_resoluton05 = pd.DataFrame(resolution05.T,columns=header.split(','))
         pd_resoluton0143 = pd.DataFrame(resolution0143.T,columns=header.split(','))
