@@ -57,8 +57,35 @@ def main():
             from compare_results import compare_results
             compare_results(config)
 
-    # TODO load all FSCs and merge that into the bar plot
 
+
+    if args.no_comparison:
+        resolution05 = np.zeros((6,len(volume_name_list)))
+        resolution0143 = np.zeros((6,len(volume_name_list)))
+        x_val = np.zeros(len(volume_name_list))
+        for i, v_SNR in enumerate(v_SNR_list):
+            config.path_save_data = "./results/all_models_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
+            config.path_save = "./results/all_models_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
+
+            data_path = os.path.join(config.path_save,'evaluation','FSC.csv')
+            fsc = pd.read_csv(data_path+'FSC.csv')
+            resolutions = getReolution(fsc)
+            resolution05[:,i] = resolutions[0]
+            resolution0143[:,i] = resolutions[1]
+            x_val[i] = int(f.split('_')[1])
+            model_name.append('model'+str(i))
+
+            plt.figure()
+            plt.bar(x_val,resolution05[3,:],width=0.2, label='FBP')
+            plt.bar(x_val+0.2,resolution05[4,:],width=0.2, label='FBP undeformed')
+            plt.bar(x_val+0.4,resolution05[0,:],width=0.2,label='ours')
+            plt.bar(x_val+0.6,resolution05[5,:],width=0.2,label='FBP est deformation')
+            plt.xticks(x_val+0.3, model_name)
+            plt.ylabel('Resolution (1/pixel size)')
+            plt.legend()
+            plt.savefig(os.path.join(config.path_save,'evaluation','resolution05.pdf'))
+            plt.close()
+            
 
 
 if __name__ == '__main__':
