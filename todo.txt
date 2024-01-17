@@ -1,6 +1,4 @@
 - remove useless function in the utils script (reconstruction)
-- handle the __main__ in utils_sampling.py
-- define other model for implicit net or remove it
 - multi shrec XP
    Davinci (running)
    python -m experiment_scripts.simulation_all_shrec_models --no_aretomo --no_comparison
@@ -29,4 +27,4 @@
 
 
 -check mutlires et multi SNR display results
-- debug for  implicit net
+

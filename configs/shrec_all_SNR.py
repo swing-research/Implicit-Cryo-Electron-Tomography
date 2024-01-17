@@ -63,8 +63,8 @@ def get_config():
     config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
-    config.epochs = 11
-    config.Ntest = 10 # number of epoch before display
+    config.epochs = 1000
+    config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
     config.compute_fsc = False # save fsc, takes more time
     config.scheduler_step_size = 200

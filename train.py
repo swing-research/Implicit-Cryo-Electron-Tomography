@@ -382,7 +382,6 @@ def train(config):
 
         # Save and display some results
         if (ep%config.Ntest==0) and check_point_training:
-            print('Running and saving tests')
 
             with torch.no_grad():
                 ## Avergae loss over until the last test
@@ -394,6 +393,8 @@ def train(config):
                 l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader)*config.Ntest:])
                 print("----Epoch: {}, loss_avg: {:2.3f} || Loss data fidelity: {:2.3f}, regul volume: {:2.2f}, regul shifts: {:2.4f}, regul inplane: {:2.2f}, regul local: {:2.4f}, time: {:2.0f} s".format(
                     ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
+                
+                print('Running and saving tests')  
 
                 ## Save local deformation
                 utils_display.display_local_movie(implicit_deformation_list,field_true=local_tr,Npts=(20,20),
@@ -497,6 +498,7 @@ def train(config):
                 ep_tot.append(ep)
                 np.save(os.path.join(config.path_save,'training','resolution05_iter.npy'),np.array(resolution_icetide_tot))
                 header ='ep,icetide,FBP,FBP_no_deformed'
+                import ipdb; ipdb.set_trace()
                 np.savetxt(os.path.join(config.path_save,'training','resolution05_iter.csv'),np.array([ep_tot,resolution_icetide_tot,resolution_FBP_tot,resolution_FBP_no_deformed_tot]).T,header=header,delimiter=",",comments='')
 
     print("Saving final state after training...")
