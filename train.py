@@ -245,6 +245,8 @@ def train(config):
         from utils import utils_FSC 
         ep_tot = []
         resolution_icetide_tot = []
+        resolution_FBP_tot = []
+        resolution_FBP_no_deformed_tot = []
         V = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V.mrc").data),0,2)
         V_FBP_no_deformed = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_FBP_no_deformed.mrc").data),0,2)
         V_FBP =  np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_FBP.mrc").data),0,2)
