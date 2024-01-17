@@ -242,6 +242,7 @@ def train(config):
         memory_used = []
         check_point_training = False # Do not stop for display when keeping track of the memory
     if config.compute_fsc:
+        from utils import utils_FSC 
         ep_tot = []
         resolution_icetide_tot = []
         V = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V.mrc").data),0,2)
@@ -470,7 +471,6 @@ def train(config):
                 }, os.path.join(config.path_save,'training','model_trained.pt'))
 
         if (ep%config.Ntest==0) and check_point_training and config.compute_fsc:
-            from utils import utils_FSC 
             with torch.no_grad():
                 resolution_FBP_tot.append(resolution_FBP)
                 resolution_FBP_no_deformed_tot.append(resolution_FBP_no_deformed)
