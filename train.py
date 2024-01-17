@@ -325,7 +325,7 @@ def train(config):
                 # Using only the x and y coordinates
                 for ii_ in idx_loader:
                     depl = torch.abs(implicit_deformation_list[ii](raysSet[:,:,0,:2].reshape(-1,2))*config.n1)
-                    depl_mean = torch.mean(implicit_deformation_list[ii](raysSet[:,:,0,:2].reshape(-1,2))*config.n1)
+                    depl_mean = torch.abs(torch.mean(implicit_deformation_list[ii](raysSet[:,:,0,:2].reshape(-1,2))*config.n1))
                     loss += (config.lamb_local_ampl*depl.mean()+config.lamb_local_mean*depl_mean)
                     loss_regul_local_ampl.append((config.lamb_local_ampl*depl.mean()+config.lamb_local_mean*depl_mean).item())
             if train_global_def and (config.lamb_rot!=0 or config.lamb_shifts!=0):
