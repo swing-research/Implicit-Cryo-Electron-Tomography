@@ -4,6 +4,7 @@ File to run the simulation with SHREC2021 model_0 volume.
 It creates the dataset (projections, FBP), train ICE-TIDE and compare the results with AreTomo and Etomo.
 """
 
+import numpy as np
 import argparse
 import configs.shrec_all_SNR as config_file
 import subprocess
