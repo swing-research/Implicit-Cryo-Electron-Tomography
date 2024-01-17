@@ -65,7 +65,7 @@ def get_config():
     config.train_local_def = True
     config.train_global_def = True
     config.volume_model = "multi-resolution" # multi-resolution, Fourier-features, grid, MLP
-    config.local_model = 'implicit' #  'implicit' or 'interp'
+    config.local_model = 'tcnn' #  'implicit' or 'interp' or 'tcnn'
 
     # Training schedule
     config.epochs = 1000
@@ -133,11 +133,31 @@ def get_config():
     if config.local_model == 'implicit':
         config.local_deformation.input_size = 2 # fixed
         config.local_deformation.output_size = 2 # fixed
-        config.local_deformation.num_layers = 3
-        config.local_deformation.hidden_size = 32
+        config.local_deformation.num_layers = 5
+        config.local_deformation.hidden_size = 64
         config.local_deformation.L = 30
     elif config.local_model == 'interp':
         config.local_deformation.N_ctrl_pts_net = 10
+    elif config.local_model == 'tcnn':
+        config.local_model.input_size_volume = 2 # always 3 for 3d tomography
+        config.local_model.output_size_volume = 2 # always 1 for 3d tomography
+        config.local_model.num_layers_volume = 2
+        config.local_model.hidden_size_volume = 16
+        config.local_model.L_volume = 3
+        config.local_model.encoding = ml_collections.ConfigDict()
+        config.local_model.encoding.otype = 'Grid'
+        config.local_model.encoding.type = 'Hash'
+        config.local_model.encoding.n_levels = 5#
+        config.local_model.encoding.n_features_per_level = 2
+        config.local_model.encoding.log2_hashmap_size = 22
+        config.local_model.encoding.base_resolution = 32
+        config.local_model.encoding.per_level_scale = 2
+        config.local_model.encoding.interpolation = 'Smoothstep'
+        # params specific to Tiny cuda network
+        config.local_model.network = ml_collections.ConfigDict()
+        config.local_model.network.otype = 'FullyFusedMLP'
+        config.local_model.network.activation = 'ReLU'
+        config.local_model.network.output_activation = 'None'
 
     #######################
     ## AreTomo ##
