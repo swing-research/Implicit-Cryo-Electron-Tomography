@@ -89,7 +89,7 @@ def main():
             os.makedirs(config.path_save+"evaluation/")
 
 
-
+        import ipdb; ipdb.set_trace()
         plt.figure()
         plt.plot(v_SNR_list,resolution05[3,:],width=0.2, label='FBP')
         plt.plot(v_SNR_list,resolution05[4,:],width=0.2, label='FBP undeformed')
