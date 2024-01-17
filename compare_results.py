@@ -212,6 +212,7 @@ def compare_results(config):
         ARE_TOMO_FILE = f'projections_aligned_aretomo_{npatch}by{npatch}.mrc'
         path_file = os.path.join(config.path_save,'AreTomo',ARE_TOMO_FILE)
         shift_aretomo = np.zeros((config.Nangles,2))
+        translation_matrix_np = np.zeros((2))        
         if os.path.isfile(path_file):
             eval_AreTomo = True
             # load projections # need to be reorder and there seem to be a shift in intensity, so we match the mean on the noisy one 
@@ -481,8 +482,8 @@ def compare_results(config):
                                                 ).mean(),decimals=4)
 
     # Compute the error between the true and AreTomo estimated deformation
-    error_x_shifts_aretomo = np.around(np.abs(x_shifts*n1_eval-shift_aretomo[:,0]-translation_matrix_np[1]).mean(),decimals=4)
-    error_y_shifts_aretomo = np.around(np.abs(y_shifts*n1_eval-shift_aretomo[:,1]).mean(),decimals=4)
+    error_x_shifts_aretomo = np.around(np.abs(x_shifts*n1_eval-shift_aretomo[:,0]-translation_matrix_np[0]).mean(),decimals=4)
+    error_y_shifts_aretomo = np.around(np.abs(y_shifts*n1_eval-shift_aretomo[:,1]-translation_matrix_np[1]).mean(),decimals=4)
     error_inplane_rotation_aretomo =np.around( np.abs(inplane_rotation-inplane_rotation_aretomo
                                                 ).mean(),decimals=4)
 
