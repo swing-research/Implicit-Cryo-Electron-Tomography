@@ -60,9 +60,10 @@ def main():
 
 
     if args.no_comparison:
-        resolution05 = np.zeros((6,len(volume_name_list)))
-        resolution0143 = np.zeros((6,len(volume_name_list)))
-        x_val = np.zeros(len(volume_name_list))
+        import pandas as pd
+        resolution05 = np.zeros((6,len(v_SNR_list)))
+        resolution0143 = np.zeros((6,len(v_SNR_list)))
+        x_val = np.zeros(len(v_SNR_list))
         for i, v_SNR in enumerate(v_SNR_list):
             config.SNR_value = v_SNR
             config.path_save_data = "./results/SNR_exp_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"

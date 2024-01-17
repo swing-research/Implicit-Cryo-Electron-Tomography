@@ -8,7 +8,6 @@
    python -m experiment_scripts.simulation_all_shrec_models --no_gen_data --no_train --no_comparison
    scp + Davinci
    python -m experiment_scripts.simulation_all_shrec_models --no_gen_data --no_train --no_aretomo
-   TODO: compare results inot the one bar plot
 - real data XP
 - different SNR
    Davinci (running)
@@ -17,7 +16,6 @@
    python -m experiment_scripts.simulation_SNR_influence --no_gen_data --no_train --no_comparison
    scp + Davinci
    python -m experiment_scripts.simulation_SNR_influence --no_gen_data --no_train --no_aretomo
-   TODO: compare results inot the one line plot
 - Timing (re run to tr the new command max_memory)
    python -m experiment_scripts.simulation_shrec_timing 
 - FSC per epoch
