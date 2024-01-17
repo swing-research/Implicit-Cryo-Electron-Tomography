@@ -53,10 +53,10 @@ def main():
                     t = time.time()-t0
 
 
-        # Compare the results and save the figures
-        if args.no_comparison:
-            from compare_results import compare_results
-            compare_results(config)
+        # # Compare the results and save the figures
+        # if args.no_comparison:
+        #     from compare_results import compare_results
+        #     compare_results(config)
 
 
 
@@ -72,7 +72,7 @@ def main():
             config.path_save = "./results/SNR_exp_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
 
             data_path = os.path.join(config.path_save,'evaluation','FSC.csv')
-            fsc = pd.read_csv(data_path+'FSC.csv')
+            fsc = pd.read_csv(data_path)
             resolutions = getReolution(fsc)
             resolution05[:,i] = resolutions[0]
             resolution0143[:,i] = resolutions[1]
