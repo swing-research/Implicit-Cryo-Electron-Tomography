@@ -551,13 +551,14 @@ def train(config):
     print("Training is over.")
 
     if config.compute_fsc:
-        import ipdb; ipdb.set_trace()
         plt.figure(figsize=(10,10))
-        plt.plot(resolution_icetide_tot,label='ICETIDE')
-        plt.plot(resolution_FBP_tot,label='FBP')
-        plt.plot(resolution_FBP_no_deformed_tot,label='FBP no deform')
+        plt.plot(ep_tot,resolution_icetide_tot,label='ICETIDE')
+        plt.plot(ep_tot,resolution_FBP_tot,label='FBP')
+        plt.plot(ep_tot,resolution_FBP_no_deformed_tot,label='FBP no deform')
         plt.legend()
         plt.xticks(ep_tot)
+        plt.ylabel('Resolution (1/pixel size)')
+        plt.xlabel('Epoch')
         plt.savefig(os.path.join(config.path_save,'training','resolution05_iter.png'))
         plt.savefig(os.path.join(config.path_save,'training','resolution05_iter.pdf'))
 
