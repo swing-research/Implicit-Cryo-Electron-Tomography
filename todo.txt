@@ -16,6 +16,8 @@
    python -m experiment_scripts.simulation_SNR_influence --no_gen_data --no_train --no_aretomo
 - Timing (re run to tr the new command max_memory)
    python -m experiment_scripts.simulation_shrec_timing 
+- Run timing on a single GPU that is free
+    python -m experiment_scripts.simulation_shrec_timing
 
 
 
@@ -25,6 +27,4 @@
 
 
 
-
--check mutlires et multi SNR display results
 
