@@ -160,15 +160,8 @@ def main():
             pd_resoluton05 = pd.DataFrame(resolution05.T,columns=header.split(','))
             pd_resoluton0143 = pd.DataFrame(resolution0143.T,columns=header.split(','))
 
-
             pd_resoluton05.to_csv(os.path.join(config.path_save,'evaluation','resolution05.csv'),index=False)
             pd_resoluton0143.to_csv(os.path.join(config.path_save,'evaluation','resolution0143.csv'),index=False)
-
-
-
-
-
-    # TODO load all FSCs and merge that into the bar plot
 
 
 
