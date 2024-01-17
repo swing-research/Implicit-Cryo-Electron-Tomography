@@ -244,6 +244,18 @@ def train(config):
     if config.compute_fsc:
         ep_tot = []
         resolution_icetide_tot = []
+        V = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V.mrc").data),0,2)
+        V_FBP_no_deformed = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_FBP_no_deformed.mrc").data),0,2)
+        V_FBP =  np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_FBP.mrc").data),0,2)
+        fsc_FBP = utils_FSC.FSC(V,V_FBP)
+        fsc_FBP_no_deformed = utils_FSC.FSC(V,V_FBP_no_deformed)
+
+        indeces = np.where(fsc_FBP<0.5)[0]
+        choosenIndex = np.where(indeces>2)[0][0]
+        resolution_FBP = indeces[choosenIndex]
+        indeces = np.where(fsc_FBP_no_deformed<0.5)[0]
+        choosenIndex = np.where(indeces>2)[0][0]
+        resolution_FBP_no_deformed = indeces[choosenIndex]
     t0 = time.time()
     print("Training the network(s)...")
     for ep in range(config.epochs):
@@ -459,7 +471,8 @@ def train(config):
         if (ep%config.Ntest==0) and check_point_training and config.compute_fsc:
             from utils import utils_FSC 
             with torch.no_grad():
-                V = np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V.mrc").data),0,2)
+                resolution_FBP_tot.append(resolution_FBP)
+                resolution_FBP_no_deformed_tot.append(resolution_FBP_no_deformed)
                 ## Compute our model at same resolution than other volume
                 rays_scaling = torch.tensor(np.array(config.rays_scaling))[None,None,None].type(config.torch_type).to(device)
                 n1_eval, n2_eval, n3_eval = V.shape
@@ -483,8 +496,8 @@ def train(config):
                 resolution_icetide_tot.append(resolution_icetide)
                 ep_tot.append(ep)
                 np.save(os.path.join(config.path_save,'training','resolution05_iter.npy'),np.array(resolution_icetide_tot))
-                header ='ep,icetide'
-                np.savetxt(os.path.join(config.path_save,'training','resolution05_iter.csv'),np.array([ep_tot,resolution_icetide_tot]).T,header=header,delimiter=",",comments='')
+                header ='ep,icetide,FBP,FBP_no_deformed'
+                np.savetxt(os.path.join(config.path_save,'training','resolution05_iter.csv'),np.array([ep_tot,resolution_icetide_tot,resolution_FBP_tot,resolution_FBP_no_deformed_tot]).T,header=header,delimiter=",",comments='')
 
     print("Saving final state after training...")
     torch.save({
@@ -533,3 +546,15 @@ def train(config):
     plt.savefig(os.path.join(config.path_save,'training','loss.png'))
     plt.savefig(os.path.join(config.path_save,'training','loss.pdf'))
     print("Training is over.")
+
+    import ipdb; ipdb.set_trace()
+    if config.compute_fsc:
+        plt.figure(figsize=(10,10))
+        plt.plot(resolution_icetide_tot,label='ICETIDE')
+        plt.plot(resolution_FBP_tot,label='FBP')
+        plt.plot(resolution_FBP_no_deformed_tot,label='FBP no deform')
+        plt.legend()
+        plt.xticks(ep_tot)
+        plt.savefig(os.path.join(config.path_save,'training','resolution05_iter.png'))
+        plt.savefig(os.path.join(config.path_save,'training','resolution05_iter.pdf'))
+
