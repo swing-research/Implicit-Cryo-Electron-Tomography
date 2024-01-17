@@ -470,8 +470,11 @@ def train(config):
     training_time = time.time()-t0
     # Saving the training time and the memory used
     if config.track_memory:
+        max_memory_allocated_bytes = torch.cuda.max_memory_allocated()
+        # Convert bytes to gigabytes
+        max_memory_allocated_gb = max_memory_allocated_bytes / (1024**3)
         np.save(os.path.join(config.path_save,'training','memory_used.npy'),memory_used)
-        np.savetxt(os.path.join(config.path_save,'training','memory_used.txt'),np.array([memory_used.max()/ (1024**3)])) # Conversion in Gb
+        np.savetxt(os.path.join(config.path_save,'training','memory_used.txt'),np.array([memory_used.max()/ (1024**3),max_memory_allocated_gb])) # Conversion in Gb
     np.save(os.path.join(config.path_save,'training','training_time.npy'),training_time)
     np.savetxt(os.path.join(config.path_save,'training','training_time.txt'),np.array([training_time]))
 
