@@ -602,7 +602,6 @@ def train_without_ground_truth(config):
         for img in img_pyramids[0]:
             len_set.append(img.shape[0])
 
-        import ipdb; ipdb.set_trace()
         proj_pyramid_set = []
         for lenIndex, projLen in enumerate(len_set):
             if config.multires_params.upsample:
@@ -668,7 +667,6 @@ def train_without_ground_truth(config):
     num_param = sum(p.numel() for p in impl_volume.parameters() if p.requires_grad) 
     print(f"---> Number of trainable parameters in volume net: {num_param}")
 
-    import ipdb; ipdb.set_trace()
     ######################################################################################################
     ## Define the implicit deformations
     if config.local_model=='implicit':
@@ -819,7 +817,6 @@ def train_without_ground_truth(config):
         # RAY_LENGTH = ray_length_set[0]
         # BATCH_SIZE = batch_set[0]
 
-    import ipdb; ipdb.set_trace()
     ######################################################################################################
     ## Iterative optimization
     loss_tot = []
@@ -866,12 +863,10 @@ def train_without_ground_truth(config):
                 # N_RAYS = n_rays_set[min(multi_resolution_counter, len(n_rays_set)-1)]
                 # RAY_LENGTH = ray_length_set[min(multi_resolution_counter, len(ray_length_set)-1)]
                 
-                import ipdb; ipdb.set_trace()
 
 
         for   angle,proj, idx_loader  in trainLoader:
-            import ipdb; ipdb.set_trace()
-            
+
             optimizer_volume.zero_grad()
             if learn_deformations:
                 optimizer_deformations_glob.zero_grad()

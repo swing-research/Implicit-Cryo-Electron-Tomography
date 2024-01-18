@@ -61,7 +61,8 @@ def main():
     projections_noisy = np.double(mrcfile.open(os.path.join(config.path_load,config.volume_name+".mrc"),permissive=True).data)
     projections_noisy = projections_noisy/np.abs(projections_noisy).max()
     if config.n1 is not None:
-        projections_noisy = resize(V,(60,1024,1024))
+        config.Nangles = projections_noisy.shape[0]
+        projections_noisy = resize(projections_noisy,(config.Nangles,config.n1,config.n2))
     else:
         config.Nangles, config.n1, config.n2 = projections_noisy.shape
         config.n3 = config.n1*2
