@@ -925,6 +925,10 @@ def compare_results_real(config):
     # numpy
     V_FBP = V_FBP_t.detach().cpu().numpy()
 
+    data = np.load(config.path_save_data+"volume_and_projections.npz")
+    projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
+    config.Nangles = projections_noisy.shape[0]
+
 
     ## Aretomo
     # get the files
