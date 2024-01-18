@@ -1026,7 +1026,7 @@ def compare_results_real(config):
         grid2d = np.concatenate([XX.reshape(-1,1),YY.reshape(-1,1)],1)
         grid2d_t = torch.tensor(grid2d).type(config.torch_type)
         z_range = np.linspace(-1,1,n3_eval)*rays_scaling[0,0,0,2].item()*(n3_eval/n1_eval)/2+0.5
-        V_icetide = np.zeros_like(V)
+        V_icetide = np.zeros_like(V_FBP)
         for zz, zval in enumerate(z_range):
             grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
             grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
