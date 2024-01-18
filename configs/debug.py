@@ -13,7 +13,7 @@ def get_config():
     #######################
     config = ml_collections.ConfigDict()
     config.seed = 42
-    config.device_num = 2
+    config.device_num = 0
     config.torch_type = torch.float
     config.track_memory = False
 
@@ -54,8 +54,8 @@ def get_config():
     config.N_ctrl_pts_local_def = (5,5) # number of different interpolation to interpolate
     
     # # Parameters for the data generation
-    config.path_save_data = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"_implicit/"
-    config.path_save = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"_implicit/"
+    config.path_save_data = "./results/Debug_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
+    config.path_save = "./results/Debug_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
 
     #############################
     ## Parameters for training ##
@@ -65,15 +65,15 @@ def get_config():
     config.train_local_def = True
     config.train_global_def = True
     config.volume_model = "multi-resolution" # multi-resolution, Fourier-features, grid, MLP
-    config.local_model = 'tcnn' #  'implicit' or 'interp' or 'tcnn'
+    config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
     config.epochs = 1000
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
-    config.compute_fsc = False # save fsc, takes more time
-    config.scheduler_step_size = 200
-    config.scheduler_gamma = 0.6
+    config.compute_fsc = True # save fsc, takes more time
+    config.scheduler_step_size = 100
+    config.scheduler_gamma = 0.5
 
     # Sampling strategy
     config.batch_size = 4 # number of viewing direction per iteration
@@ -93,14 +93,14 @@ def get_config():
     config.lr_volume = 1e-2
     config.lr_shift = 1e-3
     config.lr_rot = 1e-3
-    config.lr_local_def = 1e-3
+    config.lr_local_def = 1e-4
 
     # Training regularization
     config.lamb_volume = 0 # regul parameters on volume regularization
     config.lamb_rot = 1e-5 # regul parameters on inplane rotations
     config.lamb_shifts = 1e-5 # regul parameters on shifts
-    config.lamb_local_ampl = 1e-4 # regul on amplitude of local def.
-    config.lamb_local_mean = 1e-3 # regul on mean of local def.
+    config.lamb_local_ampl = 1e-5 # regul on amplitude of local def.
+    config.lamb_local_mean = 1e-5 # regul on mean of local def.
     config.wd = 5e-6 # weights decay
 
     # Params for implicit deformation
@@ -117,7 +117,7 @@ def get_config():
     config.encoding = ml_collections.ConfigDict()
     config.encoding.otype = 'Grid'
     config.encoding.type = 'Hash'
-    config.encoding.n_levels = 8#
+    config.encoding.n_levels = 8
     config.encoding.n_features_per_level = 4
     config.encoding.log2_hashmap_size = 22
     config.encoding.base_resolution = 8
@@ -134,30 +134,11 @@ def get_config():
     if config.local_model == 'implicit':
         config.local_deformation.input_size = 2 # fixed
         config.local_deformation.output_size = 2 # fixed
-        config.local_deformation.num_layers = 5
-        config.local_deformation.hidden_size = 64
-        config.local_deformation.L = 30
+        config.local_deformation.num_layers = 3
+        config.local_deformation.hidden_size = 32
+        config.local_deformation.L = 10
     elif config.local_model == 'interp':
         config.local_deformation.N_ctrl_pts_net = 10
-    elif config.local_model == 'tcnn':
-        config.local_deformation.input_size = 2 # fixed
-        config.local_deformation.output_size = 2 # fixed
-        config.local_deformation.num_layers = 2
-        config.local_deformation.hidden_size = 16
-        config.local_deformation.encoding = ml_collections.ConfigDict()
-        config.local_deformation.encoding.otype = 'Grid'
-        config.local_deformation.encoding.type = 'Hash'
-        config.local_deformation.encoding.n_levels = 2#
-        config.local_deformation.encoding.n_features_per_level = 2
-        config.local_deformation.encoding.log2_hashmap_size = 22
-        config.local_deformation.encoding.base_resolution = 4
-        config.local_deformation.encoding.per_level_scale = 2
-        config.local_deformation.encoding.interpolation = 'Smoothstep'
-        # params specific to Tiny cuda network
-        config.local_deformation.network = ml_collections.ConfigDict()
-        config.local_deformation.network.otype = 'FullyFusedMLP'
-        config.local_deformation.network.activation = 'ReLU'
-        config.local_deformation.network.output_activation = 'None'
 
     #######################
     ## AreTomo ##
