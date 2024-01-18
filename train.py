@@ -328,7 +328,7 @@ def train(config):
             raysSet = raysSet*rays_scaling
             outputValues,support = sample_implicit_batch_lowComp(impl_volume,raysSet,angle,
                 rot_deformSet=rot_deformSet,shift_deformSet=shift_deformSet,local_deformSet=local_deformSet,
-                scale=1,grid_positive=config.grid_positive,zlimit=config.n3/max(config.n1,config.n2,fixedRotSet=fixedRotSet))
+                scale=1,grid_positive=config.grid_positive,zlimit=config.n3/max(config.n1,config.n2),fixedRotSet=fixedRotSet)
             outputValues = outputValues.type(config.torch_type)
             support = support.reshape(outputValues.shape[0],outputValues.shape[1],-1)
             projEstimate = torch.sum(support*outputValues,2)/config.n3
@@ -925,7 +925,7 @@ def train_without_ground_truth(config):
             raysSet = raysSet*rays_scaling
             outputValues,support = sample_implicit_batch_lowComp(impl_volume,raysSet,angle,
                 rot_deformSet=rot_deformSet,shift_deformSet=shift_deformSet,local_deformSet=local_deformSet,
-                scale=1,grid_positive=config.grid_positive,zlimit=config.n3/max(config.n1,config.n2,fixedRotSet=fixedRotSet))
+                scale=1,grid_positive=config.grid_positive,zlimit=config.n3/max(config.n1,config.n2),fixedRotSet=fixedRotSet)
             outputValues = outputValues.type(config.torch_type)
             support = support.reshape(outputValues.shape[0],outputValues.shape[1],-1)
             projEstimate = torch.sum(support*outputValues,2)/config.n3
