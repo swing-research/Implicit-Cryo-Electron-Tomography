@@ -383,7 +383,7 @@ for k in range(config.Nangles):
             l_sh = np.mean(loss_regul_shifts[-len(trainLoader)*trainLoader.batch_size:])
             l_rot = np.mean(loss_regul_rot[-len(trainLoader)*trainLoader.batch_size:])
             l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader)*trainLoader.batch_size:])
-            print(f"Epoch: {}, loss_avg: {:.3e} || Loss data fidelity: {:.3e}, regul volume: {:.3e}, regul shifts: {:.3e}, regul inplane: {:.3e}, regul local: {:.3e}, time: {:2.0f} s".format(
+            print("Epoch: {}, loss_avg: {:.3e} || Loss data fidelity: {:.3e}, regul volume: {:.3e}, regul shifts: {:.3e}, regul inplane: {:.3e}, regul local: {:.3e}, time: {:2.0f} s".format(
                 ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
         if config.track_memory:
             memory_used.append(torch.cuda.memory_allocated())
