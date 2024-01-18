@@ -45,10 +45,17 @@ done
 
 
 # Send folder to run Etomo on local machine
+for folder in results/*/; do
+    ssh debarn0000@davinci.dmi.unibas.ch "mkdir -p Implicit-Cryo-Electron-Tomography/results/{$folder}Etomo"
+    scp -r $folder$"Etomo/" debarn0000@davinci.dmi.unibas.ch:Implicit-Cryo-Electron-Tomography/{$folder}
+done
+
+# Send Etomo result to davinci
 for folder in */; do
     ssh debarn0000@131.152.54.15 "mkdir -p /home/debarn0000/Documents/Codes/Implicit-Cryo-Electron-Tomography/results/$folder"
     scp -r $folder$"projections.mrc" debarn0000@131.152.54.15:home/debarn0000/Documents/Codes/Implicit-Cryo-Electron-Tomography/results/$folder  
 done
+
 
 
 
