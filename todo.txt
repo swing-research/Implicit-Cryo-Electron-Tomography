@@ -18,8 +18,9 @@
 
 
 
-- real data
+- real data (running)
 - include etomo on comparison
+- finish all model and all snr while includng etomo
 
 
 

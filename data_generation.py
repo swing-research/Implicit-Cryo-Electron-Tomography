@@ -197,3 +197,57 @@ def data_generation(config):
         np.save(config.path_save_data+"angles.npy",angles)
         np.savetxt(config.path_save_data+"angles.txt",angles)
         print("Saving done.")
+
+
+    
+def data_generation_real_data(config):
+    # Choosing the seed and the device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.device_count()>1:
+        torch.cuda.set_device(config.device_num)
+    np.random.seed(config.seed)
+    torch.manual_seed(config.seed)
+
+    # prepare the folders
+    if not os.path.exists(config.path_save_data):
+        os.makedirs(config.path_save_data)
+    if not os.path.exists(config.path_save_data+"projections/"):
+        os.makedirs(config.path_save_data+"projections/")
+    if not os.path.exists(config.path_save_data+"projections/noisy/"):
+        os.makedirs(config.path_save_data+"projections/noisy/")
+
+    #######################################################################################
+    ## Load data
+    #######################################################################################
+    projections_noisy = np.float32(mrcfile.open(os.path.join(config.path_load,config.volume_name+".mrc"),permissive=True).data)
+    projections_noisy = projections_noisy/np.abs(projections_noisy).max()
+    if config.n1 is not None:
+        config.Nangles = projections_noisy.shape[0]
+        projections_noisy = resize(projections_noisy,(config.Nangles,config.n1,config.n2))
+    else:
+        config.Nangles, config.n1, config.n2 = projections_noisy.shape
+        config.n3 = config.n1*2
+
+    np.savez(config.path_save_data+"volume_and_projections.npz",projections_noisy=projections_noisy)
+
+    # save projections
+    for k in range(config.Nangles):
+        tmp = projections_noisy[k]
+        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+        tmp = np.floor(255*tmp).astype(np.uint8)
+        imageio.imwrite(config.path_save_data+"projections/noisy/noisy_"+str(k)+".png",tmp)
+
+
+    angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
+    angles_t = torch.tensor(angles).type(config.torch_type).to(device)
+    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
+    V_FBP = operator_ET.pinv(torch.tensor(projections_noisy).to(device).detach().requires_grad_(False))
+    out = mrcfile.new(config.path_save_data+"V_FBP.mrc",np.moveaxis(V_FBP.detach().cpu().numpy().reshape(config.n1,config.n2,config.n3),2,0),overwrite=True)
+    out.close() 
+    out = mrcfile.new(config.path_save_data+"projections.mrc",projections_noisy,overwrite=True)
+    out.close() 
+
+    # Save angle files
+    np.save(config.path_save_data+"angles.npy",angles)
+    np.savetxt(config.path_save_data+"angles.txt",angles)
+    print("Saving done.")

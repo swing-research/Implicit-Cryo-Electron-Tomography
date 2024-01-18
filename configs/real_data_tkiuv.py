@@ -75,7 +75,7 @@ def get_config():
     config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
-    config.epochs = 1000
+    config.epochs = 5000
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
     config.scheduler_step_size = 100
@@ -97,7 +97,7 @@ def get_config():
 
     # Training learning rates for Adam optimizer
     config.loss_data = torch.nn.L1Loss()
-    config.lr_volume = 5e-3
+    config.lr_volume = 1e-3
     config.lr_shift = 1e-3
     config.lr_rot = 1e-3
     config.lr_local_def = 1e-4

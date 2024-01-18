@@ -70,7 +70,7 @@ def get_config():
     config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
-    config.epochs = 1000
+    config.epochs = 5000
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
     config.compute_fsc = True # save fsc, takes more time
