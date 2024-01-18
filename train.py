@@ -160,12 +160,17 @@ def train(config):
         print('---> Number of trainable parameters in implicit net: {}'.format(num_param))
 
     ######################################################################################################
-    ## Define the global deformations
-    shift_est = []
-    rot_est = []
-    for k in range(config.Nangles):
-        shift_est.append(utils_deformation.shiftNet(1).to(device))
-        rot_est.append(utils_deformation.rotNet(1).to(device))
+    ## Define the global deformations##############
+## Define the global deformations
+fixedAngle = torch.FloatTensor([config.fixed_angle* np.pi/180]).to(device)[0]
+
+shift_est = []
+rot_est = []
+fixed_rot =[ ]
+for k in range(config.Nangles):
+    shift_est.append(utils_deformation.shiftNet(1).to(device))
+    rot_est.append(utils_deformation.rotNet(1).to(device))
+    fixed_rot.append(utils_deformation.rotNet(1,x0=fixedAngle).to(device))
 
     ######################################################################################################
     ## Optimizer
@@ -371,6 +376,8 @@ def train(config):
         scheduler_deformation_glob.step()
         scheduler_deformation_loc.step()
 
+f"{float(f'{t:.3e}'):g}"
+
         # Track loss and display values
         if ((ep%10)==0 and (ep%config.Ntest!=0)):
             loss_current_epoch = np.mean(loss_tot[-len(trainLoader):])
@@ -379,10 +386,11 @@ def train(config):
             l_sh = np.mean(loss_regul_shifts[-len(trainLoader)*trainLoader.batch_size:])
             l_rot = np.mean(loss_regul_rot[-len(trainLoader)*trainLoader.batch_size:])
             l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader)*trainLoader.batch_size:])
-            print("Epoch: {}, loss_avg: {:2.3f} || Loss data fidelity: {:2.3f}, regul volume: {:2.2f}, regul shifts: {:2.2f}, regul inplane: {:2.2f}, regul local: {:2.2f}, time: {:2.0f} s".format(
+            print(f"Epoch: {}, loss_avg: {:.3e} || Loss data fidelity: {:.3e}, regul volume: {:.3e}, regul shifts: {:.3e}, regul inplane: {:.3e}, regul local: {:.3e}, time: {:2.0f} s".format(
                 ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
         if config.track_memory:
             memory_used.append(torch.cuda.memory_allocated())
+
 
         # Save and display some results
         if (ep%config.Ntest==0) and check_point_training:
@@ -395,7 +403,7 @@ def train(config):
                 l_sh = np.mean(loss_regul_shifts[-len(trainLoader)*config.Ntest:])
                 l_rot = np.mean(loss_regul_rot[-len(trainLoader)*config.Ntest:])
                 l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader)*config.Ntest:])
-                print("----Epoch: {}, loss_avg: {:2.3f} || Loss data fidelity: {:2.3f}, regul volume: {:2.2f}, regul shifts: {:2.4f}, regul inplane: {:2.2f}, regul local: {:2.4f}, time: {:2.0f} s".format(
+                print("----Epoch: {}, loss_avg: {:.3e} || Loss data fidelity: {:.3e}, regul volume: {:.2e}, regul shifts: {:2.4f}, regul inplane: {:.2e}, regul local: {:2.4f}, time: {:2.0f} s".format(
                     ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
                 
                 print('Running and saving tests')  
@@ -904,6 +912,7 @@ def train_without_ground_truth(config):
             else:
                 rot_deformSet = None
                 shift_deformSet = None
+            fixedRotSet = list(map(fixed_rot.__getitem__, idx_loader))
 
             ## Sample the rays
             raysSet,raysRot, isOutsideSet, pixelValues = generate_rays_batch_bilinear(proj,angle,config.nRays,config.ray_length,
@@ -915,7 +924,7 @@ def train_without_ground_truth(config):
             raysSet = raysSet*rays_scaling
             outputValues,support = sample_implicit_batch_lowComp(impl_volume,raysSet,angle,
                 rot_deformSet=rot_deformSet,shift_deformSet=shift_deformSet,local_deformSet=local_deformSet,
-                scale=1,grid_positive=config.grid_positive,zlimit=config.n3/max(config.n1,config.n2))
+                scale=1,grid_positive=config.grid_positive,zlimit=config.n3/max(config.n1,config.n2,fixedRotSet=fixedRotSet))
             outputValues = outputValues.type(config.torch_type)
             support = support.reshape(outputValues.shape[0],outputValues.shape[1],-1)
             projEstimate = torch.sum(support*outputValues,2)/config.n3
@@ -971,7 +980,7 @@ def train_without_ground_truth(config):
             l_sh = np.mean(loss_regul_shifts[-len(trainLoader)*trainLoader.batch_size:])
             l_rot = np.mean(loss_regul_rot[-len(trainLoader)*trainLoader.batch_size:])
             l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader)*trainLoader.batch_size:])
-            print("Epoch: {}, loss_avg: {:2.3f} || Loss data fidelity: {:2.3f}, regul volume: {:2.2f}, regul shifts: {:2.2f}, regul inplane: {:2.2f}, regul local: {:2.2f}, time: {:2.0f} s".format(
+            print("Epoch: {}, loss_avg: {:.3e} || Loss data fidelity: {:.3e}, regul volume: {:.2e}, regul shifts: {:.2e}, regul inplane: {:.2e}, regul local: {:.2e}, time: {:2.0f} s".format(
                 ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
         if config.track_memory:
             memory_used.append(torch.cuda.memory_allocated())
@@ -986,7 +995,7 @@ def train_without_ground_truth(config):
                 l_sh = np.mean(loss_regul_shifts[-len(trainLoader)*config.Ntest:])
                 l_rot = np.mean(loss_regul_rot[-len(trainLoader)*config.Ntest:])
                 l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader)*config.Ntest:])
-                print("----Epoch: {}, loss_avg: {:2.3f} || Loss data fidelity: {:2.3f}, regul volume: {:2.2f}, regul shifts: {:2.4f}, regul inplane: {:2.2f}, regul local: {:2.4f}, time: {:2.0f} s".format(
+                print("----Epoch: {}, loss_avg: {:.3e} || Loss data fidelity: {:.3e}, regul volume: {:.2e}, regul shifts: {:2.4f}, regul inplane: {:.2e}, regul local: {:2.4f}, time: {:2.0f} s".format(
                     ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
                 
                 print('Running and saving tests')  

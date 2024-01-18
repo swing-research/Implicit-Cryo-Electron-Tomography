@@ -29,6 +29,8 @@ def get_config():
     config.n1_patch = 512
     config.n2_patch = 512
     config.n3_patch = 180 
+    # Fixed angle that is approximately known
+    config.fixed_angle = -5
     # Sampling operator
     config.view_angle_min = -60
     config.view_angle_max = 60
@@ -95,7 +97,7 @@ def get_config():
 
     # Training learning rates for Adam optimizer
     config.loss_data = torch.nn.L1Loss()
-    config.lr_volume = 1e-2
+    config.lr_volume = 5e-3
     config.lr_shift = 1e-3
     config.lr_rot = 1e-3
     config.lr_local_def = 1e-4
