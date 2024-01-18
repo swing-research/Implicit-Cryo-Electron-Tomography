@@ -73,6 +73,10 @@ python -m experiment_scripts.simulation_shrec_timing
 python -m experiment_scripts.real_data_tkiuv --no_gen_data --no_aretomo --no_comparison
 ```
 
+python -m experiment_scripts.real_data_tkiuv --no_gen_data --no_train --no_comparison
+python -m experiment_scripts.real_data_tkiuv --no_gen_data --no_train --no_aretomo
+
+
 
 
 Warning: it will only work on Linux and MacOS systems.

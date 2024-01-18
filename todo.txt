@@ -18,7 +18,7 @@
 
 
 
-- real data (running)
+- real data (running) + AreTomo (running) -> remains to do Etomo and comparison
 - include etomo on comparison
 - finish all model and all snr while includng etomo
 
