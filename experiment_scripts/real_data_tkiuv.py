@@ -58,7 +58,7 @@ def main():
     #######################################################################################
     ## Load data
     #######################################################################################
-    projections_noisy = np.double(mrcfile.open(os.path.join(config.path_load,config.volume_name+".mrc"),permissive=True).data)
+    projections_noisy = np.float32(mrcfile.open(os.path.join(config.path_load,config.volume_name+".mrc"),permissive=True).data)
     projections_noisy = projections_noisy/np.abs(projections_noisy).max()
     if config.n1 is not None:
         config.Nangles = projections_noisy.shape[0]

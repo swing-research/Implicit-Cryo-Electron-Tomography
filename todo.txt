@@ -18,14 +18,8 @@
 
 
 
-
-@Vinith
--etomo on shrec 0
-
-
-
 - real data
-- etomo script batch
+- include etomo on comparison
 
 
 
@@ -46,8 +40,7 @@ done
 
 # Send folder to run Etomo on local machine
 for folder in results/*/; do
-    ssh debarn0000@davinci.dmi.unibas.ch "mkdir -p Implicit-Cryo-Electron-Tomography/results/{$folder}Etomo"
-    scp -r $folder$"Etomo/" debarn0000@davinci.dmi.unibas.ch:Implicit-Cryo-Electron-Tomography/{$folder}
+    scp -r $folder$"Etomo/" debarn0000@davinci.dmi.unibas.ch:Implicit-Cryo-Electron-Tomography/$folder
 done
 
 # Send Etomo result to davinci
