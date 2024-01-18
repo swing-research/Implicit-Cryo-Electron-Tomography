@@ -589,6 +589,7 @@ def train_without_ground_truth(config):
     ## Load data that was previously saved
     data = np.load(config.path_save_data+"volume_and_projections.npz")
     projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
+    config.Nangles = projections_noisy.shape[0]
 
     if config.multiresolution:
         projection_noisy_np = projection_noisy.detach().cpu().numpy()

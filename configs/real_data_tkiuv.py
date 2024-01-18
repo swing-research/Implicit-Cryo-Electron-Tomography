@@ -30,7 +30,6 @@ def get_config():
     config.n2_patch = 512
     config.n3_patch = 180 
     # Sampling operator
-    config.Nangles = 60
     config.view_angle_min = -60
     config.view_angle_max = 60
     config.number_sub_projections = 1
