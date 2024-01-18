@@ -7,6 +7,7 @@ It creates the dataset (projections, FBP), train ICE-TIDE and compare the result
 import argparse
 import configs.real_data_tkiuv as config_file
 import subprocess
+from skimage.transform import resize
 import time
 
 
@@ -59,8 +60,11 @@ def main():
     #######################################################################################
     projections_noisy = np.double(mrcfile.open(os.path.join(config.path_load,config.volume_name+".mrc"),permissive=True).data)
     projections_noisy = projections_noisy/np.abs(projections_noisy).max()
-    config.Nangles, config.n1, config.n2 = projections_noisy.shape
-    config.n3 = config.n1*2
+    if config.n1 is not None:
+        projections_noisy = resize(V,(60,1024,1024))
+    else:
+        config.Nangles, config.n1, config.n2 = projections_noisy.shape
+        config.n3 = config.n1*2
 
     np.savez(config.path_save_data+"volume_and_projections.npz",projections_noisy=projections_noisy)
 

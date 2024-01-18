@@ -21,6 +21,10 @@ def get_config():
     ## Parameters for the data generation ##
     ########################################
 
+    # Size of volume, if not none will be resize to that
+    config.n1 = 1024
+    config.n2 = 1024
+    config.n3 = 512 
     # Size of the patch to crop in the raw volume
     config.n1_patch = 512
     config.n2_patch = 512
@@ -53,7 +57,7 @@ def get_config():
     config.path_save_data = "./results/tkiuv_"+str(config.volume_name)+"/"
     config.path_save = "./results/tkiuv_"+str(config.volume_name)+"/"
 
-    config.multiresolution = True
+    config.multiresolution = False
     config.multires_params = ml_collections.ConfigDict()
     config.multires_params.startResolution = 2
     config.multires_params.ray_change_epoch = [100, 200, 400, 800, 1200 ]
