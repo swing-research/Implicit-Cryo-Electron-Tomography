@@ -375,9 +375,6 @@ for k in range(config.Nangles):
         scheduler_volume.step()
         scheduler_deformation_glob.step()
         scheduler_deformation_loc.step()
-
-f"{float(f'{t:.3e}'):g}"
-
         # Track loss and display values
         if ((ep%10)==0 and (ep%config.Ntest!=0)):
             loss_current_epoch = np.mean(loss_tot[-len(trainLoader):])
