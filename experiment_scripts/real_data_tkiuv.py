@@ -66,7 +66,7 @@ def main():
 
     # save projections
     for k in range(config.Nangles):
-        tmp = projections_noisy[k].detach().cpu().numpy()
+        tmp = projections_noisy[k]
         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(config.path_save_data+"projections/noisy/noisy_"+str(k)+".png",tmp)
@@ -75,10 +75,10 @@ def main():
     angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
     angles_t = torch.tensor(angles).type(config.torch_type).to(device)
     operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
-    V_FBP = operator_ET.pinv(torch.tensor(projections_noisy).to(config.device).detach().requires_grad_(False))
+    V_FBP = operator_ET.pinv(torch.tensor(projections_noisy).to(device).detach().requires_grad_(False))
     out = mrcfile.new(config.path_save_data+"V_FBP.mrc",np.moveaxis(V_FBP.detach().cpu().numpy().reshape(config.n1,config.n2,config.n3),2,0),overwrite=True)
     out.close() 
-    out = mrcfile.new(config.path_save_data+"projections.mrc",projections_noisy.detach().cpu().numpy(),overwrite=True)
+    out = mrcfile.new(config.path_save_data+"projections.mrc",projections_noisy,overwrite=True)
     out.close() 
 
     # Save angle files
