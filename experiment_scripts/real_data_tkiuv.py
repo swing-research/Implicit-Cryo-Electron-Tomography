@@ -52,8 +52,8 @@ def main():
 
     # Compare the results and save the figures
     if args.no_comparison:
-        from compare_results import compare_results
-        compare_results(config)
+        import compare_results
+        compare_results.compare_results_real(config)
 
 
 if __name__ == '__main__':
