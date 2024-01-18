@@ -28,3 +28,19 @@
 - etomo script batch
 
 
+
+
+# Send folder and npy to dgx
+for folder in */; do
+    ssh debarn0000@dgx1-dokmanic.scicore.unibas.ch "mkdir -p Implicit-Cryo-Electron-Tomography/results/$folder"
+    scp $folder*.npy debarn0000@dgx1-dokmanic.scicore.unibas.ch:Implicit-Cryo-Electron-Tomography/results/$folder  
+    scp $folder*.txt debarn0000@dgx1-dokmanic.scicore.unibas.ch:Implicit-Cryo-Electron-Tomography/results/$folder  
+    scp $folder$"projections.mrc" debarn0000@dgx1-dokmanic.scicore.unibas.ch:Implicit-Cryo-Electron-Tomography/results/$folder   
+done
+
+# Send folder AreTomo to davinci
+for folder in */; do
+    scp -r $folder$"AreTomo" debarn0000@davinci.dmi.unibas.ch:Implicit-Cryo-Electron-Tomography/results/$folder  
+done
+
+

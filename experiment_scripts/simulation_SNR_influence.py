@@ -88,8 +88,6 @@ def main():
         if not os.path.exists(config.path_save+"evaluation/"):
             os.makedirs(config.path_save+"evaluation/")
 
-
-        import ipdb; ipdb.set_trace()
         plt.figure()
         plt.plot(v_SNR_list,resolution05[3,:], label='FBP')
         plt.plot(v_SNR_list,resolution05[4,:], label='FBP undeformed')

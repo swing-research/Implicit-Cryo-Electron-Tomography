@@ -49,7 +49,7 @@ def get_config():
     
     # # Parameters for the data generation
     config.volume_name = 'tomo2_L1G1_ODD'
-    config.path_load = "./results/tkiuv/"
+    config.path_load = "./datasets/tkiuv/"
     config.path_save_data = "./results/tkiuv_"+str(config.volume_name)+"/"
     config.path_save = "./results/tkiuv_"+str(config.volume_name)+"/"
 
