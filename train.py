@@ -766,6 +766,7 @@ def train_without_ground_truth(config):
     # Define dataset
     angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
     angles_t = torch.tensor(angles).type(config.torch_type).to(device)
+    import ipdb; ipdb.set_trace()
     dataset = TensorDataset(angles_t,projections_noisy.detach(),index)
     trainLoader = DataLoader(dataset, batch_size=config.batch_size, shuffle=True, drop_last=True)
 
