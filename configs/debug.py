@@ -25,6 +25,8 @@ def get_config():
     config.n1 = 512
     config.n2 = 512
     config.n3 = 180
+    # Fixed angle that is approximately known
+    config.fixed_angle = 0
     # Size of the patch to crop in the raw volume
     config.n1_patch = 512
     config.n2_patch = 512

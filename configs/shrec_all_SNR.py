@@ -29,6 +29,8 @@ def get_config():
     config.n1_patch = 512
     config.n2_patch = 512
     config.n3_patch = 180 
+    # Fixed angle that is approximately known
+    config.fixed_angle = 0
     # Sampling operator
     config.Nangles = 61
     config.view_angle_min = -60

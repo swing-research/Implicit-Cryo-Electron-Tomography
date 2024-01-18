@@ -161,16 +161,15 @@ def train(config):
 
     ######################################################################################################
     ## Define the global deformations##############
-## Define the global deformations
-fixedAngle = torch.FloatTensor([config.fixed_angle* np.pi/180]).to(device)[0]
+    fixedAngle = torch.FloatTensor([config.fixed_angle* np.pi/180]).to(device)[0]
 
-shift_est = []
-rot_est = []
-fixed_rot =[ ]
-for k in range(config.Nangles):
-    shift_est.append(utils_deformation.shiftNet(1).to(device))
-    rot_est.append(utils_deformation.rotNet(1).to(device))
-    fixed_rot.append(utils_deformation.rotNet(1,x0=fixedAngle).to(device))
+    shift_est = []
+    rot_est = []
+    fixed_rot =[ ]
+    for k in range(config.Nangles):
+        shift_est.append(utils_deformation.shiftNet(1).to(device))
+        rot_est.append(utils_deformation.rotNet(1).to(device))
+        fixed_rot.append(utils_deformation.rotNet(1,x0=fixedAngle).to(device))
 
     ######################################################################################################
     ## Optimizer
@@ -317,6 +316,7 @@ for k in range(config.Nangles):
             else:
                 rot_deformSet = None
                 shift_deformSet = None
+            fixedRotSet = list(map(fixed_rot.__getitem__, idx_loader))
 
             ## Sample the rays
             raysSet,raysRot, isOutsideSet, pixelValues = generate_rays_batch_bilinear(proj,angle,config.nRays,config.ray_length,
@@ -328,7 +328,7 @@ for k in range(config.Nangles):
             raysSet = raysSet*rays_scaling
             outputValues,support = sample_implicit_batch_lowComp(impl_volume,raysSet,angle,
                 rot_deformSet=rot_deformSet,shift_deformSet=shift_deformSet,local_deformSet=local_deformSet,
-                scale=1,grid_positive=config.grid_positive,zlimit=config.n3/max(config.n1,config.n2))
+                scale=1,grid_positive=config.grid_positive,zlimit=config.n3/max(config.n1,config.n2,fixedRotSet=fixedRotSet))
             outputValues = outputValues.type(config.torch_type)
             support = support.reshape(outputValues.shape[0],outputValues.shape[1],-1)
             projEstimate = torch.sum(support*outputValues,2)/config.n3
@@ -735,11 +735,15 @@ def train_without_ground_truth(config):
 
     ######################################################################################################
     ## Define the global deformations
+    fixedAngle = torch.FloatTensor([config.fixed_angle* np.pi/180]).to(device)[0]
+
     shift_est = []
     rot_est = []
+    fixed_rot =[ ]
     for k in range(config.Nangles):
         shift_est.append(utils_deformation.shiftNet(1).to(device))
         rot_est.append(utils_deformation.rotNet(1).to(device))
+        fixed_rot.append(utils_deformation.rotNet(1,x0=fixedAngle).to(device))
 
     ######################################################################################################
     ## Optimizer
