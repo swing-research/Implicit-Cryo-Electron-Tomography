@@ -813,8 +813,7 @@ def train_without_ground_truth(config):
     if config.multiresolution:
         index = torch.arange(0, config.Nangles, dtype=torch.long) # index for the dataloader
         batch_set =  config.multires_params.batch_set
-        import ipdb; ipdb.set_trace()
-        proj_len = len_set.index(1+config.multires_params.startResolution)
+        proj_len = len(len_set)-1-config.multires_params.startResolution
         proj_set_Data = torch.FloatTensor(proj_pyramid_set[proj_len]).to(device) 
 
         dataset = TensorDataset(angles_t,proj_set_Data.detach(),index)
