@@ -782,12 +782,12 @@ def train_without_ground_truth(config):
     dataset = TensorDataset(angles_t,projections_noisy.detach(),index)
     trainLoader = DataLoader(dataset, batch_size=config.batch_size, shuffle=True, drop_last=True)
 
-    ######################################################################################################
-    ## Track sampling
-    choosenLocations_all = {}
-    for ii, _ in enumerate(angles):
-        choosenLocations_all[ii] = []
-    current_sampling = np.ones_like(projections_noisy.detach().cpu().numpy())
+    # ######################################################################################################
+    # ## Track sampling
+    choosenLocations_all = None
+    # for ii, _ in enumerate(angles):
+    #     choosenLocations_all[ii] = []
+    # current_sampling = np.ones_like(projections_noisy.detach().cpu().numpy())
 
     def globalDeformationValues(shift,rot):
         shiftValueList = []
@@ -939,12 +939,12 @@ def train_without_ground_truth(config):
             loss = loss_data(projEstimate,pixelValues.to(projEstimate.dtype))
             loss_data_fidelity.append(loss.item())
 
-            # update sampling
-            with torch.no_grad():
-                for ii_ in idx_loader:
-                    ii = ii_.item()
-                    idx = np.floor((choosenLocations_all[ii][-1]+1)/2*max(config.n1,config.n2)).astype(np.int)
-                    current_sampling[ii,idx[:,0],idx[:,1]] += 1
+            # # update sampling
+            # with torch.no_grad():
+            #     for ii_ in idx_loader:
+            #         ii = ii_.item()
+            #         idx = np.floor((choosenLocations_all[ii][-1]+1)/2*max(config.n1,config.n2)).astype(np.int)
+            #         current_sampling[ii,idx[:,0],idx[:,1]] += 1
 
             ## Add regularizations
             if train_local_def and config.lamb_local_ampl!=0:
