@@ -684,7 +684,7 @@ def compare_results(config):
     #######################################################################################
 
     def display_XYZ(tmp,name="true"):
-        f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [0.5, 1], 'width_ratios': [1,0.5]})
+        f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
         aa[0,0].imshow(tmp.mean(0).T,cmap='gray')
         aa[0,0].axis('off')
         aa[1,0].imshow(tmp.mean(2),cmap='gray')
