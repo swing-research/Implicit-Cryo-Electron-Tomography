@@ -10,6 +10,12 @@
 
 
 - real data remains to do comparison
+- Change name with code: XP1, XP2, etc
+
+
+
+
+
 
 for folder in */; do
     ffmpeg -framerate 25 -i ${folder}snapshot_%d.png -c:v libx264 -pix_fmt yuv420p projections_${folder%?}.avi
