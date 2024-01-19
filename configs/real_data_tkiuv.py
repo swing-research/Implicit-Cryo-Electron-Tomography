@@ -61,7 +61,7 @@ def get_config():
     config.multiresolution = True
     config.multires_params = ml_collections.ConfigDict()
     config.multires_params.startResolution = 6
-    config.multires_params.ray_change_epoch = [100, 200, 400, 800, 1200 ]
+    config.multires_params.ray_change_epoch = [100, 200, 400, 800, 1200, 1600]
     config.multires_params.batch_set = [10, 5, 4, 3, 2]
     config.multires_params.upsample = False
 
@@ -76,7 +76,7 @@ def get_config():
     config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
-    config.epochs = 1500
+    config.epochs = 2000
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
     config.scheduler_step_size = 100
@@ -92,8 +92,8 @@ def get_config():
 
     # When to start or stop optimizing over a variable
     config.schedule_volume = []
-    config.schedule_global = []
-    config.schedule_local = []
+    config.schedule_global = [800]
+    config.schedule_local = [800]
     config.delay_deformations = 25 # Delay before learning deformations
 
     # Training learning rates for Adam optimizer
