@@ -870,6 +870,7 @@ def train_without_ground_truth(config):
 
                 proj_set_Data = torch.FloatTensor(proj_pyramid_set[proj_len]).to(device) 
                 print('New resolution: ', proj_set_Data.shape)
+                import ipdb; ipdb.set_trace()
                 dataset = TensorDataset(angles_t,proj_set_Data.detach(),index)
                 trainLoader = DataLoader(dataset, batch_size=batch_set[batch_set_index], shuffle=True, drop_last=True)
 
