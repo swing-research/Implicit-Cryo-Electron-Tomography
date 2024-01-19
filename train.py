@@ -1029,7 +1029,8 @@ def train_without_ground_truth(config):
                 plt.savefig(os.path.join(config.path_save+"/training/deformations/rotations.png"))
 
                 ## Save the loss    
-                loss_tot_avg = np.array(loss_tot).reshape(config.Nangles//config.batch_size,-1).mean(0)
+                # loss_tot_avg = np.array(loss_tot).reshape(config.Nangles//config.batch_size,-1).mean(0)
+                loss_tot_avg = np.array(loss_tot)
                 step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
                 plt.figure(figsize=(10,10))
                 plt.plot(loss_tot_avg[10:])
