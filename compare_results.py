@@ -693,7 +693,7 @@ def compare_results(config):
         projections_AreTomo = operator_ET(V_FBP_aretomo_t).detach().cpu().numpy()
     if(eval_Etomo):
         V_FBP_etomo_t = torch.tensor(V_FBP_etomo).to(device)
-        projections_Etomo = operator_ET(V_FBP_etomo_t).detach().cpu().numpy()
+        projections_Etomo = etomo_projections
 
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","icetide_projections.mrc"),projections_icetide.astype(np.float32),overwrite=True)
     out.close()
@@ -1221,7 +1221,7 @@ def getReolution(dataframe,cutoffs=[0.5,0.143]):
     else:
         fsc_etomo = np.zeros(len(fsc_ours))
     if('AreTomo' in dataframe.columns):
-        fsc_areTomo = dataframe['AreTomo'].values
+        fsc_areTomo = dataframe['AreTomo_patch1'].values
     else:
         fsc_areTomo = np.zeros(len(fsc_ours))
     fsc_FBP = dataframe['FBP'].values

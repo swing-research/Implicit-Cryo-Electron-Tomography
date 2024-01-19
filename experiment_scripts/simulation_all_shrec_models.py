@@ -71,6 +71,9 @@ def main():
     if args.no_comparison:
         import pandas as pd
         from compare_results import getReolution
+        from compare_results import compare_results
+        compare_results(config)
+        
         resolution05 = np.zeros((6,len(volume_name_list)))
         resolution0143 = np.zeros((6,len(volume_name_list)))
         x_val = np.zeros(len(volume_name_list))
