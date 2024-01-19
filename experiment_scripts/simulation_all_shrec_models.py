@@ -72,7 +72,6 @@ def main():
         import pandas as pd
         from compare_results import getReolution
         from compare_results import compare_results
-        compare_results(config)
         
         resolution05 = np.zeros((6,len(volume_name_list)))
         resolution0143 = np.zeros((6,len(volume_name_list)))
@@ -82,6 +81,8 @@ def main():
             config.volume_name = v_name
             config.path_save_data = "./results/all_models_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
             config.path_save = "./results/all_models_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
+            
+            compare_results(config)
 
             data_path = os.path.join(config.path_save,'evaluation','FSC.csv')
             fsc = pd.read_csv(data_path)

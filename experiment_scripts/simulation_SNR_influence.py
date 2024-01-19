@@ -65,8 +65,7 @@ def main():
         import pandas as pd
         from compare_results import getReolution
         from compare_results import compare_results
-        compare_results(config)
-        
+
         resolution05 = np.zeros((6,len(v_SNR_list)))
         resolution0143 = np.zeros((6,len(v_SNR_list)))
         x_val = np.zeros(len(v_SNR_list))
@@ -75,6 +74,8 @@ def main():
             config.SNR_value = v_SNR
             config.path_save_data = "./results/SNR_exp_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
             config.path_save = "./results/SNR_exp_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
+            
+            compare_results(config)
 
             data_path = os.path.join(config.path_save,'evaluation','FSC.csv')
             fsc = pd.read_csv(data_path)
