@@ -813,6 +813,7 @@ def train_without_ground_truth(config):
     if config.multiresolution:
         index = torch.arange(0, config.Nangles, dtype=torch.long) # index for the dataloader
         batch_set =  config.multires_params.batch_set
+        import ipdb; ipdb.set_trace()
         proj_len = len_set.index(1+config.multires_params.startResolution)
         proj_set_Data = torch.FloatTensor(proj_pyramid_set[proj_len]).to(device) 
 
@@ -872,7 +873,6 @@ def train_without_ground_truth(config):
                 index = torch.arange(0, config.Nangles, dtype=torch.long) # index for the dataloader
                 proj_set_Data = torch.FloatTensor(proj_pyramid_set[proj_len]).to(device) 
                 print('New resolution: ', proj_set_Data.shape)
-                import ipdb; ipdb.set_trace()
                 dataset = TensorDataset(angles_t,proj_set_Data.detach(),index)
                 trainLoader = DataLoader(dataset, batch_size=batch_set[batch_set_index], shuffle=True, drop_last=True)
 
