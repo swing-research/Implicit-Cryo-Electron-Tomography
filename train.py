@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage.transform import resize
 from torch.utils.data import DataLoader, TensorDataset
+from skimage.transform import pyramid_gaussian
 from utils import utils_deformation, utils_display
 from utils.utils_sampling import sample_implicit_batch_lowComp, generate_rays_batch_bilinear
 
