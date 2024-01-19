@@ -974,6 +974,12 @@ def train_without_ground_truth(config):
                 optimizer_deformations_loc.step()
             loss_tot.append(loss.item())
 
+        import imageio
+        tmp = proj[0].detach().cpu().numpy()
+        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+        tmp = np.floor(255*tmp).astype(np.uint8)
+        imageio.imwrite(os.path.join(config.path_save_data,'training',"projections.png"),tmp)
+
         scheduler_volume.step()
         scheduler_deformation_glob.step()
         scheduler_deformation_loc.step()
@@ -1053,6 +1059,7 @@ def train_without_ground_truth(config):
                     plt.clf()
                     plt.imshow(pp,cmap='gray')
                     plt.savefig(os.path.join(config.path_save+"/training/volume/volume_est_slice_{}.png".format(zz)))
+                    
                                     
                 if config.save_volume:
                     z_range = np.linspace(-1,1,config.n3_patch)*rays_scaling[0,0,0,2].item()*(config.n3_patch/config.n1_patch)/2+0.5
