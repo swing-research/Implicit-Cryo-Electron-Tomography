@@ -161,8 +161,8 @@ def compare_results(config):
         os.makedirs(config.path_save+"/evaluation/deformations/true/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/true/"):
         os.makedirs(config.path_save+"/evaluation/volume_slices/true/")
-    if not os.path.exists(config.path_save+"/evaluation/volume/true/"):
-        os.makedirs(config.path_save+"/evaluation/volume/true/")
+    if not os.path.exists(config.path_save+"/evaluation/volumes/true/"):
+        os.makedirs(config.path_save+"/evaluation/volumes/true/")
 
     # FBP on undistorted projections
     if not os.path.exists(config.path_save+"/evaluation/projections/FBP_no_deformed/"):
@@ -693,7 +693,7 @@ def compare_results(config):
         aa[1,1].axis('off')
         aa[0,1].axis('off')
         plt.tight_layout(pad=0.1, w_pad=0.0, h_pad=0.5)
-        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volume",name,"XYZ.png".format(index)))
+        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name,"XYZ.png"))
 
     # True volume
     tmp = V
@@ -938,8 +938,8 @@ def compare_results_real(config):
         os.makedirs(config.path_save+"/evaluation/deformations/true/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/true/"):
         os.makedirs(config.path_save+"/evaluation/volume_slices/true/")
-    if not os.path.exists(config.path_save+"/evaluation/volume/true/"):
-        os.makedirs(config.path_save+"/evaluation/volume/true/")
+    if not os.path.exists(config.path_save+"/evaluation/volumes/true/"):
+        os.makedirs(config.path_save+"/evaluation/volumes/true/")
 
     # FBP on undistorted projections
     if not os.path.exists(config.path_save+"/evaluation/projections/FBP_no_deformed/"):
@@ -1166,7 +1166,7 @@ def compare_results_real(config):
         aa[1,1].axis('off')
         aa[0,1].axis('off')
         plt.tight_layout(pad=0.1, w_pad=0.0, h_pad=0.5)
-        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volume",name,"XYZ.png".format(index)))
+        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volume",name,"XYZ.png"))
 
     # ICETIDE
     tmp = V_icetide
