@@ -678,6 +678,53 @@ def compare_results(config):
 
 
     #######################################################################################
+    ## Save volumes
+    #######################################################################################
+
+    def display_XYZ(tmp,name="true"):
+        f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [0.5, 1], 'width_ratios': [1,0.5]})
+        aa[0,0].imshow(tmp.mean(0).T,cmap='gray')
+        aa[0,0].axis('off')
+        aa[1,0].imshow(tmp.mean(2),cmap='gray')
+        aa[1,0].axis('off')
+        aa[1,1].imshow(tmp.mean(1),cmap='gray')
+        aa[1,1].axis('off')
+        aa[0,1].axis('off')
+        plt.tight_layout(pad=0.1, w_pad=0.0, h_pad=0.5)
+        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volume",name,"XYZ.png".format(index)))
+
+    # True volume
+    tmp = V
+    display_XYZ(tmp,name="true")
+
+    # ICETIDE
+    tmp = V_icetide
+    display_XYZ(tmp,name="ICETIDE")
+
+    # FBP volume
+    tmp = V_FBP
+    display_XYZ(tmp,name="FBP")
+
+    # FBP_no_deformed volume
+    tmp = V_FBP_no_deformed
+    display_XYZ(tmp,name="FBP_no_deformed")
+
+    if(eval_AreTomo):
+        # AreTomo volume
+        tmp = V_FBP_aretomo
+        display_XYZ(tmp,name="AreTomo")
+
+    if(eval_Etomo):
+        # Etomo volume
+        tmp = V_FBP_etomo
+        display_XYZ(tmp,name="Etomo")
+
+    # FBP_ICETIDE volume
+    tmp = V_FBP_icetide
+    display_XYZ(tmp,name="FBP_ICETIDE")
+
+
+    #######################################################################################
     ## Generate projections
     #######################################################################################
     # Define angles and X-ray transform
@@ -1100,6 +1147,44 @@ def compare_results_real(config):
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE","slice_{}.png".format(index)),tmp)
 
+
+    #######################################################################################
+    ## Save volumes
+    #######################################################################################
+
+    def display_XYZ(tmp,name="true"):
+        f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [0.5, 1], 'width_ratios': [1,0.5]})
+        aa[0,0].imshow(tmp.mean(0).T,cmap='gray')
+        aa[0,0].axis('off')
+        aa[1,0].imshow(tmp.mean(2),cmap='gray')
+        aa[1,0].axis('off')
+        aa[1,1].imshow(tmp.mean(1),cmap='gray')
+        aa[1,1].axis('off')
+        aa[0,1].axis('off')
+        plt.tight_layout(pad=0.1, w_pad=0.0, h_pad=0.5)
+        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volume",name,"XYZ.png".format(index)))
+
+    # ICETIDE
+    tmp = V_icetide
+    display_XYZ(tmp,name="ICETIDE")
+
+    # FBP volume
+    tmp = V_FBP
+    display_XYZ(tmp,name="FBP")
+
+    if(eval_AreTomo):
+        # AreTomo volume
+        tmp = V_FBP_aretomo
+        display_XYZ(tmp,name="AreTomo")
+
+    if(eval_Etomo):
+        # Etomo volume
+        tmp = V_FBP_etomo
+        display_XYZ(tmp,name="Etomo")
+
+    # FBP_ICETIDE volume
+    tmp = V_FBP_icetide
+    display_XYZ(tmp,name="FBP_ICETIDE")
 
     #######################################################################################
     ## Generate projections
