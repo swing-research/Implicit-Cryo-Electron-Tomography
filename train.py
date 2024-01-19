@@ -802,8 +802,8 @@ def train_without_ground_truth(config):
         return shiftValueList, rotValueList
 
     ## grid for display 
-    x_lin1 = np.linspace(-1,1,config.n1)*rays_scaling[0,0,0,0].item()/2+0.5
-    x_lin2 = np.linspace(-1,1,config.n2)*rays_scaling[0,0,0,1].item()/2+0.5
+    x_lin1 = np.linspace(-1,1,config.n1_patch)*rays_scaling[0,0,0,0].item()/2+0.5
+    x_lin2 = np.linspace(-1,1,config.n2_patch)*rays_scaling[0,0,0,1].item()/2+0.5
     XX, YY = np.meshgrid(x_lin1,x_lin2,indexing='ij')
     grid2d = np.concatenate([XX.reshape(-1,1),YY.reshape(-1,1)],1)
     grid2d_t = torch.tensor(grid2d).type(config.torch_type)
@@ -1042,7 +1042,7 @@ def train_without_ground_truth(config):
                 plt.savefig(os.path.join(config.path_save,'training','loss_iter.png'))
                 
                 ## Save slice of the volume
-                z_range = np.linspace(-1,1,config.n3//5)*rays_scaling[0,0,0,2].item()*(config.n3/config.n1)/2+0.5
+                z_range = np.linspace(-1,1,config.n3_patch//5)*rays_scaling[0,0,0,2].item()*(config.n3_patch/config.n1_patch)/2+0.5
                 for zz, zval in enumerate(z_range):
                     grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
                     grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
@@ -1054,8 +1054,8 @@ def train_without_ground_truth(config):
                     plt.savefig(os.path.join(config.path_save+"/training/volume/volume_est_slice_{}.png".format(zz)))
                                     
                 if config.save_volume:
-                    z_range = np.linspace(-1,1,config.n3)*rays_scaling[0,0,0,2].item()*(config.n3/config.n1)/2+0.5
-                    V_ours = np.zeros((config.n1,config.n2,config.n3))
+                    z_range = np.linspace(-1,1,config.n3_patch)*rays_scaling[0,0,0,2].item()*(config.n3_patch/config.n1_patch)/2+0.5
+                    V_ours = np.zeros((config.n1_patch,config.n2_patch,config.n3_patch))
                     for zz, zval in enumerate(z_range):
                         grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
                         grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
