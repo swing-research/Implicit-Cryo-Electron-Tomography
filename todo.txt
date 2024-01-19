@@ -1,29 +1,19 @@
 - multi shrec XP
    Davinci (re run with new better scheduler)
    python -m experiment_scripts.simulation_all_shrec_models --no_aretomo
-   
-   DGX:
-   python -m experiment_scripts.simulation_all_shrec_models --no_gen_data --no_train --no_comparison
-   scp + Davinci
-   python -m experiment_scripts.simulation_all_shrec_models --no_gen_data --no_train --no_aretomo
-- real data XP
 - different SNR
    Davinci (re run with new better scheduler)
    python -m experiment_scripts.simulation_SNR_influence --no_aretomo --no_comparison
-   
-   DGX:
-   python -m experiment_scripts.simulation_SNR_influence --no_gen_data --no_train --no_comparison
-   scp + Davinci
-   python -m experiment_scripts.simulation_SNR_influence --no_gen_data --no_train --no_aretomo
 - Run timing on a single GPU that is free
     python -m experiment_scripts.simulation_shrec_timing
-
+- real data XP
 
 
 - real data remains to do comparison
-- include etomo on comparison
-- finish all model and all snr while includng etomo
 
+for folder in */; do
+    ffmpeg -framerate 25 -i ${folder}snapshot_%d.png -c:v libx264 -pix_fmt yuv420p projections_${folder%?}.avi
+done
 
 
 

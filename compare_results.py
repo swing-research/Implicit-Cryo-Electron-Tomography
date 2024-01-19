@@ -929,6 +929,9 @@ def compare_results_real(config):
     projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
     config.Nangles = projections_noisy.shape[0]
 
+    config.n1 = config.n1_patch
+    config.n2 = config.n2_patch
+    config.n3 = config.n3_patch
 
     ## Aretomo
     # get the files

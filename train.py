@@ -1115,7 +1115,7 @@ def train_without_ground_truth(config):
         out = mrcfile.new(config.path_save+"/training/V_est_final.mrc",np.moveaxis(V_ours.astype(np.float32),2,0),overwrite=True)
         out.close() 
 
-    loss_tot_avg = np.array(loss_tot).reshape(config.Nangles//config.batch_size,-1).mean(0)
+    loss_tot_avg = np.array(loss_tot)
     step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
     plt.figure(figsize=(10,10))
     plt.plot(loss_tot_avg[10:])

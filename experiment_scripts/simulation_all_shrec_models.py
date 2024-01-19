@@ -62,12 +62,7 @@ def main():
                     t = time.time()-t0
 
 
-        # # Compare the results and save the figures
-        # if args.no_comparison:
-        #     from compare_results import compare_results
-        #     compare_results(config)
-
-
+    # Compare the results and save the figures
     if args.no_comparison:
         import pandas as pd
         from compare_results import getReolution
@@ -128,7 +123,6 @@ def main():
         pd_resoluton0143 = pd.DataFrame(resolution0143.T,columns=header.split(','))
         pd_resoluton05.to_csv(os.path.join(config.path_save,'evaluation','resolution05.csv'),index=False)
         pd_resoluton0143.to_csv(os.path.join(config.path_save,'evaluation','resolution0143.csv'),index=False)
-
 
 
 if __name__ == '__main__':
