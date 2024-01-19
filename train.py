@@ -1046,7 +1046,7 @@ def train_without_ground_truth(config):
                 for zz, zval in enumerate(z_range):
                     grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
                     grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
-                    estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1,config.n2)
+                    estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1_patch,config.n2_patch)
                     pp = (estSlice)*1.
                     plt.figure(1)
                     plt.clf()
@@ -1059,7 +1059,7 @@ def train_without_ground_truth(config):
                     for zz, zval in enumerate(z_range):
                         grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
                         grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
-                        estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1,config.n2)
+                        estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1_patch,config.n2_patch)
                         V_ours[:,:,zz] = estSlice
                     out = mrcfile.new(config.path_save+"/training/V_est"+".mrc",np.moveaxis(V_ours.astype(np.float32),2,0),overwrite=True)
                     out.close() 
@@ -1105,12 +1105,12 @@ def train_without_ground_truth(config):
     np.savetxt(os.path.join(config.path_save,'training','training_time.txt'),np.array([training_time]))
 
     with torch.no_grad():
-        z_range = np.linspace(-1,1,config.n3)*rays_scaling[0,0,0,2].item()*(config.n3/config.n1)/2+0.5
-        V_ours = np.zeros((config.n1,config.n2,config.n3))
+        z_range = np.linspace(-1,1,config.n3_patch)*rays_scaling[0,0,0,2].item()*(config.n3_patch/config.n1_patch)/2+0.5
+        V_ours = np.zeros((config.n1_patch,config.n2_patch,config.n3_patch))
         for zz, zval in enumerate(z_range):
             grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
             grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
-            estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1,config.n2)
+            estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1_patch,config.n2_patch)
             V_ours[:,:,zz] = estSlice
         out = mrcfile.new(config.path_save+"/training/V_est_final.mrc",np.moveaxis(V_ours.astype(np.float32),2,0),overwrite=True)
         out.close() 
