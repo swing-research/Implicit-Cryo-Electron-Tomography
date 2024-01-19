@@ -58,9 +58,9 @@ def get_config():
     config.path_save_data = "./results/tkiuv_"+str(config.volume_name)+"/"
     config.path_save = "./results/tkiuv_"+str(config.volume_name)+"/"
 
-    config.multiresolution = False
+    config.multiresolution = True
     config.multires_params = ml_collections.ConfigDict()
-    config.multires_params.startResolution = 2
+    config.multires_params.startResolution = 1
     config.multires_params.ray_change_epoch = [100, 200, 400, 800, 1200 ]
     config.multires_params.batch_set = [10, 5, 4, 3, 2]
 
@@ -128,7 +128,7 @@ def get_config():
     config.encoding.n_features_per_level = 4
     config.encoding.log2_hashmap_size = 22
     config.encoding.base_resolution = 8
-    config.encoding.per_level_scale = 2#1.3
+    config.encoding.per_level_scale = 2 #1.3
     config.encoding.interpolation = 'Smoothstep'
     # params specific to Tiny cuda network
     config.network = ml_collections.ConfigDict()

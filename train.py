@@ -597,7 +597,8 @@ def train_without_ground_truth(config):
     config.Nangles = projections_noisy.shape[0]
 
     if config.multiresolution:
-        projection_noisy_np = projection_noisy.detach().cpu().numpy()
+        print("Computing multiscale...")
+        projection_noisy_np = projections_noisy.detach().cpu().numpy()
         img_pyramids = []
         for proj in projection_noisy_np:
             img_pyramid = tuple(pyramid_gaussian(proj, downscale=2, order =2))
@@ -611,15 +612,16 @@ def train_without_ground_truth(config):
         proj_pyramid_set = []
         for lenIndex, projLen in enumerate(len_set):
             if config.multires_params.upsample:
-                proj_downsample = np.zeros((projection_np.shape[0], config.n1,config.n2))
+                proj_downsample = np.zeros((projection_noisy_np.shape[0], config.n1,config.n2))
             else:
-                proj_downsample = np.zeros((projection_np.shape[0], projLen, projLen))
+                proj_downsample = np.zeros((projection_noisy_np.shape[0], projLen, projLen))
             for i,img_tuple in enumerate(img_pyramids):
                 if config.multires_params.upsample:
                     proj_downsample[i] = resize(img_tuple[lenIndex],(config.n1,config.n2))
                 else:
                     proj_downsample[i] = img_tuple[lenIndex]
             proj_pyramid_set.append(proj_downsample)
+        print("Multiscale computed.
 
     ######################################################################################################
     ######################################################################################################
