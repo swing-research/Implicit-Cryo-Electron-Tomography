@@ -76,7 +76,7 @@ def get_config():
     config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
-    config.epochs = 1000
+    config.epochs = 1500
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
     config.scheduler_step_size = 100
@@ -118,18 +118,18 @@ def get_config():
     # params of implicit volume
     config.input_size_volume = 3 # always 3 for 3d tomography
     config.output_size_volume = 1 # always 1 for 3d tomography
-    config.num_layers_volume = 3
-    config.hidden_size_volume = 64
+    config.num_layers_volume = 7
+    config.hidden_size_volume = 128
     config.L_volume = 3
     # params for the multi-resolution grids encoding
     config.encoding = ml_collections.ConfigDict()
     config.encoding.otype = 'Grid'
     config.encoding.type = 'Hash'
-    config.encoding.n_levels = 8
+    config.encoding.n_levels = 6
     config.encoding.n_features_per_level = 4
-    config.encoding.log2_hashmap_size = 22
-    config.encoding.base_resolution = 8
-    config.encoding.per_level_scale = 2 #1.3
+    config.encoding.log2_hashmap_size = 24
+    config.encoding.base_resolution = 64
+    config.encoding.per_level_scale = 2
     config.encoding.interpolation = 'Smoothstep'
     # params specific to Tiny cuda network
     config.network = ml_collections.ConfigDict()
