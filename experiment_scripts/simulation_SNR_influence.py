@@ -64,6 +64,9 @@ def main():
     if args.no_comparison:
         import pandas as pd
         from compare_results import getReolution
+        from compare_results import compare_results
+        compare_results(config)
+        
         resolution05 = np.zeros((6,len(v_SNR_list)))
         resolution0143 = np.zeros((6,len(v_SNR_list)))
         x_val = np.zeros(len(v_SNR_list))
@@ -101,10 +104,10 @@ def main():
         plt.close() 
 
         plt.figure()
-        plt.plot(v_SNR_list,resolution0143[3,:],width=0.2, label='FBP')
-        plt.plot(v_SNR_list,resolution0143[4,:],width=0.2, label='FBP undeformed')
-        plt.plot(v_SNR_list,resolution0143[0,:],width=0.2,label='ICETIDE')
-        plt.plot(v_SNR_list,resolution0143[5,:],width=0.2,label='FBP est deformation')
+        plt.plot(v_SNR_list,resolution0143[3,:], label='FBP')
+        plt.plot(v_SNR_list,resolution0143[4,:], label='FBP undeformed')
+        plt.plot(v_SNR_list,resolution0143[0,:],label='ICETIDE')
+        plt.plot(v_SNR_list,resolution0143[5,:],label='FBP est deformation')
         # plt.xticks(x_val+0.3, model_name,rotation=45)
         plt.ylabel('Resolution (1/pixel size)')
         plt.ylabel('SNR (dB)')

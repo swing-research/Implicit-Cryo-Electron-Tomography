@@ -1,14 +1,16 @@
 - multi shrec XP
-   Davinci (running)
-   python -m experiment_scripts.simulation_all_shrec_models --no_aretomo --no_comparison
+   Davinci (re run with new better scheduler)
+   python -m experiment_scripts.simulation_all_shrec_models --no_aretomo
+   
    DGX:
    python -m experiment_scripts.simulation_all_shrec_models --no_gen_data --no_train --no_comparison
    scp + Davinci
    python -m experiment_scripts.simulation_all_shrec_models --no_gen_data --no_train --no_aretomo
 - real data XP
 - different SNR
-   Davinci (running)
+   Davinci (re run with new better scheduler)
    python -m experiment_scripts.simulation_SNR_influence --no_aretomo --no_comparison
+   
    DGX:
    python -m experiment_scripts.simulation_SNR_influence --no_gen_data --no_train --no_comparison
    scp + Davinci
