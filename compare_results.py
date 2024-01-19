@@ -325,7 +325,7 @@ def compare_results(config):
 
 
 
-    ETOMO_FILE = 'projections_ali.mrc'
+    ETOMO_FILE = 'projxfalign.mrc'
     path_file = os.path.join(config.path_save,'Etomo',ETOMO_FILE)
     shift_etomo = np.zeros((config.Nangles,2))
     inplane_rotation_etomo = np.zeros(config.Nangles)
@@ -339,7 +339,7 @@ def compare_results(config):
         out.close() 
 
         # Extract the estimated deformations for etomo
-        ETOMO_FILENAME = 'projections.xf'
+        ETOMO_FILENAME = 'projxfalign.xf'
         path_file_etomo = os.path.join(config.path_save,'Etomo',ETOMO_FILENAME)
         etomodata = pd.read_csv(path_file_etomo, sep='\s+', header=None)
         etomodata.columns = ['a11', 'a12', 'a21', 'a22','y','x']
@@ -355,7 +355,7 @@ def compare_results(config):
             etomo_rotation_matrix = np.array([[etomodata['a11'][index],etomodata['a12'][index]],
                                 [etomodata['a21'][index],etomodata['a22'][index]]])
             inplane_rotation_etomo[index] = extract_angle(etomo_rotation_matrix)
-
+        print("Loaded Etomo")
 
 
     ######################################################################################################
