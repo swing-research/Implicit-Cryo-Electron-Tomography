@@ -161,6 +161,8 @@ def compare_results(config):
         os.makedirs(config.path_save+"/evaluation/deformations/true/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/true/"):
         os.makedirs(config.path_save+"/evaluation/volume_slices/true/")
+    if not os.path.exists(config.path_save+"/evaluation/volumes/true/"):
+        os.makedirs(config.path_save+"/evaluation/volumes/true/")
 
     # FBP on undistorted projections
     if not os.path.exists(config.path_save+"/evaluation/projections/FBP_no_deformed/"):
@@ -936,6 +938,8 @@ def compare_results_real(config):
         os.makedirs(config.path_save+"/evaluation/deformations/true/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/true/"):
         os.makedirs(config.path_save+"/evaluation/volume_slices/true/")
+    if not os.path.exists(config.path_save+"/evaluation/volumes/true/"):
+        os.makedirs(config.path_save+"/evaluation/volumes/true/")
 
     # FBP on undistorted projections
     if not os.path.exists(config.path_save+"/evaluation/projections/FBP_no_deformed/"):
