@@ -63,6 +63,7 @@ def get_config():
     config.multires_params.startResolution = 1
     config.multires_params.ray_change_epoch = [100, 200, 400, 800, 1200 ]
     config.multires_params.batch_set = [10, 5, 4, 3, 2]
+    config.multires_params.upsample = False
 
     #############################
     ## Parameters for training ##
