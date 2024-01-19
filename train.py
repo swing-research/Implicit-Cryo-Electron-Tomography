@@ -621,7 +621,7 @@ def train_without_ground_truth(config):
                 else:
                     proj_downsample[i] = img_tuple[lenIndex]
             proj_pyramid_set.append(proj_downsample)
-        print("Multiscale computed.
+        print("Multiscale computed.")
 
     ######################################################################################################
     ######################################################################################################
