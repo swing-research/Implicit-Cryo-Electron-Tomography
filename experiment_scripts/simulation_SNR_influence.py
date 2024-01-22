@@ -78,7 +78,7 @@ def main():
             resolution05[:,i] = resolutions[0]
             resolution0143[:,i] = resolutions[1]
             x_val[i] = i
-            model_name.append('model '+str(i))
+            model_name.append('SNR '+str(v_SNR))
 
             data_path = os.path.join(config.path_save,'evaluation','CC.csv')
             fsc = pd.read_csv(data_path)
