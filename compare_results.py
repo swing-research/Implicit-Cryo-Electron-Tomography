@@ -956,6 +956,8 @@ def compare_results(config):
             savepath = os.path.join(config.path_save,'evaluation','deformations','AreTomo','local_deformation_factor10_error_{}'.format(index))
             utils_display.display_local_est_and_true(implicit_deformation_AreTomo[index],local_tr[index],Npts=(20,20),scale=0.1, img_path=savepath )
 
+    plt.close('all')
+
 
 
 def compare_results_real(config):
@@ -1358,7 +1360,7 @@ def compare_results_real(config):
     # header ='angles,true,icetide,AreTomo,Etomo'
     # np.savetxt(os.path.join(config.path_save,'evaluation','inplane_angles.csv'),inplaneAngles,header=header,delimiter=",",comments='')
 
-
+    plt.close('all')
 
 
 
