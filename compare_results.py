@@ -1391,4 +1391,32 @@ def getReolution(dataframe,cutoffs=[0.5,0.143]):
     return res_set
 
 
+def getCorrelation(dataframe):
+    """
+    Uses the pandas dataframe extracts the CC for each method
+    """
+    CC_ours = dataframe['icetide'].values
+    if('ETOMO' in dataframe.columns):
+        CC_etomo = dataframe['ETOMO'].values
+    else:
+        CC_etomo = 0
+    if('AreTomo' in dataframe.columns):
+        CC_areTomo = dataframe['AreTomo_patch1'].values
+    else:
+        CC_areTomo = 0
+    CC_FBP = dataframe['FBP'].values
+    CC_FBP_undeformed = dataframe['FBP_no_deformed'].values
+    CC_FBP_est_deformed = dataframe['FBP_est_deformed'].values
+
+    CCSet = np.zeros((6, 1))
+    CCSet[0] = CC_ours
+    CCSet[1] = CC_etomo
+    CCSet[2] = CC_areTomo
+    CCSet[3] = CC_FBP
+    CCSet[4] = CC_FBP_undeformed
+    CCSet[5] = CC_FBP_est_deformed
+
+    return CCSet
+
+
 
