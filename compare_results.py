@@ -222,6 +222,7 @@ def compare_results(config):
         shift_aretomo = np.zeros((config.Nangles,2))
         translation_matrix_np = np.zeros((2))       
         inplane_rotation_aretomo = np.zeros(config.Nangles) 
+        import ipdb; ipdb.set_trace()
         if os.path.isfile(path_file):
             eval_AreTomo = True
             # load projections # need to be reorder and there seem to be a shift in intensity, so we match the mean on the noisy one 
@@ -259,6 +260,14 @@ def compare_results(config):
             out.close() 
             out = mrcfile.new(config.path_save_data+f"V_aretomo_{npatch}by{npatch}_corrected.mrc",np.moveaxis(V_FBP_aretomo.astype(np.float32),2,0),overwrite=True)
             out.close() 
+
+
+            import ipdb; ipdb.set_trace()
+            out = mrcfile.new("./aretomo.mrc",np.moveaxis(V_aretomo_centered.astype(np.float32),2,0),overwrite=True)
+            out.close() 
+            out = mrcfile.new("./true.mrc",np.moveaxis(v.astype(np.float32),2,0),overwrite=True)
+            out.close() 
+
 
             # Compute fsc and CC
             fsc_AreTomo = utils_FSC.FSC(V,V_FBP_aretomo)
