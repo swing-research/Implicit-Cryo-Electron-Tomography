@@ -84,7 +84,6 @@ def main():
             cor = pd.read_csv(data_path)
             correlations = getCorrelation(cor)
             CC_all[:,i] = correlations[:,0]
-            import ipdb; ipdb.set_trace()
 
         config.path_save = "./results/SNR_exp_"+str(config.volume_name)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
         if not os.path.exists(config.path_save):

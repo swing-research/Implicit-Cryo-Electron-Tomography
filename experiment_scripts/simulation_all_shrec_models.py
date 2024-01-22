@@ -78,7 +78,7 @@ def main():
             config.path_save_data = "./results/all_models_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
             config.path_save = "./results/all_models_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
             
-            compare_results(config)
+            # compare_results(config)
 
             data_path = os.path.join(config.path_save,'evaluation','FSC.csv')
             fsc = pd.read_csv(data_path)
@@ -89,8 +89,8 @@ def main():
             model_name.append('model '+str(i))
 
             data_path = os.path.join(config.path_save,'evaluation','CC.csv')
-            fsc = pd.read_csv(data_path)
-            correlations = getCorrelation(fsc)
+            cor = pd.read_csv(data_path)
+            correlations = getCorrelation(cor)
             CC_all[:,i] = correlations[:,0]
 
         config.path_save = "./results/all_models"+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
