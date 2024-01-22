@@ -147,7 +147,7 @@ def get_config():
     config.encoding = ml_collections.ConfigDict()
     config.encoding.otype = 'Grid'
     config.encoding.type = 'Dense'
-    config.encoding.n_levels = 8
+    config.encoding.n_levels = 6
     config.encoding.n_features_per_level = 4
     config.encoding.log2_hashmap_size = 22
     config.encoding.base_resolution = 8
