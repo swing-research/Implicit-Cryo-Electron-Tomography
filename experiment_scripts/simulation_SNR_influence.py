@@ -83,7 +83,7 @@ def main():
             data_path = os.path.join(config.path_save,'evaluation','CC.csv')
             fsc = pd.read_csv(data_path)
             correlations = getCorrelation(fsc)
-            CC_all[:,i] = correlations
+            CC_all[:,i] = correlations[:,0]
 
         config.path_save = "./results/SNR_exp_"+str(config.volume_name)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
         if not os.path.exists(config.path_save):
