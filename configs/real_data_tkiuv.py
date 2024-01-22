@@ -62,7 +62,7 @@ def get_config():
     config.multires_params = ml_collections.ConfigDict()
     config.multires_params.startResolution = 6
     config.multires_params.ray_change_epoch = [100, 200, 400, 800, 1200, 1600, 2200]
-    config.multires_params.batch_set = [10, 5, 4, 3, 2, 2]
+    config.multires_params.batch_set = [10, 5, 4, 3, 2, 2, 2]
     config.multires_params.upsample = False
 
     #############################
@@ -140,7 +140,7 @@ def get_config():
     # params of implicit volume
     config.input_size_volume = 3 # always 3 for 3d tomography
     config.output_size_volume = 1 # always 1 for 3d tomography
-    config.num_layers_volume = 3
+    config.num_layers_volume = 4
     config.hidden_size_volume = 64
     config.L_volume = 3
     # params for the multi-resolution grids encoding

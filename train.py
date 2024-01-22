@@ -361,10 +361,10 @@ def train(config):
                     loss_regul_local_ampl.append((config.lamb_local_ampl*depl.mean()+config.lamb_local_mean*depl_mean).item())
             if train_global_def and (config.lamb_rot!=0 or config.lamb_shifts!=0):
                 for ii in idx_loader:
-                    loss += config.lamb_shifts*torch.abs(shift_est[ii]()*config.n1).sum()
-                    loss += config.lamb_rot*torch.abs(rot_est[ii]()*180/np.pi).sum()
-                    loss_regul_shifts.append((config.lamb_shifts*torch.abs(shift_est[ii]()*config.n1).sum()).item())
-                    loss_regul_rot.append((config.lamb_rot*torch.abs(rot_est[ii]()*180/np.pi).sum()).item())
+                    loss += config.lamb_shifts*torch.abs(shift_est[ii]()*config.n1).mean()
+                    loss += config.lamb_rot*torch.abs(rot_est[ii]()*180/np.pi).mean()
+                    loss_regul_shifts.append((config.lamb_shifts*torch.abs(shift_est[ii]()*config.n1).mean()).item())
+                    loss_regul_rot.append((config.lamb_rot*torch.abs(rot_est[ii]()*180/np.pi).mean()).item())
             if config.train_volume and config.lamb_volume!=0:
                 loss += torch.linalg.norm(outputValues[outputValues<0])*config.lamb_volume
                 loss_regul_volume.append((torch.linalg.norm(outputValues[outputValues<0])*config.lamb_volume).item())
@@ -969,10 +969,10 @@ def train_without_ground_truth(config):
                     loss_regul_local_ampl.append((config.lamb_local_ampl*depl.mean()+config.lamb_local_mean*depl_mean).item())
             if train_global_def and (config.lamb_rot!=0 or config.lamb_shifts!=0):
                 for ii in idx_loader:
-                    loss += config.lamb_shifts*torch.abs(shift_est[ii]()*config.n1).sum()
-                    loss += config.lamb_rot*torch.abs(rot_est[ii]()*180/np.pi).sum()
-                    loss_regul_shifts.append((config.lamb_shifts*torch.abs(shift_est[ii]()*config.n1).sum()).item())
-                    loss_regul_rot.append((config.lamb_rot*torch.abs(rot_est[ii]()*180/np.pi).sum()).item())
+                    loss += config.lamb_shifts*torch.abs(shift_est[ii]()*config.n1).mean()
+                    loss += config.lamb_rot*torch.abs(rot_est[ii]()*180/np.pi).mean()
+                    loss_regul_shifts.append((config.lamb_shifts*torch.abs(shift_est[ii]()*config.n1).mean()).item())
+                    loss_regul_rot.append((config.lamb_rot*torch.abs(rot_est[ii]()*180/np.pi).mean()).item())
             if config.train_volume and config.lamb_volume!=0:
                 loss += torch.linalg.norm(outputValues[outputValues<0])*config.lamb_volume
                 loss_regul_volume.append((torch.linalg.norm(outputValues[outputValues<0])*config.lamb_volume).item())
