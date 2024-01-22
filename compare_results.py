@@ -985,8 +985,8 @@ def compare_results_real(config):
     # Our method
     if not os.path.exists(config.path_save+"/evaluation/projections/ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/projections/ICETIDE/")
-    if not os.path.exists(config.path_save+"/evaluation/volume/ICETIDE/"):
-        os.makedirs(config.path_save+"/evaluation/volume/ICETIDE/")
+    if not os.path.exists(config.path_save+"/evaluation/volumes/ICETIDE/"):
+        os.makedirs(config.path_save+"/evaluation/volumes/ICETIDE/")
     if not os.path.exists(config.path_save+"/evaluation/deformations/ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/deformations/ICETIDE/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/ICETIDE/"):
@@ -1248,7 +1248,7 @@ def compare_results_real(config):
         aa[1,1].axis('off')
         aa[0,1].axis('off')
         plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
-        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volume",name,"XYZ.png"))
+        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name,"XYZ.png"))
 
     # ICETIDE
     tmp = V_icetide
