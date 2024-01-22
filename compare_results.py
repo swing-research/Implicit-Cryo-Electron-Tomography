@@ -581,22 +581,22 @@ def compare_results(config):
     if(eval_Etomo):
         CC_Etomo = CC(V,V_FBP_etomo)
 
-    plt.figure(1)
-    plt.clf()
-    plt.plot(x_fsc,CC_icetide,'b',label="icetide")
-    plt.plot(x_fsc,fsc_FBP_icetide,'--b',label="FBP with our deform. est. ")
-    if(eval_AreTomo):
-        for i, npatch in enumerate(config.nPatch):
-            col = ['r','m']
-            plt.plot(x_fsc,fsc_AreTomo_list[i],col[i],label=f"AreTomo patch {npatch}")
-            plt.plot(x_fsc,fsc_AreTomo_centered_list[i],col[i],linestyle='--',label=f"AreTomo centered patch {npatch}")
-    if(eval_Etomo):
-        plt.plot(x_fsc,fsc_Etomo,'c',label="Etomo")
-    plt.plot(x_fsc,fsc_FBP,'k',label="FBP")
-    plt.plot(x_fsc,fsc_FBP_no_deformed,'g',label="FBP no def.")
-    plt.legend()
-    plt.savefig(os.path.join(config.path_save,'evaluation','FSC.png'))
-    plt.savefig(os.path.join(config.path_save,'evaluation','FSC.pdf'))
+    # plt.figure(1)
+    # plt.clf()
+    # plt.plot(x_fsc,CC_icetide,'b',label="icetide")
+    # plt.plot(x_fsc,fsc_FBP_icetide,'--b',label="FBP with our deform. est. ")
+    # if(eval_AreTomo):
+    #     for i, npatch in enumerate(config.nPatch):
+    #         col = ['r','m']
+    #         plt.plot(x_fsc,fsc_AreTomo_list[i],col[i],label=f"AreTomo patch {npatch}")
+    #         plt.plot(x_fsc,fsc_AreTomo_centered_list[i],col[i],linestyle='--',label=f"AreTomo centered patch {npatch}")
+    # if(eval_Etomo):
+    #     plt.plot(x_fsc,fsc_Etomo,'c',label="Etomo")
+    # plt.plot(x_fsc,fsc_FBP,'k',label="FBP")
+    # plt.plot(x_fsc,fsc_FBP_no_deformed,'g',label="FBP no def.")
+    # plt.legend()
+    # plt.savefig(os.path.join(config.path_save,'evaluation','FSC.png'))
+    # plt.savefig(os.path.join(config.path_save,'evaluation','FSC.pdf'))
 
     CC_arr = np.zeros((1,8))
     CC_arr[:,1] = CC_icetide
