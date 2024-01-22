@@ -11,15 +11,20 @@ mkdir -p "$path_save"
 
 cd results
 for folder in */; do
-    path_save="./${folder}Etomo/"
-    #mkdir -p $path_save
-    batchruntomo -directive ../experiment_scripts/etomo_options.adoc -gpu 1 -cpus 8 -root projections -deliver "./${folder}" -current "./${folder}"
-
+    path_save="./${folder}projections_etomo/"
+    
+    cp "./${folder}projections.mrc" "./${folder}projections_etomo.mrc"
+    start_time=$(date +%s.%N)
+    memory_usage=$( /usr/bin/time  batchruntomo -directive ../experiment_scripts/etomo_options.adoc -gpu 1 -cpus 8 -root projections_etomo -deliver "./${folder}" -current "./${folder}" > ${path_save}etomo_batch.log  2>&1 )
+    end_time=$(date +%s.%N)
+    elapsed_time=$(echo "$end_time - $start_time" | bc)
+    echo "Time taken: $elapsed_time seconds"
+    echo "Memory used: $memory_usage kilobytes"
 done
 cd ..
 
 
-batchruntomo -directive ../../experiment_scripts/etomo_options.adoc -root projections -deliver ./Etomo -current ./
+
 
 
 
