@@ -6,6 +6,23 @@ path_exp=./results/
 path_save="${path_exp}Etomo/"
 mkdir -p "$path_save"
 
+
+
+
+cd results
+for folder in */; do
+    path_save="./${folder}Etomo/"
+    #mkdir -p $path_save
+    batchruntomo -directive ../experiment_scripts/etomo_options.adoc -gpu 1 -cpus 8 -root projections -deliver "./${folder}" -current "./${folder}"
+
+done
+cd ..
+
+
+batchruntomo -directive ../../experiment_scripts/etomo_options.adoc -root Etomo -deliver ./Etomo -current ./
+
+
+
 cd results
 for folder in */; do
     path_save="./${folder}Etomo/"
