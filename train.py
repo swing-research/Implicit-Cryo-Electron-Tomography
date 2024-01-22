@@ -521,9 +521,6 @@ def train(config):
                 np.save(os.path.join(config.path_save,'training','CC_iter.npy'),np.array(CC_icetide_tot))
                 header ='ep,icetide,FBP,FBP_no_deformed'
                 np.savetxt(os.path.join(config.path_save,'training','CC_iter.csv'),np.array([ep_tot,CC_icetide_tot,CC_FBP_tot,CC_FBP_no_deformed_tot]).T,header=header,delimiter=",",comments='')
-                print("#########################################")
-                print("#########################################")
-                print("#########################################")
 
     print("Saving final state after training...")
     torch.save({
