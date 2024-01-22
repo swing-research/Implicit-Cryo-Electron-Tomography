@@ -11,7 +11,8 @@
 
 - real data remains to do comparison
 - Change name with code: XP1, XP2, etc
-- unit of fsc
+- unit of fsc 
+- comparison with correlation
 
 
 
@@ -46,7 +47,7 @@ done
 # Send Etomo result to davinci
 for folder in */; do
     ssh debarn0000@131.152.54.15 "mkdir -p /home/debarn0000/Documents/Codes/Implicit-Cryo-Electron-Tomography/results/$folder"
-    scp -r $folder$"projections.mrc" debarn0000@131.152.54.15:home/debarn0000/Documents/Codes/Implicit-Cryo-Electron-Tomography/results/$folder  
+    scp -r $folder$"projections.mrc" debarn0000@131.152.54.15:/home/debarn0000/Documents/Codes/Implicit-Cryo-Electron-Tomography/results/$folder  
 done
 
 

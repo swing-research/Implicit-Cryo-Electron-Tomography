@@ -150,7 +150,7 @@ def get_config():
     config.encoding.n_levels = 3
     config.encoding.n_features_per_level = 4
     config.encoding.log2_hashmap_size = 26
-    config.encoding.base_resolution = 8
+    config.encoding.base_resolution = 64
     config.encoding.per_level_scale = 2
     config.encoding.interpolation = 'Smoothstep'
     # params specific to Tiny cuda network
