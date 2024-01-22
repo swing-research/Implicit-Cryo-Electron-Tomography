@@ -156,7 +156,7 @@ def get_config():
     # params specific to Tiny cuda network
     config.network = ml_collections.ConfigDict()
     config.network.otype = 'FullyFusedMLP'
-    config.network.activation = 'ReLU'
+    config.network.activation = 'LeakyReLU'
     config.network.output_activation = 'None'
 
     # parameters of implicit deformations
