@@ -1394,7 +1394,7 @@ def getReolution(dataframe,cutoffs=[0.5,0.143]):
         fsc_etomo = dataframe['ETOMO'].values
     else:
         fsc_etomo = np.zeros(len(fsc_ours))
-    if('AreTomo' in dataframe.columns):
+    if('AreTomo_patch1' in dataframe.columns):
         fsc_areTomo = dataframe['AreTomo_patch1'].values
     else:
         fsc_areTomo = np.zeros(len(fsc_ours))
