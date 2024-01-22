@@ -78,7 +78,7 @@ def main():
             resolution05[:,i] = resolutions[0]
             resolution0143[:,i] = resolutions[1]
             x_val[i] = i
-            model_name.append('SNR '+str(v_SNR))
+            model_name.append(str(v_SNR))
 
             data_path = os.path.join(config.path_save,'evaluation','CC.csv')
             cor = pd.read_csv(data_path)
@@ -140,7 +140,7 @@ def main():
         #save as csv file with header and SNR values as columns
         CC_all = np.vstack((model_name,CC_all))
         header = ['icetide','ETOMO','AreTomo','FBP','FBP_no_deformed','FBP_est_deformed']
-        header= 'MODEL_NAME'+','+','.join(header)
+        header= 'SNR'+','+','.join(header)
         pd_CC = pd.DataFrame(CC_all.T,columns=header.split(','))
         pd_CC.to_csv(os.path.join(config.path_save,'evaluation','CC.csv'),index=False)
 
