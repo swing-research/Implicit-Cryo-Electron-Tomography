@@ -104,8 +104,8 @@ def perform_3d_registration(fixed_image, moving_image):
     return final_transform
 
 def CC(V1,V2):
-    V1_norm = torch.sqrt(torch.sum(((V1-V1.mean()))**2))
-    V2_norm = torch.sqrt(torch.sum(((V2-V2.mean()))**2))
+    V1_norm = np.sqrt(np.sum(((V1-V1.mean()))**2))
+    V2_norm = np.sqrt(np.sum(((V2-V2.mean()))**2))
     return (V1-V1.mean())*(V2-V2.mean())/(V1_norm*V2_norm)
 
 def compare_results(config):
