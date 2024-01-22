@@ -19,7 +19,7 @@ done
 cd ..
 
 
-batchruntomo -directive ../../experiment_scripts/etomo_options.adoc -root Etomo -deliver ./Etomo -current ./
+batchruntomo -directive ../../experiment_scripts/etomo_options.adoc -root projections -deliver ./Etomo -current ./
 
 
 
