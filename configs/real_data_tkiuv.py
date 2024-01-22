@@ -76,11 +76,11 @@ def get_config():
     config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
-    config.epochs = 2000
+    config.epochs = 2500
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
     config.scheduler_step_size = 100
-    config.scheduler_gamma = 0.5
+    config.scheduler_gamma = 0.75
 
     # Sampling strategy
     config.batch_size = 4 # number of viewing direction per iteration
@@ -140,8 +140,8 @@ def get_config():
     # params of implicit volume
     config.input_size_volume = 3 # always 3 for 3d tomography
     config.output_size_volume = 1 # always 1 for 3d tomography
-    config.num_layers_volume = 3
-    config.hidden_size_volume = 64
+    config.num_layers_volume = 7
+    config.hidden_size_volume = 128
     config.L_volume = 3
     # params for the multi-resolution grids encoding
     config.encoding = ml_collections.ConfigDict()
