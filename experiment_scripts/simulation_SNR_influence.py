@@ -119,7 +119,7 @@ def main():
         resolution05 = np.vstack((model_name,resolution05))
         resolution0143 = np.vstack((model_name,resolution0143))
         header = ['icetide','ETOMO','AreTomo','FBP','FBP_no_deformed','FBP_est_deformed']
-        header= 'MODEL_NAME'+','+','.join(header)
+        header= 'SNR'+','+','.join(header)
         pd_resoluton05 = pd.DataFrame(resolution05.T,columns=header.split(','))
         pd_resoluton0143 = pd.DataFrame(resolution0143.T,columns=header.split(','))
         pd_resoluton05.to_csv(os.path.join(config.path_save,'evaluation','resolution05.csv'),index=False)
