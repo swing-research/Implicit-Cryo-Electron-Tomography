@@ -1426,7 +1426,7 @@ def getCorrelation(dataframe):
         CC_etomo = dataframe['ETOMO'].values
     else:
         CC_etomo = 0
-    if('AreTomo' in dataframe.columns):
+    if('AreTomo_patch1' in dataframe.columns):
         CC_areTomo = dataframe['AreTomo_patch1'].values
     else:
         CC_areTomo = 0
