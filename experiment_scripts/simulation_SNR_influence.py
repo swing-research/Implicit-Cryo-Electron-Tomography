@@ -142,7 +142,7 @@ def main():
         header = ['icetide','ETOMO','AreTomo','FBP','FBP_no_deformed','FBP_est_deformed']
         header= 'MODEL_NAME'+','+','.join(header)
         pd_CC = pd.DataFrame(CC_all.T,columns=header.split(','))
-        pd_resoluton05.to_csv(os.path.join(config.path_save,'evaluation','CC.csv'),index=False)
+        pd_CC.to_csv(os.path.join(config.path_save,'evaluation','CC.csv'),index=False)
 
 
 

@@ -65,11 +65,12 @@ def main():
     # Compare the results and save the figures
     if args.no_comparison:
         import pandas as pd
-        from compare_results import getReolution
+        from compare_results import getReolution, getCorrelation
         from compare_results import compare_results
         
         resolution05 = np.zeros((6,len(volume_name_list)))
         resolution0143 = np.zeros((6,len(volume_name_list)))
+        CC_all = np.zeros((6,len(volume_name_list)))
         x_val = np.zeros(len(volume_name_list))
         model_name = []
         for i, v_name in enumerate(volume_name_list):
@@ -86,6 +87,11 @@ def main():
             resolution0143[:,i] = resolutions[1]
             x_val[i] = i
             model_name.append('model '+str(i))
+
+            data_path = os.path.join(config.path_save,'evaluation','CC.csv')
+            fsc = pd.read_csv(data_path)
+            correlations = getCorrelation(fsc)
+            CC_all[:,i] = correlations[:,0]
 
         config.path_save = "./results/all_models"+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
         if not os.path.exists(config.path_save):
@@ -123,6 +129,24 @@ def main():
         pd_resoluton0143 = pd.DataFrame(resolution0143.T,columns=header.split(','))
         pd_resoluton05.to_csv(os.path.join(config.path_save,'evaluation','resolution05.csv'),index=False)
         pd_resoluton0143.to_csv(os.path.join(config.path_save,'evaluation','resolution0143.csv'),index=False)
+
+        plt.figure()
+        plt.plot(CC_all[3,:], label='FBP')
+        plt.plot(CC_all[4,:], label='FBP undeformed')
+        plt.plot(CC_all[0,:],label='ICETIDE')
+        plt.plot(CC_all[5,:],label='FBP est deformation')
+        plt.ylabel('Resolution (1/pixel size)')
+        plt.ylabel('SNR (dB)')
+        plt.legend()
+        plt.savefig(os.path.join(config.path_save,'evaluation','CC.pdf'))
+        plt.close() 
+
+        #save as csv file with header and SNR values as columns
+        resolution05 = np.vstack((model_name,CC_all))
+        header = ['icetide','ETOMO','AreTomo','FBP','FBP_no_deformed','FBP_est_deformed']
+        header= 'MODEL_NAME'+','+','.join(header)
+        pd_CC = pd.DataFrame(CC_all.T,columns=header.split(','))
+        pd_CC.to_csv(os.path.join(config.path_save,'evaluation','CC.csv'),index=False)
 
 
 if __name__ == '__main__':
