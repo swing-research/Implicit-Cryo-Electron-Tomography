@@ -24,7 +24,7 @@ def main():
     # Get config file
     config = config_file.get_config()
 
-    v_SNR_list = np.arange(-20,31,10)
+    v_SNR_list = np.arange(30,31,10)
     for v_SNR in v_SNR_list:
         # Noise
         config.SNR_value = v_SNR

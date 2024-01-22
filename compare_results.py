@@ -263,10 +263,8 @@ def compare_results(config):
 
 
             import ipdb; ipdb.set_trace()
-            out = mrcfile.new("./aretomo.mrc",np.moveaxis(V_aretomo_centered.astype(np.float32),2,0),overwrite=True)
-            out.close() 
-            out = mrcfile.new("./true.mrc",np.moveaxis(v.astype(np.float32),2,0),overwrite=True)
-            out.close() 
+            out = mrcfile.new("./aretomo.mrc",np.moveaxis(V_aretomo_centered.astype(np.float32),2,0),overwrite=True); out.close() 
+            out = mrcfile.new("./true.mrc",np.moveaxis(V.astype(np.float32),2,0),overwrite=True); out.close() 
 
 
             # Compute fsc and CC
