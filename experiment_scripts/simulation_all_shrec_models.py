@@ -142,7 +142,7 @@ def main():
         plt.close() 
 
         #save as csv file with header and SNR values as columns
-        resolution05 = np.vstack((model_name,CC_all))
+        CC_all = np.vstack((model_name,CC_all))
         header = ['icetide','ETOMO','AreTomo','FBP','FBP_no_deformed','FBP_est_deformed']
         header= 'MODEL_NAME'+','+','.join(header)
         pd_CC = pd.DataFrame(CC_all.T,columns=header.split(','))

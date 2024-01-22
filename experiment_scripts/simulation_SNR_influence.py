@@ -70,7 +70,7 @@ def main():
             config.path_save_data = "./results/SNR_exp_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
             config.path_save = "./results/SNR_exp_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
             
-            compare_results(config)
+            # compare_results(config)
 
             data_path = os.path.join(config.path_save,'evaluation','FSC.csv')
             fsc = pd.read_csv(data_path)
@@ -138,7 +138,7 @@ def main():
         plt.close() 
 
         #save as csv file with header and SNR values as columns
-        resolution05 = np.vstack((model_name,CC_all))
+        CC_all = np.vstack((model_name,CC_all))
         header = ['icetide','ETOMO','AreTomo','FBP','FBP_no_deformed','FBP_est_deformed']
         header= 'MODEL_NAME'+','+','.join(header)
         pd_CC = pd.DataFrame(CC_all.T,columns=header.split(','))
