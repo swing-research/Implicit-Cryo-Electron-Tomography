@@ -106,7 +106,7 @@ def perform_3d_registration(fixed_image, moving_image):
 def CC(V1,V2):
     V1_norm = np.sqrt(np.sum(((V1-V1.mean()))**2))
     V2_norm = np.sqrt(np.sum(((V2-V2.mean()))**2))
-    return (V1-V1.mean())*(V2-V2.mean())/(V1_norm*V2_norm)
+    return np.sum((V1-V1.mean())*(V2-V2.mean()))/(V1_norm*V2_norm)
 
 def compare_results(config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
@@ -351,6 +351,27 @@ def compare_results(config):
         out = mrcfile.new(config.path_save_data+"V_etomo.mrc",np.moveaxis(V_FBP_etomo.astype(np.float32),2,0),overwrite=True)
         out.close() 
 
+        # Find best affine transformation between volumes
+        V_sk = sitk.GetImageFromArray(V/np.linalg.norm(V))
+        V_etomo_sk = sitk.GetImageFromArray(V_FBP_etomo)
+        final_transform = perform_3d_registration(V_sk, V_etomo_sk)
+        # Apply the final transform to the moving image
+        registered_image = sitk.Resample(V_etomo_sk, V_sk, final_transform, sitk.sitkLinear, 0.0, V_etomo_sk.GetPixelID())
+        V_etomo_centered = sitk.GetArrayFromImage(registered_image)
+
+        # Get deformation matrix
+        num_transforms = final_transform.GetNumberOfTransforms()
+        composite_transform = final_transform.GetNthTransform(num_transforms - 1)
+        affine_transform = composite_transform.GetNthTransform(0)
+        translation_transform = composite_transform.GetNthTransform(1)
+        affine_matrix = affine_transform.GetMatrix()
+        affine_matrix_np = np.array(affine_matrix).reshape((V_sk.GetDimension(), V_sk.GetDimension()))
+        translation_matrix = translation_transform.GetParameters()
+        translation_matrix_np = np.array(translation_matrix)
+        cos_theta = (np.trace(affine_matrix_np[:3, :3]) - 1) / 2
+        rotation_angles_est = np.arccos(cos_theta) * 180 / np.pi  # Convert to degrees
+
+
         # Extract the estimated deformations for etomo
         ETOMO_FILENAME = 'projections_etomo.xf'
         path_file_etomo = os.path.join(config.path_save,'projections_etomo',ETOMO_FILENAME)
@@ -496,8 +517,8 @@ def compare_results(config):
                                                 ).mean(),decimals=4)
 
     # Compute the error between the true and AreTomo estimated deformation
-    error_x_shifts_aretomo = np.around(np.abs(x_shifts*n1_eval-shift_aretomo[:,0]-translation_matrix_np[0]).mean(),decimals=4)
-    error_y_shifts_aretomo = np.around(np.abs(y_shifts*n1_eval-shift_aretomo[:,1]-translation_matrix_np[1]).mean(),decimals=4)
+    error_x_shifts_aretomo = np.around(np.abs(x_shifts*n1_eval-shift_aretomo[:,0]).mean(),decimals=4)
+    error_y_shifts_aretomo = np.around(np.abs(y_shifts*n1_eval-shift_aretomo[:,1]).mean(),decimals=4)
     error_inplane_rotation_aretomo =np.around( np.abs(inplane_rotation-inplane_rotation_aretomo
                                                 ).mean(),decimals=4)
 
@@ -531,7 +552,7 @@ def compare_results(config):
     fsc_FBP = utils_FSC.FSC(V,V_FBP)
     fsc_FBP_no_deformed = utils_FSC.FSC(V,V_FBP_no_deformed)
     if(eval_Etomo):
-        fsc_Etomo = utils_FSC.FSC(V,V_FBP_etomo)
+        fsc_Etomo = utils_FSC.FSC(V,V_etomo_centered)
     x_fsc = np.arange(fsc_FBP.shape[0])
 
     plt.figure(1)
@@ -560,7 +581,7 @@ def compare_results(config):
     if(eval_AreTomo):
         for i, npatch in enumerate(config.nPatch):
             if i==0:
-                fsc_arr[:,4] = fsc_AreTomo_list[i][:,0] 
+                fsc_arr[:,4] = fsc_AreTomo_centered_list[i][:,0] 
             if i==1:
                 fsc_arr[:,7] = fsc_AreTomo_centered_list[i][:,0] 
     if(eval_Etomo):
@@ -579,7 +600,7 @@ def compare_results(config):
     CC_FBP = CC(V,V_FBP)
     CC_FBP_no_deformed = CC(V,V_FBP_no_deformed)
     if(eval_Etomo):
-        CC_Etomo = CC(V,V_FBP_etomo)
+        CC_Etomo = CC(V,V_etomo_centered)
 
     # plt.figure(1)
     # plt.clf()
@@ -717,13 +738,13 @@ def compare_results(config):
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_no_deformed","slice_{}.png".format(index)),tmp)
 
         if(eval_AreTomo):
-            tmp = V_FBP_aretomo[:,:,index]
+            tmp = V_aretomo_centered[:,:,index]
             tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
             tmp = np.floor(255*tmp).astype(np.uint8)
             imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo","slice_{}.png".format(index)),tmp)
 
         if(eval_Etomo):
-            tmp = V_FBP_etomo[:,:,index]
+            tmp = V_etomo_centered[:,:,index]
             tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
             tmp = np.floor(255*tmp).astype(np.uint8)
             imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo","slice_{}.png".format(index)),tmp)
@@ -769,12 +790,12 @@ def compare_results(config):
 
     if(eval_AreTomo):
         # AreTomo volume
-        tmp = V_FBP_aretomo
+        tmp = V_aretomo_centered
         display_XYZ(tmp,name="AreTomo")
 
     if(eval_Etomo):
         # Etomo volume
-        tmp = V_FBP_etomo
+        tmp = V_etomo_centered
         display_XYZ(tmp,name="Etomo")
 
     # FBP_ICETIDE volume
@@ -794,10 +815,10 @@ def compare_results(config):
     projections_FBP_no_deformed = operator_ET(V_FBP_no_deformed_t).detach().cpu().numpy()
     projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
     if(eval_AreTomo):
-        V_FBP_aretomo_t = torch.tensor(V_FBP_aretomo).to(device)
+        V_FBP_aretomo_t = torch.tensor(V_aretomo_centered).to(device)
         projections_AreTomo = operator_ET(V_FBP_aretomo_t).detach().cpu().numpy()
     if(eval_Etomo):
-        V_FBP_etomo_t = torch.tensor(V_FBP_etomo).to(device)
+        V_FBP_etomo_t = torch.tensor(V_etomo_centered).to(device)
         projections_Etomo = etomo_projections
 
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","icetide_projections.mrc"),projections_icetide.astype(np.float32),overwrite=True)
@@ -852,7 +873,7 @@ def compare_results(config):
         out.close()
     if eval_Etomo:
         out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-                                    "volumes","Etomo_volume.mrc"),np.moveaxis(V_FBP_etomo,2,0),overwrite=True)
+                                    "volumes","Etomo_volume.mrc"),np.moveaxis(V_etomo_centered,2,0),overwrite=True)
         out.close()
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
                                 "FBP_volume.mrc"),np.moveaxis(V_FBP,2,0),overwrite=True)
@@ -1073,7 +1094,10 @@ def compare_results_real(config):
         etomo_projections_t = torch.tensor(etomo_projections).type(config.torch_type).to(device)
         V_FBP_etomo = reconstruct_FBP_volume(config, etomo_projections_t).detach().cpu().numpy()
         out = mrcfile.new(config.path_save_data+"V_etomo.mrc",np.moveaxis(V_FBP_etomo.astype(np.float32),2,0),overwrite=True)
+        out.close()
+        out = mrcfile.new(config.path_save_data+"V_etomo_centered.mrc",np.moveaxis(V_etomo_centered.astype(np.float32),2,0),overwrite=True)
         out.close() 
+
 
 
     ######################################################################################################
