@@ -24,7 +24,7 @@ def main():
     # Get config file
     config = config_file.get_config()
 
-    v_SNR_list = np.arange(30,31,10)
+    v_SNR_list = np.arange(-20,31,10)
     for v_SNR in v_SNR_list:
         # Noise
         config.SNR_value = v_SNR
@@ -70,7 +70,7 @@ def main():
             config.path_save_data = "./results/SNR_exp_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
             config.path_save = "./results/SNR_exp_"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
             
-            compare_results(config)
+            # compare_results(config)
 
             data_path = os.path.join(config.path_save,'evaluation','FSC.csv')
             fsc = pd.read_csv(data_path)
@@ -81,9 +81,10 @@ def main():
             model_name.append('SNR '+str(v_SNR))
 
             data_path = os.path.join(config.path_save,'evaluation','CC.csv')
-            fsc = pd.read_csv(data_path)
-            correlations = getCorrelation(fsc)
+            cor = pd.read_csv(data_path)
+            correlations = getCorrelation(cor)
             CC_all[:,i] = correlations[:,0]
+            import ipdb; ipdb.set_trace()
 
         config.path_save = "./results/SNR_exp_"+str(config.volume_name)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
         if not os.path.exists(config.path_save):
