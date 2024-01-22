@@ -13,6 +13,8 @@
 - Change name with code: XP1, XP2, etc
 - unit of fsc 
 - comparison with correlation
+- AreTomo working on all SNR and all models
+- Check Etomo on all comparisons
 
 
 
@@ -39,12 +41,12 @@ for folder in */; do
 done
 
 
-# Send folder to run Etomo on local machine
+# Send Etomo result to davinci
 for folder in results/*/; do
-    scp -r $folder$"Etomo/" debarn0000@davinci.dmi.unibas.ch:Implicit-Cryo-Electron-Tomography/$folder
+    scp -r $folder$"projections_etomo/" debarn0000@davinci.dmi.unibas.ch:Implicit-Cryo-Electron-Tomography/$folder
 done
 
-# Send Etomo result to davinci
+# Send folder to run Etomo on local machine
 for folder in */; do
     ssh debarn0000@131.152.54.15 "mkdir -p /home/debarn0000/Documents/Codes/Implicit-Cryo-Electron-Tomography/results/$folder"
     scp -r $folder$"projections.mrc" debarn0000@131.152.54.15:/home/debarn0000/Documents/Codes/Implicit-Cryo-Electron-Tomography/results/$folder  

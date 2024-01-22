@@ -103,6 +103,10 @@ def perform_3d_registration(fixed_image, moving_image):
 
     return final_transform
 
+def CC(V1,V2):
+    V1_norm = torch.sqrt(torch.sum(((V1-V1.mean()))**2))
+    V2_norm = torch.sqrt(torch.sum(((V2-V2.mean()))**2))
+    return (V1-V1.mean())*(V2-V2.mean())/(V1_norm*V2_norm)
 
 def compare_results(config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
@@ -210,6 +214,8 @@ def compare_results(config):
     eval_AreTomo = False
     fsc_AreTomo_list = []
     fsc_AreTomo_centered_list = []
+    CC_AreTomo_list = []
+    CC_AreTomo_centered_list = []
     for npatch in config.nPatch:
         ARE_TOMO_FILE = f'projections_aligned_aretomo_{npatch}by{npatch}.mrc'
         path_file = os.path.join(config.path_save,'AreTomo',ARE_TOMO_FILE)
@@ -254,11 +260,16 @@ def compare_results(config):
             out = mrcfile.new(config.path_save_data+f"V_aretomo_{npatch}by{npatch}_corrected.mrc",np.moveaxis(V_FBP_aretomo.astype(np.float32),2,0),overwrite=True)
             out.close() 
 
-            # Compute fsc
+            # Compute fsc and CC
             fsc_AreTomo = utils_FSC.FSC(V,V_FBP_aretomo)
             fsc_AreTomo_centered = utils_FSC.FSC(V,V_aretomo_centered)
             fsc_AreTomo_list.append(fsc_AreTomo)
             fsc_AreTomo_centered_list.append(fsc_AreTomo_centered)
+
+            CC_AreTomo = CC(V,V_FBP_aretomo)
+            CC_AreTomo_centered = CC(V,V_aretomo_centered)
+            CC_AreTomo_list.append(CC_AreTomo)
+            CC_AreTomo_centered_list.append(CC_AreTomo_centered)
 
             # load estimated deformations
             ARETOMO_FILENAME = f'projections_{npatch}by{npatch}.aln'
@@ -327,8 +338,8 @@ def compare_results(config):
 
 
 
-    ETOMO_FILE = 'projxfalign.mrc'
-    path_file = os.path.join(config.path_save,'Etomo',ETOMO_FILE)
+    ETOMO_FILE = 'projections_etomo_ali.mrc'
+    path_file = os.path.join(config.path_save,'projections_etomo',ETOMO_FILE)
     shift_etomo = np.zeros((config.Nangles,2))
     inplane_rotation_etomo = np.zeros(config.Nangles)
     eval_Etomo = False
@@ -341,8 +352,8 @@ def compare_results(config):
         out.close() 
 
         # Extract the estimated deformations for etomo
-        ETOMO_FILENAME = 'projxfalign.xf'
-        path_file_etomo = os.path.join(config.path_save,'Etomo',ETOMO_FILENAME)
+        ETOMO_FILENAME = 'projections_etomo.xf'
+        path_file_etomo = os.path.join(config.path_save,'projections_etomo',ETOMO_FILENAME)
         etomodata = pd.read_csv(path_file_etomo, sep='\s+', header=None)
         etomodata.columns = ['a11', 'a12', 'a21', 'a22','y','x']
         x_shifts_etomo = etomodata['x'].values
@@ -558,6 +569,51 @@ def compare_results(config):
     # fsc_arr[:,6] = fsc_icetide_isonet[:,0]
     header ='x,icetide,FBP,FBP_no_deformed,AreTomo_patch0,ETOMO,FBP_est_deformed,AreTomo_patch1'
     np.savetxt(os.path.join(config.path_save,'evaluation','FSC.csv'),fsc_arr,header=header,delimiter=",",comments='')
+
+
+    #######################################################################################
+    ## Compute Correlation Coefficient
+    #######################################################################################
+    CC_icetide = CC(V,V_icetide)
+    CC_FBP_icetide = CC(V,V_FBP_icetide)
+    CC_FBP = CC(V,V_FBP)
+    CC_FBP_no_deformed = CC(V,V_FBP_no_deformed)
+    if(eval_Etomo):
+        CC_Etomo = CC(V,V_FBP_etomo)
+
+    plt.figure(1)
+    plt.clf()
+    plt.plot(x_fsc,CC_icetide,'b',label="icetide")
+    plt.plot(x_fsc,fsc_FBP_icetide,'--b',label="FBP with our deform. est. ")
+    if(eval_AreTomo):
+        for i, npatch in enumerate(config.nPatch):
+            col = ['r','m']
+            plt.plot(x_fsc,fsc_AreTomo_list[i],col[i],label=f"AreTomo patch {npatch}")
+            plt.plot(x_fsc,fsc_AreTomo_centered_list[i],col[i],linestyle='--',label=f"AreTomo centered patch {npatch}")
+    if(eval_Etomo):
+        plt.plot(x_fsc,fsc_Etomo,'c',label="Etomo")
+    plt.plot(x_fsc,fsc_FBP,'k',label="FBP")
+    plt.plot(x_fsc,fsc_FBP_no_deformed,'g',label="FBP no def.")
+    plt.legend()
+    plt.savefig(os.path.join(config.path_save,'evaluation','FSC.png'))
+    plt.savefig(os.path.join(config.path_save,'evaluation','FSC.pdf'))
+
+    CC_arr = np.zeros((1,8))
+    CC_arr[:,1] = CC_icetide
+    CC_arr[:,2] = CC_FBP
+    CC_arr[:,3] = CC_FBP_no_deformed
+    if(eval_AreTomo):
+        for i, npatch in enumerate(config.nPatch):
+            if i==0:
+                CC_arr[:,4] = CC_AreTomo_list[i]
+            if i==1:
+                CC_arr[:,7] = CC_AreTomo_centered_list[i]
+    if(eval_Etomo):
+        CC_arr[:,5] = CC_Etomo
+    CC_arr[:,6] = CC_FBP_icetide
+    # CC_arr[:,6] = CC_icetide_isonet
+    header ='x,icetide,FBP,FBP_no_deformed,AreTomo_patch0,ETOMO,FBP_est_deformed,AreTomo_patch1'
+    np.savetxt(os.path.join(config.path_save,'evaluation','CC.csv'),CC_arr,header=header,delimiter=",",comments='')
 
 
 
