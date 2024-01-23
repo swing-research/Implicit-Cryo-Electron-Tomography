@@ -103,6 +103,22 @@ def perform_3d_registration(fixed_image, moving_image):
 
     return final_transform
 
+
+def reconstruct_FBP_volume(config, tiltseries):
+    """
+    Args:
+        config : 
+        tiltseries (torch tensor): volume
+    """
+    # Define the forward operator
+    angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
+    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
+
+    # Reconstruct the volume    
+    V_FBP = operator_ET.pinv(tiltseries).detach().requires_grad_(False)
+
+    return V_FBP
+
 def CC(V1,V2):
     V1_norm = np.sqrt(np.sum(((V1-V1.mean()))**2))
     V2_norm = np.sqrt(np.sum(((V2-V2.mean()))**2))
