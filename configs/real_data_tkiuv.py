@@ -57,7 +57,7 @@ def get_config():
     config.path_load = "./datasets/tkiuv/"
     config.path_save_data = "./results/tkiuv_"+str(config.volume_name)+"/"
     config.path_save = "./results/tkiuv_"+str(config.volume_name)+"/"
-    config.load_existing_net = True
+    # config.load_existing_net = True
 
     config.multiresolution = True
     config.multires_params = ml_collections.ConfigDict()
