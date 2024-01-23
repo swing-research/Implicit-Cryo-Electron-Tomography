@@ -81,6 +81,7 @@ It will only work on Linux and MacOS systems.
 
 ## How to cite?
 Please cite the following paper if you use this code into your research:
-XXXXXXXXXXXXXXXXXXxx
+
+XXXXXXXXXXXXXXXXXXXX
 
 
