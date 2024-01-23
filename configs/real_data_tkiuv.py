@@ -57,6 +57,7 @@ def get_config():
     config.path_load = "./datasets/tkiuv/"
     config.path_save_data = "./results/tkiuv_"+str(config.volume_name)+"/"
     config.path_save = "./results/tkiuv_"+str(config.volume_name)+"/"
+    config.load_existing_net = True
 
     config.multiresolution = True
     config.multires_params = ml_collections.ConfigDict()
@@ -76,10 +77,10 @@ def get_config():
     config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
-    config.epochs = 2000
+    config.epochs = 10000
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
-    config.scheduler_step_size = 100
+    config.scheduler_step_size = 300
     config.scheduler_gamma = 0.85
 
     # Sampling strategy

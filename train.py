@@ -786,6 +786,24 @@ def train_without_ground_truth(config):
     scheduler_deformation_loc = torch.optim.lr_scheduler.StepLR(
         optimizer_deformations_loc, step_size=config.scheduler_step_size, gamma=config.scheduler_gamma)
 
+    if config.load_existing_net:
+        import ipdb; ipdb.set_trace()
+        checkpoint = torch.load(os.path.join(config.path_save,'training','model_trained.pt'),map_location=device)
+        impl_volume.load_state_dict(checkpoint['implicit_volume'])
+        optimizer_volume.load_state_dict(checkpoint['optimizer_volume'])
+        optimizer_deformations_glob.load_state_dict(checkpoint['optimizer_deformations_glob'])
+        optimizer_deformations_loc.load_state_dict(checkpoint['optimizer_deformations_loc'])
+        scheduler_volume = checkpoint['scheduler_volume']
+        scheduler_deformation_glob = checkpoint['scheduler_deformation_glob']
+        scheduler_deformation_loc = checkpoint['scheduler_deformation_loc']
+        s_est = checkpoint['shift_est']
+        r_est = checkpoint['rot_est']
+        i_est = checkpoint['implicit_deformation_list']
+        for k in range(config.Nangles):
+            shift_est[k].load_state_dict(s_est[k])
+            rot_est[k].load_state_dict(r_est[k])
+            implicit_deformation_list[k].load_state_dict(i_est[k])
+
     ######################################################################################################
     # Format data for batch training
     index = torch.arange(0, config.Nangles, dtype=torch.long) # index for the dataloader
