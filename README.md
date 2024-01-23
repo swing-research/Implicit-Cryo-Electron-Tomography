@@ -1,5 +1,4 @@
 # ICE-TIDE: Implicit Cryo-Electron Tomography: Inference and Deformation Estimation
-
 Official repo for ICE-TIDE [(paper)](https://arxiv.org/abs/)
 
 ICE-TIDE is a self-supervised machine learnign method to perform jointly alignment of tilt series in cryogenic electron tomography (cryo-ET) iand reconstruction.
@@ -19,7 +18,7 @@ This repo contains the scripts used to produce the experiments in the associated
 The Python environment can be installed using the following command. It will install all the required Python packgaes to properly run ICE-TIDE. 
 Notice that the installation script should be run using 'source'.
 ```
-source install_ICETIDE.sh
+bash install_ICETIDE.sh
 ```
 
 Then, you can simply activate you conda environment using the follwoing command every time you start a new session
@@ -33,6 +32,7 @@ The structure of the folder should be 'datasets/model_X/grandmodel.mrc', where m
 
 ## How to use
 ### Simulations
+Run the complete pipleine on model0:
 ```
 python -m experiment_scripts.simulation_model0
 ```
@@ -47,7 +47,7 @@ python -m experiment_scripts.simulation_model0 --no_train --no_aretomo --no_comp
 python -m experiment_scripts.simulation_model0 --no_gen_data --no_aretomo --no_comparison
 ```
 
-### Only run AreTomo
+### Only runing AreTomo
 Make sure to change the path of Aretomo in the config file
 ```
 python -m experiment_scripts.simulation_model0 --no_gen_data --no_train --no_comparison
@@ -59,7 +59,13 @@ python -m experiment_scripts.simulation_model0 --no_gen_data --no_train --no_are
 ```
 
 ### Use your own dataset
-put your tilt-series here ... and run ...
+You can run ICE-TIDE on your own dataset, for that you can mimic the procedure that we used to process 
+Assuming that your mrc file containing the projection is saved in 'datasets/tkiuv/tomo2_L1G1_ODD.mrc', you can run the following command to proccess this tilt-series
+```
+python -m experiment_scripts.real_data_tkiuv
+```
+Notice that the optional arguments '--no_gen_data', '--no_train', '--no_aretomo' and '--no_comparison' can be used.
+
 
 
 ### Reproduce the timing 
@@ -68,16 +74,13 @@ python -m experiment_scripts.simulation_shrec_timing
 ```
 
 
-### Only training ICE-TIDE for real data
-```
-python -m experiment_scripts.real_data_tkiuv --no_gen_data --no_aretomo --no_comparison
-```
 
-python -m experiment_scripts.real_data_tkiuv --no_gen_data --no_train --no_comparison
-python -m experiment_scripts.real_data_tkiuv --no_gen_data --no_train --no_aretomo
+## Warning
+It will only work on Linux and MacOS systems.
 
 
+## How to cite?
+Please cite the following paper if you use this code into your research:
+XXXXXXXXXXXXXXXXXXxx
 
-
-Warning: it will only work on Linux and MacOS systems.
 
