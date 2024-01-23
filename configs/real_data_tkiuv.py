@@ -13,7 +13,7 @@ def get_config():
     #######################
     config = ml_collections.ConfigDict()
     config.seed = 42
-    config.device_num = 2
+    config.device_num = 1
     config.torch_type = torch.float
     config.track_memory = False
 
@@ -62,7 +62,7 @@ def get_config():
     config.multires_params = ml_collections.ConfigDict()
     config.multires_params.startResolution = 6
     config.multires_params.ray_change_epoch = [100, 150, 200, 250, 800, 1100, 1500]
-    config.multires_params.batch_set = [10, 5, 5, 4, 3, 2, 2]
+    config.multires_params.batch_set = [10, 5, 4, 3, 2, 2, 2]
     config.multires_params.upsample = False
 
     #############################
@@ -80,15 +80,15 @@ def get_config():
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
     config.scheduler_step_size = 100
-    config.scheduler_gamma = 0.8
+    config.scheduler_gamma = 0.85
 
     # Sampling strategy
     config.batch_size = 4 # number of viewing direction per iteration
     config.nRays =  1500 # number of sampling rays per viewing direction
     # config.z_max = 2*config.n3/max(config.n1,config.n2)/np.cos((90-np.max([config.view_angle_min,config.view_angle_max]))*np.pi/180)
     config.z_max = 1.2
-    config.ray_length = 800 #int(np.floor(n1*z_max))
-    config.rays_scaling = [1.,1.,1.] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
+    config.ray_length = 500 #int(np.floor(n1*z_max))
+    config.rays_scaling = [1.5,1.5,1.5] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
 
     # When to start or stop optimizing over a variable
     config.schedule_volume = []
@@ -98,7 +98,7 @@ def get_config():
 
     # Training learning rates for Adam optimizer
     config.loss_data = torch.nn.L1Loss()
-    config.lr_volume = 1e-2
+    config.lr_volume = 1e-3
     config.lr_shift = 1e-3
     config.lr_rot = 1e-3
     config.lr_local_def = 1e-4
