@@ -147,10 +147,10 @@ def get_config():
     # params for the multi-resolution grids encoding
     config.encoding = ml_collections.ConfigDict()
     config.encoding.otype = 'Grid'
-    config.encoding.type = 'Dense'
-    config.encoding.n_levels = 6
+    config.encoding.type = 'Hash'
+    config.encoding.n_levels = 9
     config.encoding.n_features_per_level = 4
-    config.encoding.log2_hashmap_size = 22
+    config.encoding.log2_hashmap_size = 23
     config.encoding.base_resolution = 8
     config.encoding.per_level_scale = 2
     config.encoding.interpolation = 'Smoothstep'

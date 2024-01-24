@@ -1181,7 +1181,7 @@ def compare_results_real(config):
         for zz, zval in enumerate(z_range):
             grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
             grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
-            estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1,config.n2)
+            estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1_eval,config.n2_eval)
             V_icetide[:,:,zz] = estSlice
         V_icetide_t = torch.tensor(V_icetide).type(config.torch_type).to(device)
 
