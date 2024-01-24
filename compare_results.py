@@ -20,7 +20,6 @@ from scipy.interpolate import griddata
 
 
 import pandas as pd
-from reconstruct_FBP_volume import reconstruct_FBP_volume
 from utils.utils_deformation import cropper
 
 
