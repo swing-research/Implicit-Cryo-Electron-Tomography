@@ -1014,8 +1014,10 @@ def train_without_ground_truth(config):
         imageio.imwrite(os.path.join(config.path_save_data,'training',"projections.png"),tmp)
 
         scheduler_volume.step()
-        scheduler_deformation_glob.step()
-        scheduler_deformation_loc.step()
+        if len(list_params_deformations_glob)!=0:
+            scheduler_deformation_glob.step()
+        if len(list_params_deformations_loc)!=0:
+            scheduler_deformation_loc.step()
 
         # Track loss and display values
         if ((ep%10)==0 and (ep%config.Ntest!=0)):
