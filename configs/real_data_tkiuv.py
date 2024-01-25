@@ -59,7 +59,7 @@ def get_config():
     config.path_save = "./results/tkiuv_"+str(config.volume_name)+"/"
     # config.load_existing_net = True
 
-    config.multiresolution = True
+    config.multiresolution = False
     config.multires_params = ml_collections.ConfigDict()
     config.multires_params.startResolution = 6
     config.multires_params.ray_change_epoch = [100, 200, 400]
@@ -106,7 +106,7 @@ def get_config():
 
     # Training regularization
     config.lamb_volume = 0 # regul parameters on volume regularization
-    config.lamb_rot = 1e-5 # regul parameters on inplane rotations
+    config.lamb_rot = 1e5 # regul parameters on inplane rotations
     config.lamb_shifts = 1e-5 # regul parameters on shifts
     config.lamb_local_ampl = 1e-5 # regul on amplitude of local def.
     config.lamb_local_mean = 1e-5 # regul on mean of local def.

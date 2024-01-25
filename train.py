@@ -761,6 +761,25 @@ def train_without_ground_truth(config):
         rot_est.append(utils_deformation.rotNet(1).to(device))
         fixed_rot.append(utils_deformation.rotNet(1,x0=fixedAngle).to(device))
 
+    if config.load_existing_net:
+        checkpoint = torch.load(os.path.join(config.path_save,'training','model_trained.pt'),map_location=device)
+        # impl_volume.load_state_dict(checkpoint['implicit_volume'])
+        # optimizer_volume.load_state_dict(checkpoint['optimizer_volume'])
+        # optimizer_deformations_glob.load_state_dict(checkpoint['optimizer_deformations_glob'])
+        # optimizer_deformations_loc.load_state_dict(checkpoint['optimizer_deformations_loc'])
+        # scheduler_volume.load_state_dict(checkpoint['scheduler_volume'])
+        # scheduler_deformation_glob.load_state_dict(checkpoint['scheduler_deformation_glob'])
+        # scheduler_deformation_loc.load_state_dict(checkpoint['scheduler_deformation_loc'])
+        config.train_global_def = False
+        config.train_local_def = False
+        s_est = checkpoint['shift_est']
+        r_est = checkpoint['rot_est']
+        i_est = checkpoint['implicit_deformation_list']
+        for k in range(config.Nangles):
+            shift_est[k] = s_est[k]
+            rot_est[k] = r_est[k]
+            # implicit_deformation_list[k].load_state_dict(i_est[k])
+
     ######################################################################################################
     ## Optimizer
     loss_data = config.loss_data
@@ -786,23 +805,7 @@ def train_without_ground_truth(config):
     scheduler_deformation_loc = torch.optim.lr_scheduler.StepLR(
         optimizer_deformations_loc, step_size=config.scheduler_step_size, gamma=config.scheduler_gamma)
 
-    # if config.load_existing_net:
-    #     import ipdb; ipdb.set_trace()
-    #     checkpoint = torch.load(os.path.join(config.path_save,'training','model_trained.pt'),map_location=device)
-    #     impl_volume.load_state_dict(checkpoint['implicit_volume'])
-    #     optimizer_volume.load_state_dict(checkpoint['optimizer_volume'])
-    #     optimizer_deformations_glob.load_state_dict(checkpoint['optimizer_deformations_glob'])
-    #     optimizer_deformations_loc.load_state_dict(checkpoint['optimizer_deformations_loc'])
-    #     scheduler_volume.load_state_dict(checkpoint['scheduler_volume'])
-    #     scheduler_deformation_glob.load_state_dict(checkpoint['scheduler_deformation_glob'])
-    #     scheduler_deformation_loc.load_state_dict(checkpoint['scheduler_deformation_loc'])
-    #     s_est = checkpoint['shift_est']
-    #     r_est = checkpoint['rot_est']
-    #     i_est = checkpoint['implicit_deformation_list']
-    #     for k in range(config.Nangles):
-    #         shift_est[k].load_state_dict(s_est[k])
-    #         rot_est[k].load_state_dict(r_est[k])
-    #         implicit_deformation_list[k].load_state_dict(i_est[k])
+
 
     ######################################################################################################
     # Format data for batch training
@@ -943,7 +946,7 @@ def train_without_ground_truth(config):
                 local_deformSet= list(map(implicit_deformation_list.__getitem__, idx_loader))
             else:
                 local_deformSet = None
-            if use_global_def:
+            if use_global_def or config.load_existing_net:
                 rot_deformSet= list(map(rot_est.__getitem__, idx_loader))
                 shift_deformSet= list(map(shift_est.__getitem__, idx_loader))
             else:
