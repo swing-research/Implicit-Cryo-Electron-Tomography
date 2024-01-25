@@ -1122,19 +1122,30 @@ def train_without_ground_truth(config):
                 }, os.path.join(config.path_save,'training','model_trained.pt'))
 
     print("Saving final state after training...")
-    torch.save({
-        'shift_est': shift_est,
-        'rot_est': rot_est,
-        'local_deformation_network': implicit_deformation_list,
-        'implicit_volume': impl_volume.state_dict(),
-        'optimizer_volume' : optimizer_volume.state_dict(),
-        'optimizer_deformations_glob' : optimizer_deformations_glob.state_dict(),
-        'optimizer_deformations_loc' : optimizer_deformations_loc.state_dict(),
-        'scheduler_volume': scheduler_volume.state_dict(), 
-        'scheduler_deformation_glob': scheduler_deformation_glob.state_dict(), 
-        'scheduler_deformation_loc': scheduler_deformation_loc.state_dict(),
-        'ep': ep,
-    }, os.path.join(config.path_save,'training','model_trained.pt'))
+    if config.load_existing_net:
+        torch.save({
+            'shift_est': shift_est,
+            'rot_est': rot_est,
+            'local_deformation_network': implicit_deformation_list,
+            'implicit_volume': impl_volume.state_dict(),
+            'optimizer_volume' : optimizer_volume.state_dict(),
+            'scheduler_volume': scheduler_volume.state_dict(), 
+            'ep': ep,
+        }, os.path.join(config.path_save,'training','model_trained_2.pt'))
+    else:
+        torch.save({
+            'shift_est': shift_est,
+            'rot_est': rot_est,
+            'local_deformation_network': implicit_deformation_list,
+            'implicit_volume': impl_volume.state_dict(),
+            'optimizer_volume' : optimizer_volume.state_dict(),
+            'optimizer_deformations_glob' : optimizer_deformations_glob.state_dict(),
+            'optimizer_deformations_loc' : optimizer_deformations_loc.state_dict(),
+            'scheduler_volume': scheduler_volume.state_dict(), 
+            'scheduler_deformation_glob': scheduler_deformation_glob.state_dict(), 
+            'scheduler_deformation_loc': scheduler_deformation_loc.state_dict(),
+            'ep': ep,
+        }, os.path.join(config.path_save,'training','model_trained.pt'))
 
     training_time = time.time()-t0
     # Saving the training time and the memory used
