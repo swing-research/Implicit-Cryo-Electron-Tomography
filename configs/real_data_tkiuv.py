@@ -62,8 +62,8 @@ def get_config():
     config.multiresolution = True
     config.multires_params = ml_collections.ConfigDict()
     config.multires_params.startResolution = 6
-    config.multires_params.ray_change_epoch = [100, 150, 200, 250, 800, 1100, 1500]
-    config.multires_params.batch_set = [10, 5, 4, 3, 2, 2, 2]
+    config.multires_params.ray_change_epoch = [100, 200, 400]
+    config.multires_params.batch_set = [10, 5, 4]
     config.multires_params.upsample = False
 
     #############################
@@ -77,11 +77,11 @@ def get_config():
     config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
-    config.epochs = 10000
+    config.epochs = 800
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
     config.scheduler_step_size = 300
-    config.scheduler_gamma = 0.85
+    config.scheduler_gamma = 0.75
 
     # Sampling strategy
     config.batch_size = 4 # number of viewing direction per iteration
