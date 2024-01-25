@@ -792,20 +792,19 @@ def train_without_ground_truth(config):
             if train_global_def:
                 list_params_deformations_glob.append({"params": shift_est[k].parameters(), "lr": config.lr_shift})
                 list_params_deformations_glob.append({"params": rot_est[k].parameters(), "lr": config.lr_rot})
-            if train_global_def:
+            if train_local_def:
                 list_params_deformations_loc.append({"params": implicit_deformation_list[k].parameters(), "lr": config.lr_local_def})
 
     optimizer_volume = torch.optim.Adam(impl_volume.parameters(), lr=config.lr_volume, weight_decay=config.wd)
-    optimizer_deformations_glob = torch.optim.Adam(list_params_deformations_glob, weight_decay=config.wd)
-    optimizer_deformations_loc = torch.optim.Adam(list_params_deformations_loc, weight_decay=config.wd)
-
+    if len(list_params_deformations_glob)!=0:
+        optimizer_deformations_glob = torch.optim.Adam(list_params_deformations_glob, weight_decay=config.wd)
+        scheduler_deformation_glob = torch.optim.lr_scheduler.StepLR(
+            optimizer_deformations_glob, step_size=config.scheduler_step_size, gamma=config.scheduler_gamma)
+    if len(list_params_deformations_loc)!=0:
+        optimizer_deformations_loc = torch.optim.Adam(list_params_deformations_loc, weight_decay=config.wd)
+        scheduler_deformation_loc = torch.optim.lr_scheduler.StepLR(
+            optimizer_deformations_loc, step_size=config.scheduler_step_size, gamma=config.scheduler_gamma)
     scheduler_volume = torch.optim.lr_scheduler.StepLR(optimizer_volume, step_size=config.scheduler_step_size, gamma=config.scheduler_gamma)
-    scheduler_deformation_glob = torch.optim.lr_scheduler.StepLR(
-        optimizer_deformations_glob, step_size=config.scheduler_step_size, gamma=config.scheduler_gamma)
-    scheduler_deformation_loc = torch.optim.lr_scheduler.StepLR(
-        optimizer_deformations_loc, step_size=config.scheduler_step_size, gamma=config.scheduler_gamma)
-
-
 
     ######################################################################################################
     # Format data for batch training

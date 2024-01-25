@@ -95,7 +95,7 @@ def get_config():
     config.schedule_volume = []
     config.schedule_global = [800]
     config.schedule_local = [800]
-    config.delay_deformations = 25 # Delay before learning deformations
+    config.delay_deformations = 2500000 # Delay before learning deformations
 
     # Training learning rates for Adam optimizer
     config.loss_data = torch.nn.L1Loss()
