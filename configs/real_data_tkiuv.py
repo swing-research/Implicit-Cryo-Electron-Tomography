@@ -62,8 +62,8 @@ def get_config():
     config.multiresolution = False
     config.multires_params = ml_collections.ConfigDict()
     config.multires_params.startResolution = 6
-    config.multires_params.ray_change_epoch = [100, 200, 400]
-    config.multires_params.batch_set = [10, 5, 4]
+    config.multires_params.ray_change_epoch = [200, 400]
+    config.multires_params.batch_set = [10, 5]
     config.multires_params.upsample = False
 
     #############################
@@ -93,9 +93,9 @@ def get_config():
 
     # When to start or stop optimizing over a variable
     config.schedule_volume = []
-    config.schedule_global = [800]
-    config.schedule_local = [800]
-    config.delay_deformations = 2500000 # Delay before learning deformations
+    config.schedule_global = []
+    config.schedule_local = []
+    config.delay_deformations = 25 # Delay before learning deformations
 
     # Training learning rates for Adam optimizer
     config.loss_data = torch.nn.L1Loss()
@@ -176,5 +176,24 @@ def get_config():
     #######################
     config.path_aretomo = "/scicore/home/dokman0000/debarn0000/Softwares/AreTomo_1.3.4_Cuda101_Feb22_2023" #None 
     config.nPatch = [0,4]
+
+
+    # Initial training
+    config.multiresolution = True
+    config.delay_deformations = 25 # Delay before learning deformations
+    config.epochs = 800
+    config.load_existing_net = False
+
+    # # refined training
+    # config.multiresolution = False
+    # config.delay_deformations = 0 # Delay before learning deformations
+    # config.schedule_global = [0]
+    # config.schedule_local = [0]
+    # config.epochs = 4000
+    # config.load_existing_net = True
+
+
+
+
 
     return config
