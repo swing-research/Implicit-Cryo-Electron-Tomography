@@ -917,8 +917,10 @@ def train_without_ground_truth(config):
 
             optimizer_volume.zero_grad()
             if learn_deformations:
-                optimizer_deformations_glob.zero_grad()
-                optimizer_deformations_loc.zero_grad()
+                if train_global_def:
+                    optimizer_deformations_glob.zero_grad()
+                if train_local_def:
+                    optimizer_deformations_loc.zero_grad()
 
                 # Check if we stop or start learning something new
                 if ep in config.schedule_local:
