@@ -191,6 +191,7 @@ def get_config():
     config.schedule_local = [0]
     config.epochs = 4000
     config.load_existing_net = True
+    config.delay_deformations = 0 # Delay before learning deformations
 
 
 
