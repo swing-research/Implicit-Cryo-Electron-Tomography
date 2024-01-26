@@ -883,12 +883,12 @@ def train_without_ground_truth(config):
     print("Training the network(s)...")
     for ep in range(config.epochs):
         # define what to estimate
-        if(ep>=config.delay_deformations):
-            learn_deformations = True
-            use_local_def = True if train_local_def else False
-            use_global_def = True if train_global_def else False        
+        if(ep>=config.delay_deformations): 
             train_global_def = config.train_global_def
             train_local_def = config.train_local_def
+            learn_deformations = True
+            use_local_def = True if train_local_def else False
+            use_global_def = True if train_global_def else False       
         else:
             use_local_def = False
             use_global_def = False
