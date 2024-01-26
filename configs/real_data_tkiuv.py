@@ -187,8 +187,8 @@ def get_config():
     # refined training
     config.multiresolution = False
     config.delay_deformations = 0 # Delay before learning deformations
-    config.schedule_global = [0]
-    config.schedule_local = [0]
+    config.schedule_global = []
+    config.schedule_local = []
     config.epochs = 4000
     config.load_existing_net = True
     config.delay_deformations = 0 # Delay before learning deformations
