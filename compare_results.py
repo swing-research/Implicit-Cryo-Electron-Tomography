@@ -1065,7 +1065,7 @@ def compare_results_real(config):
     ## Load data
     ######################################################################################################
     data = np.load(config.path_save_data+"volume_and_projections.npz")
-    projections_noisy = torch.tensor(data['projections_noisy']).type(config.torch_type).to(device)
+    # projections_noisy = torch.tensor(data['projections_noisy']).type(config.torch_type).to(device)
     V_FBP_t =  torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_FBP.mrc").data),0,2)).type(config.torch_type).to(device)
     # numpy
     V_FBP = V_FBP_t.detach().cpu().numpy()
@@ -1077,6 +1077,8 @@ def compare_results_real(config):
     config.n1 = config.n1_patch
     config.n2 = config.n2_patch
     config.n3 = config.n3_patch
+
+    projections_noisy_resize = resize(projections_noisy,(config.Nangles,config.n1,config.n2))
 
     ## Aretomo
     # get the files
@@ -1206,7 +1208,7 @@ def compare_results_real(config):
         coordinates = coordinates - config.deformationScale*implicit_deformation_icetide[i](coordinates)
         coordinates = coordinates - shift_icetide[i].shifts_arr
         coordinates = torch.transpose(torch.matmul(rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
-        x = projections_noisy[i].clone().view(1,1,config.n1,config.n2)
+        x = projections_noisy_resize[i].clone().view(1,1,config.n1,config.n2)
         x = x.expand(config.n1*config.n2, -1, -1, -1)
         out = cropper(x,coordinates,output_size = 1).reshape(config.n1,config.n2)
         projections_noisy_undeformed[i] = out
