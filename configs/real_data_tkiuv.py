@@ -178,20 +178,20 @@ def get_config():
     config.nPatch = [0,4]
 
 
-    # # Initial training
-    # config.multiresolution = True
-    # config.delay_deformations = 25 # Delay before learning deformations
-    # config.epochs = 800
-    # config.load_existing_net = False
+    # Initial training
+    config.multiresolution = True
+    config.delay_deformations = 25 # Delay before learning deformations
+    config.epochs = 1200
+    config.load_existing_net = False
 
-    # refined training
-    config.multiresolution = False
-    config.delay_deformations = 0 # Delay before learning deformations
-    config.schedule_global = []
-    config.schedule_local = []
-    config.epochs = 4000
-    config.load_existing_net = True
-    config.delay_deformations = 0 # Delay before learning deformations
+    # # refined training
+    # config.multiresolution = False
+    # config.delay_deformations = 0 # Delay before learning deformations
+    # config.schedule_global = []
+    # config.schedule_local = []
+    # config.epochs = 4000
+    # config.load_existing_net = True
+    # config.delay_deformations = 0 # Delay before learning deformations
 
 
 
