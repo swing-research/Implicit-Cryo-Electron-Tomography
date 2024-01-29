@@ -1190,7 +1190,7 @@ def compare_results_real(config):
     ######################################################################################################
     # Using only the deformation estimates
     ######################################################################################################
-    projections_noisy_undeformed = torch.zeros_like(projections_noisy)
+    projections_noisy_undeformed = torch.zeros_like(projections_noisy_resize)
     xx1 = torch.linspace(-1,1,config.n1,dtype=config.torch_type,device=device)
     xx2 = torch.linspace(-1,1,config.n2,dtype=config.torch_type,device=device)
     XX_t, YY_t = torch.meshgrid(xx1,xx2,indexing='ij')
