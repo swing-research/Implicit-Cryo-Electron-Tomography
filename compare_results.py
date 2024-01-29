@@ -1247,10 +1247,11 @@ def compare_results_real(config):
                 imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo","slice_{}.png".format(index)),tmp)
 
         # FBP icetide
-        tmp = V_FBP_icetide[:,:,index]
-        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE","slice_{}.png".format(index)),tmp)
+        if index < V_FBP_icetide.shape[2]:
+            tmp = V_FBP_icetide[:,:,index]
+            tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+            tmp = np.floor(255*tmp).astype(np.uint8)
+            imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE","slice_{}.png".format(index)),tmp)
 
 
     #######################################################################################
