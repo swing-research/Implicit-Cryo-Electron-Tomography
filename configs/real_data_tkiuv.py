@@ -177,24 +177,4 @@ def get_config():
     config.path_aretomo = "/scicore/home/dokman0000/debarn0000/Softwares/AreTomo_1.3.4_Cuda101_Feb22_2023" #None 
     config.nPatch = [0,4]
 
-
-    # Initial training
-    config.multiresolution = True
-    config.delay_deformations = 25 # Delay before learning deformations
-    config.epochs = 1200
-    config.load_existing_net = False
-
-    # # refined training
-    # config.multiresolution = False
-    # config.delay_deformations = 0 # Delay before learning deformations
-    # config.schedule_global = []
-    # config.schedule_local = []
-    # config.epochs = 4000
-    # config.load_existing_net = True
-    # config.delay_deformations = 0 # Delay before learning deformations
-
-
-
-
-
     return config
