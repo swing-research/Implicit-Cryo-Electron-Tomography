@@ -1292,6 +1292,26 @@ def compare_results_real(config):
     tmp = V_FBP_icetide
     display_XYZ(tmp,name="FBP_ICETIDE")
 
+
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
+                                "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide,2,0),overwrite=True)
+    out.close()
+    if eval_AreTomo:
+        out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
+                                    "volumes","AreTomo_volume.mrc"),np.moveaxis(V_FBP_aretomo,2,0),overwrite=True)
+        out.close()
+    if eval_Etomo:
+        out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
+                                    "volumes","Etomo_volume.mrc"),np.moveaxis(V_FBP_etomo,2,0),overwrite=True)
+        out.close()
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
+                                "FBP_volume.mrc"),np.moveaxis(V_FBP,2,0),overwrite=True)
+    out.close()
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
+                                "FBP_icetide_volume.mrc"),np.moveaxis(V_FBP_icetide,2,0),overwrite=True)
+    out.close()
+
+
     #######################################################################################
     ## Generate projections
     #######################################################################################
@@ -1346,24 +1366,6 @@ def compare_results_real(config):
         tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","FBP_ICETIDE","snapshot_{}.png".format(k)),tmp)
-
-    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-                                "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide,2,0),overwrite=True)
-    out.close()
-    if eval_AreTomo:
-        out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-                                    "volumes","AreTomo_volume.mrc"),np.moveaxis(V_FBP_aretomo,2,0),overwrite=True)
-        out.close()
-    if eval_Etomo:
-        out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-                                    "volumes","Etomo_volume.mrc"),np.moveaxis(V_FBP_etomo,2,0),overwrite=True)
-        out.close()
-    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
-                                "FBP_volume.mrc"),np.moveaxis(V_FBP,2,0),overwrite=True)
-    out.close()
-    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
-                                "FBP_icetide_volume.mrc"),np.moveaxis(V_FBP_icetide,2,0),overwrite=True)
-    out.close()
 
     # ## Saving the inplance angles 
     # inplaneAngles = np.zeros((config.Nangles,5))
