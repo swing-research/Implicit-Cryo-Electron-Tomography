@@ -1078,7 +1078,7 @@ def compare_results_real(config):
     config.n2 = config.n2_patch
     config.n3 = config.n3_patch
 
-    projections_noisy_resize = resize(projections_noisy,(config.Nangles,config.n1,config.n2))
+    projections_noisy_resize = torch.Tensor(resize(projections_noisy.detach().cpu().numpy(),(config.Nangles,config.n1,config.n2))).type(config.torch_type).to(device)
 
     ## Aretomo
     # get the files
