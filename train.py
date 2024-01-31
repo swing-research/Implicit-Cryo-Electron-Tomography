@@ -791,7 +791,8 @@ def train_without_ground_truth(config):
         for k in range(config.Nangles):
             if train_global_def:
                 list_params_deformations_glob.append({"params": shift_est[k].parameters(), "lr": config.lr_shift})
-                list_params_deformations_glob.append({"params": rot_est[k].parameters(), "lr": config.lr_rot})
+                if config.lr_rot!=0:
+                    list_params_deformations_glob.append({"params": rot_est[k].parameters(), "lr": config.lr_rot})
             if train_local_def:
                 list_params_deformations_loc.append({"params": implicit_deformation_list[k].parameters(), "lr": config.lr_local_def})
 

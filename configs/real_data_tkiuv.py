@@ -101,7 +101,7 @@ def get_config():
     config.loss_data = torch.nn.L1Loss()
     config.lr_volume = 1e-3
     config.lr_shift = 1e-3
-    config.lr_rot = 1e-3
+    config.lr_rot = 0
     config.lr_local_def = 1e-4
 
     # Training regularization
