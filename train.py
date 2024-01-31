@@ -14,6 +14,8 @@ from skimage.transform import pyramid_gaussian
 from utils import utils_deformation, utils_display
 from utils.utils_sampling import sample_implicit_batch_lowComp, generate_rays_batch_bilinear
 
+from utils.utils_deformation import cropper
+# from compare_results import reconstruct_FBP_volume
 
 def train(config):
     print("Runing training procedure.")
@@ -1134,6 +1136,45 @@ def train_without_ground_truth(config):
                         'scheduler_deformation_loc': scheduler_deformation_loc.state_dict(),
                         'ep': ep,
                     }, os.path.join(config.path_save,'training','model_trained.pt'))
+
+
+
+
+
+
+                ######################################################################################################
+                # Using only the deformation estimates
+                ######################################################################################################
+                if ep == 0:
+                    projections_noisy_resize = torch.Tensor(resize(projections_noisy.detach().cpu().numpy(),(config.Nangles,config.n1,config.n2))).type(config.torch_type).to(device)
+                projections_noisy_undeformed = torch.zeros_like(projections_noisy_resize)
+                xx1 = torch.linspace(-1,1,config.n1,dtype=config.torch_type,device=device)
+                xx2 = torch.linspace(-1,1,config.n2,dtype=config.torch_type,device=device)
+                XX_t, YY_t = torch.meshgrid(xx1,xx2,indexing='ij')
+                XX_t = torch.unsqueeze(XX_t, dim = 2)
+                YY_t = torch.unsqueeze(YY_t, dim = 2)
+                for i in range(config.Nangles):
+                    coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
+                    #field = utils_deformation.deformation_field(-implicit_deformation_icetide[i].depl_ctr_pts[0].detach().clone())
+                    thetas = torch.tensor(-rot_est[i].thetas.item()).to(device)
+                    rot_deform = torch.stack(
+                                    [torch.stack([torch.cos(thetas),torch.sin(thetas)],0),
+                                    torch.stack([-torch.sin(thetas),torch.cos(thetas)],0)]
+                                    ,0)
+                    if use_local_def:
+                        coordinates = coordinates - config.deformationScale*implicit_deformation_list[i](coordinates)
+                    coordinates = coordinates - shift_est[i].shifts_arr
+                    coordinates = torch.transpose(torch.matmul(rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
+                    x = projections_noisy_resize[i].clone().view(1,1,config.n1,config.n2)
+                    x = x.expand(config.n1*config.n2, -1, -1, -1)
+                    out = cropper(x,coordinates,output_size = 1).reshape(config.n1,config.n2)
+                    projections_noisy_undeformed[i] = out
+                # V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
+                projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
+                out = mrcfile.new(os.path.join(config.path_save_data,'training',"FBP_icetide_projections.mrc"),projections_FBP_icetide.astype(np.float32),overwrite=True)
+                out.close()
+
+
 
     print("Saving final state after training...")
     if config.load_existing_net:

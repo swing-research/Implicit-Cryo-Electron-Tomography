@@ -850,6 +850,7 @@ def compare_results(config):
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","FBP_no_deformed_projections.mrc"),projections_FBP_no_deformed.astype(np.float32),overwrite=True)
     out.close()
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","FBP_icetide_projections.mrc"),projections_FBP_icetide.astype(np.float32),overwrite=True)
+    out.close()
     
     for k in range(config.Nangles):
         tmp = projections_icetide[k]
