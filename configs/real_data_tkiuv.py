@@ -13,7 +13,7 @@ def get_config():
     #######################
     config = ml_collections.ConfigDict()
     config.seed = 42
-    config.device_num = 1
+    config.device_num = 3
     config.torch_type = torch.float
     config.track_memory = False
 
@@ -176,5 +176,7 @@ def get_config():
     #######################
     config.path_aretomo = "/scicore/home/dokman0000/debarn0000/Softwares/AreTomo_1.3.4_Cuda101_Feb22_2023" #None 
     config.nPatch = [0,4]
+
+
 
     return config
