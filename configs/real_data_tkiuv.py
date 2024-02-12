@@ -22,9 +22,9 @@ def get_config():
     ########################################
 
     # Size of volume, if not none will be resize to that
-    config.n1 = 2048
-    config.n2 = 2048
-    config.n3 = 1024
+    config.n1 = 1024
+    config.n2 = 1024
+    config.n3 = 512
     # Size of the patch to crop in the raw volume
     config.n1_patch = 1024
     config.n2_patch = 1024
