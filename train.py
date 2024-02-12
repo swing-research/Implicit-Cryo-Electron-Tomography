@@ -1218,7 +1218,7 @@ def train_without_ground_truth(config):
                                     ,0)
                     if use_local_def:
                         coordinates = coordinates - config.deformationScale*implicit_deformation_list[i](coordinates)
-                    coordinates = coordinates - shift_est[i].shifts_arr
+                    coordinates = coordinates - shift_est[i].shifts_arr/rays_scaling[0,0,0,0].item()
                     coordinates = torch.transpose(torch.matmul(rot_fixed,torch.transpose(coordinates,0,1)),0,1) ## do rotation
                     coordinates = torch.transpose(torch.matmul(rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
                     x = projections_noisy_resize[i].clone().view(1,1,config.n1,config.n2)
