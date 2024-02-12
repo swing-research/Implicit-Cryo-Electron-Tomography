@@ -510,49 +510,49 @@ def compare_results(config):
     index = n2_eval//2
     scal = 0.3
     # True volume
-    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V)))[:,index,:]
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V)))[index,:,:]
     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
     tmp = tmp.T**scal
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","true_Fourier_XZ.png"),tmp)
 
     # ICETIDE
-    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_icetide)))[:,index,:]
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_icetide)))[index,:,:]
     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
     tmp = tmp.T**scal
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ICETIDE_Fourier_XZ.png"),tmp)
 
     # FBP
-    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP)))[:,index,:]
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP)))[index,:,:]
     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
     tmp = tmp.T**scal
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_Fourier_XZ.png"),tmp)
 
     # FBP no deformed
-    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_no_deformed)))[:,index,:]
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_no_deformed)))[index,:,:]
     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
     tmp = tmp.T**scal
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_no_deformed_Fourier_XZ.png"),tmp)
 
     if(eval_AreTomo):
-        tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_aretomo_centered)))[:,index,:]
+        tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_aretomo_centered)))[index,:,:]
         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = tmp.T**scal
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo_Fourier_XZ.png"),tmp)
 
     if(eval_Etomo):
-        tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_etomo_centered)))[:,index,:]
+        tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_etomo_centered)))[index,:,:]
         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = tmp.T**scal
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo_Fourier_XZ.png"),tmp)
 
     # FBP icetide
-    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_icetide)))[:,index,:]
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_icetide)))[index,:,:]
     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
     tmp = tmp.T**scal
     tmp = np.floor(255*tmp).astype(np.uint8)
@@ -1428,11 +1428,12 @@ def compare_results_real(config):
     operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_FBP_t.shape[0],V_FBP_t.shape[1],V_FBP_t.shape[2]), angles/180*np.pi, fact=1)
     projections_FBP = operator_ET(V_FBP_t).detach().cpu().numpy()
     projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
-    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_FBP_aretomo.shape[0],V_FBP_aretomo.shape[1],V_FBP_aretomo.shape[2]), angles/180*np.pi, fact=1)
     if(eval_AreTomo):
+        operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_FBP_aretomo.shape[0],V_FBP_aretomo.shape[1],V_FBP_aretomo.shape[2]), angles/180*np.pi, fact=1)
         V_FBP_aretomo_t = torch.tensor(V_FBP_aretomo).to(device)
         projections_AreTomo = operator_ET(V_FBP_aretomo_t).detach().cpu().numpy()
     if(eval_Etomo):
+        operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_FBP_etomo.shape[0],V_FBP_etomo.shape[1],V_FBP_etomo.shape[2]), angles/180*np.pi, fact=1)
         V_FBP_etomo_t = torch.tensor(V_FBP_etomo).to(device)
         projections_Etomo = operator_ET(V_FBP_etomo_t).detach().cpu().numpy()
 
