@@ -12,6 +12,8 @@ from skimage.transform import resize
 from torch.utils.data import DataLoader, TensorDataset
 from skimage.transform import pyramid_gaussian
 from utils import utils_deformation, utils_display
+from torch.autograd import Variable
+import json
 from utils.utils_sampling import sample_implicit_batch_lowComp, generate_rays_batch_bilinear
 
 from utils.utils_deformation import cropper
@@ -797,8 +799,8 @@ def train_without_ground_truth(config):
                     list_params_deformations_glob.append({"params": rot_est[k].parameters(), "lr": config.lr_rot})
             if train_local_def:
                 list_params_deformations_loc.append({"params": implicit_deformation_list[k].parameters(), "lr": config.lr_local_def})
-
-    optimizer_volume = torch.optim.Adam(impl_volume.parameters(), lr=config.lr_volume, weight_decay=config.wd)
+    gains = Variable(torch.rand(config.Nangles).to(device)/5+1, requires_grad=True) 
+    optimizer_volume = torch.optim.Adam(list(impl_volume.parameters())+[gains], lr=config.lr_volume, weight_decay=config.wd)
     if len(list_params_deformations_glob)!=0:
         optimizer_deformations_glob = torch.optim.Adam(list_params_deformations_glob, weight_decay=config.wd)
         scheduler_deformation_glob = torch.optim.lr_scheduler.StepLR(
@@ -875,7 +877,12 @@ def train_without_ground_truth(config):
     loss_regul_volume = []
     loss_regul_shifts = []
     loss_regul_rot = []
-
+    shift_estimates = []
+    rot_estimates = []
+    if config.multiresolution:
+        N_RAYS = config.nRays[0]
+    else:
+        N_RAYS = config.nRays[-1]
     train_volume = config.train_volume
     learn_deformations = False
     check_point_training = True
@@ -911,7 +918,7 @@ def train_without_ground_truth(config):
                 dataset = TensorDataset(angles_t,proj_set_Data.detach(),index)
                 trainLoader = DataLoader(dataset, batch_size=batch_set[batch_set_index], shuffle=True, drop_last=True)
 
-                # N_RAYS = n_rays_set[min(multi_resolution_counter, len(n_rays_set)-1)]
+                N_RAYS = config.nRays[min(multi_resolution_counter, len(config.nRays)-1)]
                 # RAY_LENGTH = ray_length_set[min(multi_resolution_counter, len(ray_length_set)-1)]
                 
 
@@ -958,10 +965,12 @@ def train_without_ground_truth(config):
                 shift_deformSet = None
             fixedRotSet = list(map(fixed_rot.__getitem__, idx_loader))
 
+            #print(proj.shape)
             ## Sample the rays
-            raysSet,raysRot, isOutsideSet, pixelValues = generate_rays_batch_bilinear(proj,angle,config.nRays,config.ray_length,
+            raysSet,raysRot, isOutsideSet, pixelValues = generate_rays_batch_bilinear(proj,angle,N_RAYS,config.ray_length,
                                                                                                 randomZ=2,zmax=config.z_max,
                                                                                                 choosenLocations_all=choosenLocations_all,
+                                                                                                pad = config.pad,
                                                                                                 density_sampling=None,idx_loader=idx_loader)
 
             # Compute the projections
@@ -974,7 +983,7 @@ def train_without_ground_truth(config):
             projEstimate = torch.sum(support*outputValues,2)/config.n3
 
             # Take the datafidelity loss
-            loss = loss_data(projEstimate,pixelValues.to(projEstimate.dtype))
+            loss = loss_data(projEstimate*gains[idx_loader,None],pixelValues.to(projEstimate.dtype))
             loss_data_fidelity.append(loss.item())
 
             # # update sampling
@@ -1024,6 +1033,12 @@ def train_without_ground_truth(config):
         if len(list_params_deformations_loc)!=0:
             scheduler_deformation_loc.step()
 
+        shiftEstimate, rotEstimate = globalDeformationValues(shift_est,rot_est)
+        shift_estimates.append(shiftEstimate)
+        rot_estimates.append(rotEstimate)
+        
+        
+
         # Track loss and display values
         if ((ep%10)==0 and (ep%config.Ntest!=0)):
             loss_current_epoch = np.mean(loss_tot[-len(trainLoader):])
@@ -1040,6 +1055,7 @@ def train_without_ground_truth(config):
 
         # Save and display some results
         if (ep%config.Ntest==0) and check_point_training:
+            print(ep)
             with torch.no_grad():
                 ## Avergae loss over until the last test
                 loss_current_epoch = np.mean(loss_tot[-len(trainLoader)*config.Ntest:])
@@ -1130,10 +1146,10 @@ def train_without_ground_truth(config):
                         'implicit_volume': impl_volume.state_dict(),
                         'optimizer_volume' : optimizer_volume.state_dict(),
                         'optimizer_deformations_glob' : optimizer_deformations_glob.state_dict(),
-                        'optimizer_deformations_loc' : optimizer_deformations_loc.state_dict(),
+                        #'optimizer_deformations_loc' : optimizer_deformations_loc.state_dict(),
                         'scheduler_volume': scheduler_volume.state_dict(), 
                         'scheduler_deformation_glob': scheduler_deformation_glob.state_dict(), 
-                        'scheduler_deformation_loc': scheduler_deformation_loc.state_dict(),
+                        #'scheduler_deformation_loc': scheduler_deformation_loc.state_dict(),
                         'ep': ep,
                     }, os.path.join(config.path_save,'training','model_trained.pt'))
 
@@ -1157,14 +1173,20 @@ def train_without_ground_truth(config):
                     coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
                     #field = utils_deformation.deformation_field(-implicit_deformation_icetide[i].depl_ctr_pts[0].detach().clone())
                     thetas = torch.tensor(-rot_est[i].thetas.item()).to(device)
+                    thetas_fixed = torch.tensor(-fixed_rot[i].thetas.item()).to(device)
                     rot_deform = torch.stack(
                                     [torch.stack([torch.cos(thetas),torch.sin(thetas)],0),
                                     torch.stack([-torch.sin(thetas),torch.cos(thetas)],0)]
+                                    ,0)
+                    rot_fixed = torch.stack(
+                                    [torch.stack([torch.cos(thetas_fixed),torch.sin(thetas_fixed)],0),
+                                    torch.stack([-torch.sin(thetas_fixed),torch.cos(thetas_fixed)],0)]
                                     ,0)
                     if use_local_def:
                         coordinates = coordinates - config.deformationScale*implicit_deformation_list[i](coordinates)
                     coordinates = coordinates - shift_est[i].shifts_arr
                     coordinates = torch.transpose(torch.matmul(rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
+                    coordinates = torch.transpose(torch.matmul(rot_fixed,torch.transpose(coordinates,0,1)),0,1) ## do rotation
                     x = projections_noisy_resize[i].clone().view(1,1,config.n1,config.n2)
                     x = x.expand(config.n1*config.n2, -1, -1, -1)
                     out = cropper(x,coordinates,output_size = 1).reshape(config.n1,config.n2)
@@ -1172,6 +1194,40 @@ def train_without_ground_truth(config):
                 # V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
                 projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
                 out = mrcfile.new(os.path.join(config.path_save_data,'training',"FBP_icetide_projections.mrc"),projections_FBP_icetide.astype(np.float32),overwrite=True)
+                out.close()
+
+                N_small = 256
+                projections_noisy_undeformed = torch.zeros(config.Nangles,N_small,N_small)
+                xx1 = torch.linspace(-1,1,N_small,dtype=config.torch_type,device=device)
+                xx2 = torch.linspace(-1,1,N_small,dtype=config.torch_type,device=device)
+                XX_t, YY_t = torch.meshgrid(xx1,xx2,indexing='ij')
+                XX_t = torch.unsqueeze(XX_t, dim = 2)
+                YY_t = torch.unsqueeze(YY_t, dim = 2)
+                for i in range(config.Nangles):
+                    coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
+                    #field = utils_deformation.deformation_field(-implicit_deformation_icetide[i].depl_ctr_pts[0].detach().clone())
+                    thetas = torch.tensor(-rot_est[i].thetas.item()).to(device)
+                    thetas_fixed = torch.tensor(-fixed_rot[i].thetas.item()).to(device)
+                    rot_deform = torch.stack(
+                                    [torch.stack([torch.cos(thetas),torch.sin(thetas)],0),
+                                    torch.stack([-torch.sin(thetas),torch.cos(thetas)],0)]
+                                    ,0)
+                    rot_fixed = torch.stack(
+                                    [torch.stack([torch.cos(thetas_fixed),torch.sin(thetas_fixed)],0),
+                                    torch.stack([-torch.sin(thetas_fixed),torch.cos(thetas_fixed)],0)]
+                                    ,0)
+                    if use_local_def:
+                        coordinates = coordinates - config.deformationScale*implicit_deformation_list[i](coordinates)
+                    coordinates = coordinates - shift_est[i].shifts_arr
+                    coordinates = torch.transpose(torch.matmul(rot_fixed,torch.transpose(coordinates,0,1)),0,1) ## do rotation
+                    coordinates = torch.transpose(torch.matmul(rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
+                    x = projections_noisy_resize[i].clone().view(1,1,config.n1,config.n2)
+                    x = x.expand(N_small*N_small, -1, -1, -1)
+                    out = cropper(x,coordinates,output_size = 1).reshape(N_small,N_small)
+                    projections_noisy_undeformed[i] = out
+                # V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
+                projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
+                out = mrcfile.new(os.path.join(config.path_save_data,'training',"FBP_icetide_projections_small.mrc"),projections_FBP_icetide.astype(np.float32),overwrite=True)
                 out.close()
 
 
@@ -1195,10 +1251,10 @@ def train_without_ground_truth(config):
             'implicit_volume': impl_volume.state_dict(),
             'optimizer_volume' : optimizer_volume.state_dict(),
             'optimizer_deformations_glob' : optimizer_deformations_glob.state_dict(),
-            'optimizer_deformations_loc' : optimizer_deformations_loc.state_dict(),
+            #'optimizer_deformations_loc' : optimizer_deformations_loc.state_dict(),
             'scheduler_volume': scheduler_volume.state_dict(), 
             'scheduler_deformation_glob': scheduler_deformation_glob.state_dict(), 
-            'scheduler_deformation_loc': scheduler_deformation_loc.state_dict(),
+            #'scheduler_deformation_loc': scheduler_deformation_loc.state_dict(),
             'ep': ep,
         }, os.path.join(config.path_save,'training','model_trained.pt'))
 
@@ -1233,4 +1289,26 @@ def train_without_ground_truth(config):
     plt.grid()
     plt.savefig(os.path.join(config.path_save,'training','loss.png'))
     plt.savefig(os.path.join(config.path_save,'training','loss.pdf'))
+
+    shift_estimates_np = np.array(shift_estimates)
+    rot_estimates_np = np.array(rot_estimates)
+
+
+    print(shift_estimates_np.shape)
+
+    np.save(os.path.join(config.path_save,'training','shiftEstimates.npy'),shift_estimates_np)
+    np.save(os.path.join(config.path_save,'training','rotestiamtes.npy'),rot_estimates_np)
+
+    
+    plt.figure(figsize=(10,10))
+    plt.plot(shift_estimates_np[:,26,0,0])
+    plt.plot(shift_estimates_np[:,26,0,1])
+    plt.title('Shift Estimates')
+    plt.savefig(os.path.join(config.path_save,'training','shiftEstimates.png'))
+
+    # with open(os.path.join(config.path_save,'training','config.json'), 'w') as f:
+    #     config_dict = config.to_dict()
+    #     json.dump(config_dict, f, indent=2)
+
+    
     print("Training is over.")

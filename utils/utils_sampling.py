@@ -277,7 +277,7 @@ def sample_implicit_batch_list(implt_repr,frac,rays,view_dirSet,rot_deformSet=No
             shift_deform = shift_deformSet[i]()
             ss = torch.zeros_like(grid_deform)
             ss[:2,:] = shift_deform.view(shift_deform.shape[-1],-1)#.index_select(0,idx)
-            grid_deform = grid_deform + ss
+            grid_deform = grid_deform + ssf
         # Apply local deformation
         if local_deformSet!=None:
             local_deform = local_deformSet[i]
@@ -432,7 +432,7 @@ def generate_rays_batch(projectionSet,angleSet,nRays,rayLength,validLocations,ra
     
 # idx_loader is needed if choosenLocations_all is not None
 def generate_rays_batch_bilinear(projectionSet,angleSet,nRays,rayLength,randomZ = 0,type=1,zmax=1.5,
-                                 choosenLocations_all=None,density_sampling=None,idx_loader=None):
+                                 choosenLocations_all=None,density_sampling=None,idx_loader=None, pad =0):
     # Projection set of the form [Nbatch,n,n]
     # Angle set of the form [Nbatch]
     # nRays is the number of rays per projection
@@ -467,7 +467,7 @@ def generate_rays_batch_bilinear(projectionSet,angleSet,nRays,rayLength,randomZ 
             choosenLocations = torch.tensor(choosenLocations).to(projectionSet.device).type_as(projectionSet)
 
         else:
-            choosenLocations = torch.rand(nRays,2).to(projectionSet.device)*2-1
+            choosenLocations = (torch.rand(nRays,2).to(projectionSet.device)*2-1)*(1 - pad)
 
         if choosenLocations_all is not None:
             choosenLocations_all[idx_loader[i].item()].append(choosenLocations.detach().cpu().numpy())

@@ -25,6 +25,7 @@ def main():
     ## generate data
     ############################
     if args.no_gen_data:
+        print('data generation')
         import data_generation
         data_generation.data_generation_real_data(config)
 
@@ -33,34 +34,35 @@ def main():
     if args.no_train:
         import train
         # Initial training
-        config.multiresolution = True
-        config.delay_deformations = 25 # Delay before learning deformations
-        config.epochs = 1200
-        config.load_existing_net = False
+        # config.multiresolution = True
+        # #config.delay_deformations = 25 # Delay before learning deformations
+        # config.epochs = 1000
+        # config.load_existing_net = False
+
+        # # config.encoding.otype = 'Grid'
+        # # config.encoding.type = 'Hash'
+        # # config.encoding.n_levels = 9
+        # # config.encoding.base_resolution = 8
+
+        # train.train_without_ground_truth(config)
+
+        # refined training
+        config.multiresolution = False
+        config.delay_deformations = 0 # Delay before learning deformations
+        config.schedule_global = []
+        config.schedule_local = []
+        config.epochs = 4000
+        config.load_existing_net = True
+        config.delay_deformations = 0 # Delay before learning deformations
 
         config.encoding.otype = 'Grid'
         config.encoding.type = 'Hash'
-        config.encoding.n_levels = 9
-        config.encoding.base_resolution = 8
-
-        train.train_without_ground_truth(config)
-
-        # # refined training
-        # config.multiresolution = False
-        # config.delay_deformations = 0 # Delay before learning deformations
-        # config.schedule_global = []
-        # config.schedule_local = []
-        # config.epochs = 4000
-        # config.load_existing_net = True
-        # config.delay_deformations = 0 # Delay before learning deformations
-
-        # config.encoding.otype = 'Grid'
-        # config.encoding.type = 'Hash'
-        # config.encoding.log2_hashmap_size = 22
-        # config.encoding.n_levels = 16
-        # config.encoding.base_resolution = 16
+        config.encoding.log2_hashmap_size = 22
+        config.encoding.n_levels = 14
+        config.encoding.base_resolution = 16
+        config.pad  = 0
         
-        # train.train_without_ground_truth(config)
+        train.train_without_ground_truth(config)
 
 
     # AreTomo

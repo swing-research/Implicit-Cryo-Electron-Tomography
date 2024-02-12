@@ -238,7 +238,7 @@ def data_generation_real_data(config):
         imageio.imwrite(config.path_save_data+"projections/noisy/noisy_"+str(k)+".png",tmp)
 
 
-    angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
+    angles = np.loadtxt(os.path.join(config.path_load,config.angle_name))
     angles_t = torch.tensor(angles).type(config.torch_type).to(device)
     operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
     V_FBP = operator_ET.pinv(torch.tensor(projections_noisy).to(device).detach().requires_grad_(False))
