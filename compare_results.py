@@ -509,10 +509,12 @@ def compare_results(config):
     #######################################################################################
     index = n2_eval//2
     # True volume
-    tmp = np.abs(np.fft.fftn(V))[:,index,:]
+    import ipdb; ipdb.set_trace()
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V)))[:,index,:]
     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","true_Fourier_XZ.png"),tmp)
+
 
     # ICETIDE
     tmp = np.abs(np.fft.fftn(V_icetide))[:,index,:]
@@ -549,6 +551,11 @@ def compare_results(config):
     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE_Fourier_XZ.png"),tmp) 
+
+
+    print('over')
+    print(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE_Fourier_XZ.png"))
+
 
 def tmp():
 
