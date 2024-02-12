@@ -430,7 +430,7 @@ def train(config):
                 plt.hist(shiftEstimate.reshape(-1)*config.n1,alpha=1)
                 plt.hist(shift_true.reshape(-1)*config.n1,alpha=0.5)
                 plt.legend(['est.','true'])
-                plt.savefig(os.path.join(config.path_save+"/training/deformations/shitfs.png"))
+                plt.savefig(os.path.join(config.path_save+"/training/deformations/shifts.png"))
 
                 plt.figure(1)
                 plt.clf()
@@ -1068,7 +1068,7 @@ def train_without_ground_truth(config):
                 plt.clf()
                 plt.hist(shiftEstimate.reshape(-1)*config.n1,alpha=1)
                 plt.legend(['est.'])
-                plt.savefig(os.path.join(config.path_save+"/training/deformations/shitfs.png"))
+                plt.savefig(os.path.join(config.path_save+"/training/deformations/shifts.png"))
 
                 plt.figure(1)
                 plt.clf()
@@ -1163,7 +1163,7 @@ def train_without_ground_truth(config):
                                     ,0)
                     if use_local_def:
                         coordinates = coordinates - config.deformationScale*implicit_deformation_list[i](coordinates)
-                    coordinates = coordinates - shift_est[i].shifts_arr
+                    coordinates = coordinates - shift_est[i].shifts_arr/rays_scaling[0,0,0,0].item()
                     coordinates = torch.transpose(torch.matmul(rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
                     x = projections_noisy_resize[i].clone().view(1,1,config.n1,config.n2)
                     x = x.expand(config.n1*config.n2, -1, -1, -1)
