@@ -1421,7 +1421,7 @@ def compare_results_real(config):
     #######################################################################################
     # Define angles and X-ray transform
     angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
-    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
+    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_icetide_t.shape[0],V_icetide_t.shape[1],V_icetide_t.shape[2]), angles/180*np.pi, fact=1)
     projections_icetide = operator_ET(V_icetide_t).detach().cpu().numpy()
 
     operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_FBP_t.shape[0],V_FBP_t.shape[1],V_FBP_t.shape[2]), angles/180*np.pi, fact=1)
