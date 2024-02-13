@@ -1314,12 +1314,6 @@ def compare_results_real(config):
         projections_noisy_undeformed[i] = out
     V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
 
-    nn = 400
-    nn3 = 200
-    V_icetide_t = V_icetide_t[nn:-nn,nn:-nn,nn3:-nn3]
-    V_FBP_icetide = V_FBP_icetide[nn:-nn,nn:-nn,nn3:-nn3]
-    V_icetide = V_icetide[nn:-nn,nn:-nn,nn3:-nn3]
-    V_FBP = V_FBP[nn:-nn,nn:-nn,nn3:-nn3]
 
     #######################################################################################
     ## Save slices of volumes
@@ -1404,63 +1398,6 @@ def compare_results_real(config):
     #     tmp = np.floor(255*tmp).astype(np.uint8)
     #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo_Fourier_XZ.png"),tmp)
 
-    #######################################################################################
-    ## Save volumes
-    #######################################################################################
-
-    def display_XYZ(tmp,name="true"):
-        f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
-        aa[0,0].imshow(tmp.mean(0).T,cmap='gray')
-        aa[0,0].axis('off')
-        aa[1,0].imshow(tmp.mean(2),cmap='gray')
-        aa[1,0].axis('off')
-        aa[1,1].imshow(tmp.mean(1),cmap='gray')
-        aa[1,1].axis('off')
-        aa[0,1].axis('off')
-        plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
-        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name,"XYZ.png"))
-
-    # ICETIDE
-    tmp = V_icetide
-    display_XYZ(tmp,name="ICETIDE")
-
-    # FBP volume
-    tmp = V_FBP
-    display_XYZ(tmp,name="FBP")
-
-    if(eval_AreTomo):
-        # AreTomo volume
-        tmp = V_FBP_aretomo
-        display_XYZ(tmp,name="AreTomo")
-
-    if(eval_Etomo):
-        # Etomo volume
-        tmp = V_FBP_etomo
-        display_XYZ(tmp,name="Etomo")
-
-    # FBP_ICETIDE volume
-    tmp = V_FBP_icetide
-    display_XYZ(tmp,name="FBP_ICETIDE")
-
-
-    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-                                "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide,2,0),overwrite=True)
-    out.close()
-    if eval_AreTomo:
-        out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-                                    "volumes","AreTomo_volume.mrc"),np.moveaxis(V_FBP_aretomo,2,0),overwrite=True)
-        out.close()
-    if eval_Etomo:
-        out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-                                    "volumes","Etomo_volume.mrc"),np.moveaxis(V_FBP_etomo,2,0),overwrite=True)
-        out.close()
-    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
-                                "FBP_volume.mrc"),np.moveaxis(V_FBP,2,0),overwrite=True)
-    out.close()
-    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
-                                "FBP_icetide_volume.mrc"),np.moveaxis(V_FBP_icetide,2,0),overwrite=True)
-    out.close()
-
 
     #######################################################################################
     ## Generate projections
@@ -1519,6 +1456,75 @@ def compare_results_real(config):
         tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","FBP_ICETIDE","snapshot_{}.png".format(k)),tmp)
+
+
+
+    #######################################################################################
+    ## Save volumes
+    #######################################################################################
+
+
+    nn = 400
+    nn3 = 200
+    V_icetide_t = V_icetide_t[nn:-nn,nn:-nn,nn3:-nn3]
+    V_FBP_icetide = V_FBP_icetide[nn:-nn,nn:-nn,nn3:-nn3]
+    V_icetide = V_icetide[nn:-nn,nn:-nn,nn3:-nn3]
+    V_FBP = V_FBP[nn:-nn,nn:-nn,nn3:-nn3]
+
+    def display_XYZ(tmp,name="true"):
+        f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
+        aa[0,0].imshow(tmp.mean(0).T,cmap='gray')
+        aa[0,0].axis('off')
+        aa[1,0].imshow(tmp.mean(2),cmap='gray')
+        aa[1,0].axis('off')
+        aa[1,1].imshow(tmp.mean(1),cmap='gray')
+        aa[1,1].axis('off')
+        aa[0,1].axis('off')
+        plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name,"XYZ.png"))
+
+    # ICETIDE
+    tmp = V_icetide
+    display_XYZ(tmp,name="ICETIDE")
+
+    # FBP volume
+    tmp = V_FBP
+    display_XYZ(tmp,name="FBP")
+
+    if(eval_AreTomo):
+        # AreTomo volume
+        tmp = V_FBP_aretomo
+        display_XYZ(tmp,name="AreTomo")
+
+    if(eval_Etomo):
+        # Etomo volume
+        tmp = V_FBP_etomo
+        display_XYZ(tmp,name="Etomo")
+
+    # FBP_ICETIDE volume
+    tmp = V_FBP_icetide
+    display_XYZ(tmp,name="FBP_ICETIDE")
+
+
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
+                                "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide,2,0),overwrite=True)
+    out.close()
+    if eval_AreTomo:
+        out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
+                                    "volumes","AreTomo_volume.mrc"),np.moveaxis(V_FBP_aretomo,2,0),overwrite=True)
+        out.close()
+    if eval_Etomo:
+        out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
+                                    "volumes","Etomo_volume.mrc"),np.moveaxis(V_FBP_etomo,2,0),overwrite=True)
+        out.close()
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
+                                "FBP_volume.mrc"),np.moveaxis(V_FBP,2,0),overwrite=True)
+    out.close()
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
+                                "FBP_icetide_volume.mrc"),np.moveaxis(V_FBP_icetide,2,0),overwrite=True)
+    out.close()
+
+
 
     # ## Saving the inplance angles 
     # inplaneAngles = np.zeros((config.Nangles,5))
