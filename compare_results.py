@@ -1314,8 +1314,8 @@ def compare_results_real(config):
         projections_noisy_undeformed[i] = out
     V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
 
-    nn = 100
-    nn3 = 50
+    nn = 400
+    nn3 = 200
     V_icetide_t = V_icetide_t[nn:-nn,nn:-nn,nn3:-nn3]
     V_FBP_icetide = V_FBP_icetide[nn:-nn,nn:-nn,nn3:-nn3]
     V_icetide = V_icetide[nn:-nn,nn:-nn,nn3:-nn3]
