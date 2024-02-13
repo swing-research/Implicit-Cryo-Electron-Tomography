@@ -1314,6 +1314,12 @@ def compare_results_real(config):
         projections_noisy_undeformed[i] = out
     V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
 
+    nn = 100
+    nn3 = 50
+    V_icetide_t = V_icetide_t[nn:-nn,nn:-nn,nn3:-nn3]
+    V_FBP_icetide = V_FBP_icetide[nn:-nn,nn:-nn,nn3:-nn3]
+    V_icetide = V_icetide[nn:-nn,nn:-nn,nn3:-nn3]
+    V_FBP = V_FBP[nn:-nn,nn:-nn,nn3:-nn3]
 
     #######################################################################################
     ## Save slices of volumes
@@ -1355,49 +1361,48 @@ def compare_results_real(config):
 
 
 
-    #######################################################################################
-    ## Save Fourier of volumes
-    #######################################################################################
-    
-    scal = 0.3
-    # ICETIDE volume
-    index = V_icetide.shape[0]//2
-    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_icetide)))[index,:,:]
-    tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    tmp = tmp.T**scal
-    tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ICETIDE_Fourier_XZ.png"),tmp)
+    # #######################################################################################
+    # ## Save Fourier of volumes
+    # #######################################################################################
+    # scal = 0.3
+    # # ICETIDE volume
+    # index = V_icetide.shape[0]//2
+    # tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_icetide)))[index,:,:]
+    # tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    # tmp = tmp.T**scal
+    # tmp = np.floor(255*tmp).astype(np.uint8)
+    # imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ICETIDE_Fourier_XZ.png"),tmp)
 
-    # FBP volume
-    index = V_FBP.shape[0]//2
-    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP)))[index,:,:]
-    tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    tmp = tmp.T**scal
-    tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_Fourier_XZ.png"),tmp)
+    # # FBP volume
+    # index = V_FBP.shape[0]//2
+    # tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP)))[index,:,:]
+    # tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    # tmp = tmp.T**scal
+    # tmp = np.floor(255*tmp).astype(np.uint8)
+    # imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_Fourier_XZ.png"),tmp)
 
-    # FBP icetide volume
-    index = V_FBP_icetide.shape[0]//2
-    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_icetide)))[index,:,:]
-    tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    tmp = tmp.T**scal
-    tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE_Fourier_XZ.png"),tmp)
+    # # FBP icetide volume
+    # index = V_FBP_icetide.shape[0]//2
+    # tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_icetide)))[index,:,:]
+    # tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    # tmp = tmp.T**scal
+    # tmp = np.floor(255*tmp).astype(np.uint8)
+    # imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE_Fourier_XZ.png"),tmp)
     
-    if(eval_AreTomo):
-        index = V_FBP_aretomo[0]//2
-        tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_aretomo)))[index,:,:]
-        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-        tmp = tmp.T**scal
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo_Fourier_XZ.png"),tmp)
-    if(eval_Etomo):
-        index = V_FBP_etomo[0]//2
-        tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_etomo)))[index,:,:]
-        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-        tmp = tmp.T**scal
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo_Fourier_XZ.png"),tmp)
+    # if(eval_AreTomo):
+    #     index = V_FBP_aretomo[0]//2
+    #     tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_aretomo)))[index,:,:]
+    #     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    #     tmp = tmp.T**scal
+    #     tmp = np.floor(255*tmp).astype(np.uint8)
+    #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo_Fourier_XZ.png"),tmp)
+    # if(eval_Etomo):
+    #     index = V_FBP_etomo[0]//2
+    #     tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_etomo)))[index,:,:]
+    #     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    #     tmp = tmp.T**scal
+    #     tmp = np.floor(255*tmp).astype(np.uint8)
+    #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo_Fourier_XZ.png"),tmp)
 
     #######################################################################################
     ## Save volumes
