@@ -1496,6 +1496,7 @@ def compare_results_real(config):
 
     # FBP volume
     tmp = V_best
+    import ipdb; ipdb.set_trace()
     display_XYZ(tmp**0.5,name="Best")
 
     # if(eval_AreTomo):
