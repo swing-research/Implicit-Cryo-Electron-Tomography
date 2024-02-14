@@ -1172,6 +1172,7 @@ def compare_results_real(config):
     if config.name_best_volume is not None:
         if config.name_best_volume != "":
             V_best_t =  torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_load+config.name_best_volume).data),0,2)).type(config.torch_type).to(device)
+            V_best_t = torch.rot90(V_best_t, k=2, dims=[0, 1])
         else:
             V_best_t = torch.zeros((config.n1,config.n2,config.n3))
     else:
@@ -1476,6 +1477,8 @@ def compare_results_real(config):
     V_best = V_best[nn:-nn,nn:-nn,nn3:-nn3]
 
     def display_XYZ(tmp,name="true"):
+        tmp = (tmp - tmp.mean(2).max())/(tmp.mean(2).max()-tmp.mean(2).min())
+        tmp = np.floor(255*tmp).astype(np.uint8)
         f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
         aa[0,0].imshow(tmp.mean(0).T,cmap='gray')
         aa[0,0].axis('off')
