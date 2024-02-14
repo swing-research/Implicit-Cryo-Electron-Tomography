@@ -1510,7 +1510,7 @@ def compare_results_real(config):
     display_XYZ(tmp,name="FBP_ICETIDE")
 
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-                                "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide,2,0),overwrite=True)
+                                "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide.astype(np.float32),2,0),overwrite=True)
     out.close()
     # if eval_AreTomo:
     #     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
@@ -1521,10 +1521,10 @@ def compare_results_real(config):
     #                                 "volumes","Etomo_volume.mrc"),np.moveaxis(V_FBP_etomo,2,0),overwrite=True)
     #     out.close()
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
-                                "Best_volume.mrc"),np.moveaxis(V_best,2,0),overwrite=True)
+                                "Best_volume.mrc"),np.moveaxis(V_best.astype(np.float32),2,0),overwrite=True)
     out.close()
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
-                                "FBP_icetide_volume.mrc"),np.moveaxis(V_FBP_icetide,2,0),overwrite=True)
+                                "FBP_icetide_volume.mrc"),np.moveaxis(V_FBP_icetide.astype(np.float32),2,0),overwrite=True)
     out.close()
 
     plt.close('all')
