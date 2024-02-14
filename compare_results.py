@@ -1171,7 +1171,6 @@ def compare_results_real(config):
     # projections_noisy = torch.tensor(data['projections_noisy']).type(config.torch_type).to(device)
     if config.name_best_volume is not None:
         if config.name_best_volume != "":
-            import ipdb; ipdb.set_trace()
             V_best_t =  torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_load+config.name_best_volume).data),0,2)).type(config.torch_type).to(device)
         else:
             V_best_t = torch.zeros((config.n1,config.n2,config.n3))
