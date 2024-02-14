@@ -27,9 +27,9 @@ def get_config():
     config.n3 = 1024
     config.n3 = 1024
     # Size of the patch to crop in the raw volume
-    config.n1_patch = 1024
-    config.n2_patch = 1024
-    config.n3_patch = 512
+    config.n1_patch = 2048
+    config.n2_patch = 2048
+    config.n3_patch = 1024
     # Fixed angle that is approximately known
     config.fixed_angle = 5
     # Sampling operator
@@ -59,6 +59,7 @@ def get_config():
     config.path_load = "./datasets/tkiuv/"
     config.path_save_data = "./results/tkiuv_"+str(config.volume_name)+"/"
     config.path_save = "./results/tkiuv_"+str(config.volume_name)+"/"
+    config.name_best_volume = "emd_15056_additional_1.map"
     config.load_existing_net = False
 
     config.multiresolution = False
