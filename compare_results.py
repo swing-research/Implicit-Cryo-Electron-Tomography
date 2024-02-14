@@ -1425,11 +1425,11 @@ def compare_results_real(config):
     #######################################################################################
     ## Save volumes
     #######################################################################################
-    nn = 400
-    nn3 = 200
-    V_icetide_t = V_icetide_t[nn:-nn,nn:-nn,nn3:-nn3]
-    V_FBP_icetide = V_FBP_icetide[nn:-nn,nn:-nn,nn3:-nn3]
-    V_icetide = V_icetide[nn:-nn,nn:-nn,nn3:-nn3]
+    # nn = 400
+    # nn3 = 200
+    # V_icetide_t = V_icetide_t[nn:-nn,nn:-nn,nn3:-nn3]
+    # V_FBP_icetide = V_FBP_icetide[nn:-nn,nn:-nn,nn3:-nn3]
+    # V_icetide = V_icetide[nn:-nn,nn:-nn,nn3:-nn3]
     # nn_best = int(np.floor(V_best.shape[0]*(nn/config.n1)))
     # nn3_best = int(np.floor(V_best.shape[2]*(nn3/config.n3)))
     # V_best = V_best[nn_best:-nn_best,nn_best:-nn_best,nn3_best:-nn3_best]
@@ -1446,7 +1446,7 @@ def compare_results_real(config):
         aa[1,1].axis('off')
         aa[0,1].axis('off')
         plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
-        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name,"XYZ.png"))
+        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ.png"))
 
     # ICETIDE
     tmp = V_icetide
@@ -1519,21 +1519,6 @@ def compare_results_real(config):
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE_Fourier_XZ.png"),tmp)
     
-    if(eval_AreTomo):
-        index = V_FBP_aretomo[0]//2
-        tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_aretomo)))[index,:,:]
-        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-        tmp = tmp.T**scal
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo_Fourier_XZ.png"),tmp)
-    if(eval_Etomo):
-        index = V_FBP_etomo[0]//2
-        tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_etomo)))[index,:,:]
-        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-        tmp = tmp.T**scal
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo_Fourier_XZ.png"),tmp)
-
 
 
 
