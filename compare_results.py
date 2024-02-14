@@ -1331,12 +1331,6 @@ def compare_results_real(config):
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ICETIDE","slice_{}.png".format(index)),tmp)
 
-        # Best
-        tmp = V_best[:,:,index]
-        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Best","slice_{}.png".format(index)),tmp)
-
         # if(eval_AreTomo):
         #     if index < V_FBP_aretomo.shape[2]:
         #         tmp = V_FBP_aretomo[:,:,index]
@@ -1358,6 +1352,14 @@ def compare_results_real(config):
             tmp = np.floor(255*tmp).astype(np.uint8)
             imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE","slice_{}.png".format(index)),tmp)
 
+
+    saveIndex = [V_best.shape[2]//4,V_best.shape[2]//2,int(3*V_best.shape[2]//4)] # The slices to save taken from previous plots
+    for index in saveIndex:
+        # Best
+        tmp = V_best[:,:,index]
+        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+        tmp = np.floor(255*tmp).astype(np.uint8)
+        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Best","slice_{}.png".format(index)),tmp)
 
 
     # #######################################################################################
