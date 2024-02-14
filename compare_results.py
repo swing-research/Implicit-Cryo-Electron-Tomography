@@ -1321,148 +1321,148 @@ def compare_results_real(config):
     V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
 
 
-    #######################################################################################
-    ## Save slices of volumes
-    #######################################################################################
-    saveIndex = [n3_eval//4,n3_eval//2,int(3*n3_eval//4)] # The slices to save taken from previous plots
-    for index in saveIndex:
-        # ICETIDE
-        tmp = V_icetide[:,:,index]
-        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ICETIDE","slice_{}.png".format(index)),tmp)
-
-        # if(eval_AreTomo):
-        #     if index < V_FBP_aretomo.shape[2]:
-        #         tmp = V_FBP_aretomo[:,:,index]
-        #         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-        #         tmp = np.floor(255*tmp).astype(np.uint8)
-        #         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo","slice_{}.png".format(index)),tmp)
-
-        # if(eval_Etomo):
-        #     if index < V_FBP_etomo.shape[2]:
-        #         tmp = V_FBP_etomo[:,:,index]
-        #         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-        #         tmp = np.floor(255*tmp).astype(np.uint8)
-        #         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo","slice_{}.png".format(index)),tmp)
-
-        # FBP icetide
-        if index < V_FBP_icetide.shape[2]:
-            tmp = V_FBP_icetide[:,:,index]
-            tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-            tmp = np.floor(255*tmp).astype(np.uint8)
-            imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE","slice_{}.png".format(index)),tmp)
-
-
-    saveIndex = [V_best.shape[2]//4,V_best.shape[2]//2,int(3*V_best.shape[2]//4)] # The slices to save taken from previous plots
-    for index in saveIndex:
-        # Best
-        tmp = V_best[:,:,index]
-        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Best","slice_{}.png".format(index)),tmp)
-
-
     # #######################################################################################
-    # ## Save Fourier of volumes
+    # ## Save slices of volumes
     # #######################################################################################
-    # scal = 0.3
-    # # ICETIDE volume
-    # index = V_icetide.shape[0]//2
-    # tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_icetide)))[index,:,:]
-    # tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    # tmp = tmp.T**scal
-    # tmp = np.floor(255*tmp).astype(np.uint8)
-    # imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ICETIDE_Fourier_XZ.png"),tmp)
+    # saveIndex = [n3_eval//4,n3_eval//2,int(3*n3_eval//4)] # The slices to save taken from previous plots
+    # for index in saveIndex:
+    #     # ICETIDE
+    #     tmp = V_icetide[:,:,index]
+    #     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    #     tmp = np.floor(255*tmp).astype(np.uint8)
+    #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ICETIDE","slice_{}.png".format(index)),tmp)
 
-    # # FBP volume
-    # index = V_best.shape[0]//2
-    # tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP)))[index,:,:]
-    # tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    # tmp = tmp.T**scal
-    # tmp = np.floor(255*tmp).astype(np.uint8)
-    # imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Best_Fourier_XZ.png"),tmp)
+    #     # if(eval_AreTomo):
+    #     #     if index < V_FBP_aretomo.shape[2]:
+    #     #         tmp = V_FBP_aretomo[:,:,index]
+    #     #         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    #     #         tmp = np.floor(255*tmp).astype(np.uint8)
+    #     #         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo","slice_{}.png".format(index)),tmp)
 
-    # # FBP icetide volume
-    # index = V_FBP_icetide.shape[0]//2
-    # tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_icetide)))[index,:,:]
-    # tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    # tmp = tmp.T**scal
-    # tmp = np.floor(255*tmp).astype(np.uint8)
-    # imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE_Fourier_XZ.png"),tmp)
+    #     # if(eval_Etomo):
+    #     #     if index < V_FBP_etomo.shape[2]:
+    #     #         tmp = V_FBP_etomo[:,:,index]
+    #     #         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    #     #         tmp = np.floor(255*tmp).astype(np.uint8)
+    #     #         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo","slice_{}.png".format(index)),tmp)
+
+    #     # FBP icetide
+    #     if index < V_FBP_icetide.shape[2]:
+    #         tmp = V_FBP_icetide[:,:,index]
+    #         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    #         tmp = np.floor(255*tmp).astype(np.uint8)
+    #         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE","slice_{}.png".format(index)),tmp)
+
+
+    # saveIndex = [V_best.shape[2]//4,V_best.shape[2]//2,int(3*V_best.shape[2]//4)] # The slices to save taken from previous plots
+    # for index in saveIndex:
+    #     # Best
+    #     tmp = V_best[:,:,index]
+    #     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    #     tmp = np.floor(255*tmp).astype(np.uint8)
+    #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Best","slice_{}.png".format(index)),tmp)
+
+
+    # # #######################################################################################
+    # # ## Save Fourier of volumes
+    # # #######################################################################################
+    # # scal = 0.3
+    # # # ICETIDE volume
+    # # index = V_icetide.shape[0]//2
+    # # tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_icetide)))[index,:,:]
+    # # tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    # # tmp = tmp.T**scal
+    # # tmp = np.floor(255*tmp).astype(np.uint8)
+    # # imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ICETIDE_Fourier_XZ.png"),tmp)
+
+    # # # FBP volume
+    # # index = V_best.shape[0]//2
+    # # tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP)))[index,:,:]
+    # # tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    # # tmp = tmp.T**scal
+    # # tmp = np.floor(255*tmp).astype(np.uint8)
+    # # imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Best_Fourier_XZ.png"),tmp)
+
+    # # # FBP icetide volume
+    # # index = V_FBP_icetide.shape[0]//2
+    # # tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_icetide)))[index,:,:]
+    # # tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    # # tmp = tmp.T**scal
+    # # tmp = np.floor(255*tmp).astype(np.uint8)
+    # # imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE_Fourier_XZ.png"),tmp)
     
-    # if(eval_AreTomo):
-    #     index = V_FBP_aretomo[0]//2
-    #     tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_aretomo)))[index,:,:]
-    #     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    #     tmp = tmp.T**scal
+    # # if(eval_AreTomo):
+    # #     index = V_FBP_aretomo[0]//2
+    # #     tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_aretomo)))[index,:,:]
+    # #     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    # #     tmp = tmp.T**scal
+    # #     tmp = np.floor(255*tmp).astype(np.uint8)
+    # #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo_Fourier_XZ.png"),tmp)
+    # # if(eval_Etomo):
+    # #     index = V_FBP_etomo[0]//2
+    # #     tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_etomo)))[index,:,:]
+    # #     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    # #     tmp = tmp.T**scal
+    # #     tmp = np.floor(255*tmp).astype(np.uint8)
+    # #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo_Fourier_XZ.png"),tmp)
+
+
+    # #######################################################################################
+    # ## Generate projections
+    # #######################################################################################
+    # # Define angles and X-ray transform
+    # angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
+    # operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_icetide_t.shape[0],V_icetide_t.shape[1],V_icetide_t.shape[2]), angles/180*np.pi, fact=1)
+    # projections_icetide = operator_ET(V_icetide_t).detach().cpu().numpy()
+    # out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","icetide_projections.mrc"),projections_icetide.astype(np.float32),overwrite=True)
+    # out.close()
+
+    # operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_best_t.shape[0],V_best_t.shape[1],V_best_t.shape[2]), angles/180*np.pi, fact=1)
+    # projections_best = operator_ET(V_best_t).detach().cpu().numpy()
+    # projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
+    # # if(eval_AreTomo):
+    # #     operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_FBP_aretomo.shape[0],V_FBP_aretomo.shape[1],V_FBP_aretomo.shape[2]), angles/180*np.pi, fact=1)
+    # #     V_FBP_aretomo_t = torch.tensor(V_FBP_aretomo).to(device)
+    # #     projections_AreTomo = operator_ET(V_FBP_aretomo_t).detach().cpu().numpy()
+    # # if(eval_Etomo):
+    # #     operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_FBP_etomo.shape[0],V_FBP_etomo.shape[1],V_FBP_etomo.shape[2]), angles/180*np.pi, fact=1)
+    # #     V_FBP_etomo_t = torch.tensor(V_FBP_etomo).to(device)
+    # #     projections_Etomo = operator_ET(V_FBP_etomo_t).detach().cpu().numpy()
+    # # if(eval_AreTomo):
+    # #     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","AreTomo_projections.mrc"),projections_AreTomo.astype(np.float32),overwrite=True)
+    # #     out.close()
+    # # if(eval_Etomo):
+    # #     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","Etomo_projections.mrc"),projections_Etomo.astype(np.float32),overwrite=True)
+    # #     out.close()
+
+    # out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","Best_projections.mrc"),projections_best.astype(np.float32),overwrite=True)
+    # out.close()
+    # out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","FBP_icetide_projections.mrc"),projections_FBP_icetide.astype(np.float32),overwrite=True)
+    # out.close()
+
+    # for k in range(config.Nangles):
+    #     tmp = projections_icetide[k]
+    #     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
     #     tmp = np.floor(255*tmp).astype(np.uint8)
-    #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo_Fourier_XZ.png"),tmp)
-    # if(eval_Etomo):
-    #     index = V_FBP_etomo[0]//2
-    #     tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_etomo)))[index,:,:]
-    #     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    #     tmp = tmp.T**scal
+    #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","ICETIDE","snapshot_{}.png".format(k)),tmp)
+    #     # if(eval_AreTomo):
+    #     #     tmp = projections_AreTomo[k]
+    #     #     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+    #     #     tmp = np.floor(255*tmp).astype(np.uint8)
+    #     #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","AreTomo","snapshot_{}.png".format(k)),tmp)
+    #     # if(eval_Etomo):
+    #     #     tmp = projections_Etomo[k]
+    #     #     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+    #     #     tmp = np.floor(255*tmp).astype(np.uint8)
+    #     #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","Etomo","snapshot_{}.png".format(k)),tmp)
+    #     tmp = projections_best[k]
+    #     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
     #     tmp = np.floor(255*tmp).astype(np.uint8)
-    #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo_Fourier_XZ.png"),tmp)
-
-
-    #######################################################################################
-    ## Generate projections
-    #######################################################################################
-    # Define angles and X-ray transform
-    angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
-    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_icetide_t.shape[0],V_icetide_t.shape[1],V_icetide_t.shape[2]), angles/180*np.pi, fact=1)
-    projections_icetide = operator_ET(V_icetide_t).detach().cpu().numpy()
-    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","icetide_projections.mrc"),projections_icetide.astype(np.float32),overwrite=True)
-    out.close()
-
-    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_best_t.shape[0],V_best_t.shape[1],V_best_t.shape[2]), angles/180*np.pi, fact=1)
-    projections_best = operator_ET(V_best_t).detach().cpu().numpy()
-    projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
-    # if(eval_AreTomo):
-    #     operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_FBP_aretomo.shape[0],V_FBP_aretomo.shape[1],V_FBP_aretomo.shape[2]), angles/180*np.pi, fact=1)
-    #     V_FBP_aretomo_t = torch.tensor(V_FBP_aretomo).to(device)
-    #     projections_AreTomo = operator_ET(V_FBP_aretomo_t).detach().cpu().numpy()
-    # if(eval_Etomo):
-    #     operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_FBP_etomo.shape[0],V_FBP_etomo.shape[1],V_FBP_etomo.shape[2]), angles/180*np.pi, fact=1)
-    #     V_FBP_etomo_t = torch.tensor(V_FBP_etomo).to(device)
-    #     projections_Etomo = operator_ET(V_FBP_etomo_t).detach().cpu().numpy()
-    # if(eval_AreTomo):
-    #     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","AreTomo_projections.mrc"),projections_AreTomo.astype(np.float32),overwrite=True)
-    #     out.close()
-    # if(eval_Etomo):
-    #     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","Etomo_projections.mrc"),projections_Etomo.astype(np.float32),overwrite=True)
-    #     out.close()
-
-    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","Best_projections.mrc"),projections_best.astype(np.float32),overwrite=True)
-    out.close()
-    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","FBP_icetide_projections.mrc"),projections_FBP_icetide.astype(np.float32),overwrite=True)
-    out.close()
-
-    for k in range(config.Nangles):
-        tmp = projections_icetide[k]
-        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","ICETIDE","snapshot_{}.png".format(k)),tmp)
-        # if(eval_AreTomo):
-        #     tmp = projections_AreTomo[k]
-        #     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
-        #     tmp = np.floor(255*tmp).astype(np.uint8)
-        #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","AreTomo","snapshot_{}.png".format(k)),tmp)
-        # if(eval_Etomo):
-        #     tmp = projections_Etomo[k]
-        #     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
-        #     tmp = np.floor(255*tmp).astype(np.uint8)
-        #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","Etomo","snapshot_{}.png".format(k)),tmp)
-        tmp = projections_best[k]
-        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","Best","snapshot_{}.png".format(k)),tmp)
-        tmp = projections_FBP_icetide[k]
-        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","FBP_ICETIDE","snapshot_{}.png".format(k)),tmp)
+    #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","Best","snapshot_{}.png".format(k)),tmp)
+    #     tmp = projections_FBP_icetide[k]
+    #     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+    #     tmp = np.floor(255*tmp).astype(np.uint8)
+    #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","FBP_ICETIDE","snapshot_{}.png".format(k)),tmp)
 
 
 
@@ -1477,8 +1477,8 @@ def compare_results_real(config):
     V_best = V_best[nn:-nn,nn:-nn,nn3:-nn3]
 
     def display_XYZ(tmp,name="true"):
-        tmp = (tmp - tmp.mean(2).max())/(tmp.mean(2).max()-tmp.mean(2).min())
-        tmp = np.floor(255*tmp).astype(np.uint8)
+        # tmp = (tmp - tmp.mean(2).max())/(tmp.mean(2).max()-tmp.mean(2).min())
+        # tmp = np.floor(255*tmp).astype(np.uint8)
         f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
         aa[0,0].imshow(tmp.mean(0).T,cmap='gray')
         aa[0,0].axis('off')
@@ -1496,7 +1496,7 @@ def compare_results_real(config):
 
     # FBP volume
     tmp = V_best
-    display_XYZ(tmp,name="Best")
+    display_XYZ(tmp**0.5,name="Best")
 
     # if(eval_AreTomo):
     #     # AreTomo volume
