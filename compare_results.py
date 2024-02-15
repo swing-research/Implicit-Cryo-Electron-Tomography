@@ -1505,7 +1505,7 @@ def compare_results_real(config):
 
     # FBP volume
     index = V_best.shape[0]//2
-    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP)))[index,:,:]
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_best)))[index,:,:]
     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
     tmp = tmp.T**scal
     tmp = np.floor(255*tmp).astype(np.uint8)
