@@ -25,12 +25,12 @@ def get_config():
     config.n1 = 512
     config.n2 = 512
     config.n3 = 180
-    # Fixed angle that is approximately known
-    config.fixed_angle = 0
     # Size of the patch to crop in the raw volume
     config.n1_patch = 512
     config.n2_patch = 512
     config.n3_patch = 180 
+    # Fixed angle that is approximately known
+    config.fixed_angle = 0
     # Sampling operator
     config.Nangles = 61
     config.view_angle_min = -60
@@ -70,7 +70,7 @@ def get_config():
     config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
-    config.epochs = 5000
+    config.epochs = 1001
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
     config.compute_fsc = True # save fsc, takes more time
@@ -82,7 +82,7 @@ def get_config():
     config.nRays =  1500 # number of sampling rays per viewing direction
     config.z_max = 2*config.n3/max(config.n1,config.n2)/np.cos((90-np.max([config.view_angle_min,config.view_angle_max]))*np.pi/180)
     config.ray_length = 500 #int(np.floor(n1*z_max))
-    config.rays_scaling = [1.,1.,1.] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
+    config.rays_scaling = [0.75,0.75,0.75] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
 
     # When to start or stop optimizing over a variable
     config.schedule_volume = []
@@ -119,7 +119,7 @@ def get_config():
     config.encoding = ml_collections.ConfigDict()
     config.encoding.otype = 'Grid'
     config.encoding.type = 'Hash'
-    config.encoding.n_levels = 8
+    config.encoding.n_levels = 8#
     config.encoding.n_features_per_level = 4
     config.encoding.log2_hashmap_size = 22
     config.encoding.base_resolution = 8
@@ -140,7 +140,8 @@ def get_config():
         config.local_deformation.hidden_size = 32
         config.local_deformation.L = 10
     elif config.local_model == 'interp':
-        config.local_deformation.N_ctrl_pts_net = 10
+        config.local_deformation.N_ctrl_pts_net = 15
+        config.maskBoundary = 0
 
     #######################
     ## AreTomo ##

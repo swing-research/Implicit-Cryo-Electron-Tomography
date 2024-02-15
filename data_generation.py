@@ -98,7 +98,7 @@ def data_generation(config):
         depl_ctr_pts = torch.randn(2,config.N_ctrl_pts_local_def[0],config.N_ctrl_pts_local_def[1]).to(device).type(config.torch_type)
         depl_ctr_pts[0] = depl_ctr_pts[0]/config.n1*config.sigma_local_def
         depl_ctr_pts[1] = depl_ctr_pts[1]/config.n2*config.sigma_local_def
-        field = utils_deformation.deformation_field(depl_ctr_pts)
+        field = utils_deformation.deformation_field(depl_ctr_pts,maskBoundary=1)
         local_tr.append(field)
         # Some display
         nsr = (config.n1*4,config.n2*4)
