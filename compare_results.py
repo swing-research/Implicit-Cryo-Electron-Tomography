@@ -1450,6 +1450,7 @@ def compare_results_real(config):
 
     # ICETIDE
     tmp = V_icetide
+    import ipdb; ipdb.set_trace()
     display_XYZ(tmp,name="ICETIDE")
 
     # FBP volume
