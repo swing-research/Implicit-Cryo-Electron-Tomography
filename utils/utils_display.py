@@ -71,7 +71,9 @@ def display_local(field,field_true=None,Npts=(10,10),img_path='',img_type='.pdf'
 
 
 # save only est and true plot
-def display_local_est_and_true(field,field_true=None,Npts=(10,10),img_path='',img_type='.pdf',scale=3,alpha=0.8,width=0.002,device='cuda',wx=1,wy=1):
+# s: scaling of the input coordinates in field
+def display_local_est_and_true(field,field_true=None,Npts=(10,10),img_path='',img_type='.pdf',
+            scale=3,alpha=0.8,width=0.002,device='cuda',wx=1,wy=1,s=1):
     ## Display quiver
     xx1 = torch.linspace(-1,1,Npts[0],device=device)
     xx2 = torch.linspace(-1,1,Npts[1],device=device)
@@ -79,7 +81,7 @@ def display_local_est_and_true(field,field_true=None,Npts=(10,10),img_path='',im
     XX_t = torch.unsqueeze(XX_t, dim = 2)
     YY_t = torch.unsqueeze(YY_t, dim = 2)
     coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
-    displacement = field(coordinates)
+    displacement = field(coordinates*s)
     x2 = coordinates[:,0].detach().cpu().numpy()*wx
     y2 = coordinates[:,1].detach().cpu().numpy()*wy
     u2 = displacement[:,0].detach().cpu().numpy()
@@ -102,7 +104,7 @@ def display_local_est_and_true(field,field_true=None,Npts=(10,10),img_path='',im
             plt.savefig(img_path+'_est_and_true'+img_type)
 
 def display_local_movie(field,field_true=None,Npts=(10,10),img_path='',img_type='.pdf',scale=3,alpha=0.8,width=0.002,
-                        device='cuda',loc='upper right',legend1='Estimation', legend2='True',weights_est=1):
+                        device='cuda',loc='upper right',legend1='Estimation', legend2='True',weights_est=1,s=1):
     xx1 = torch.linspace(-1,1,Npts[0],device=device)
     xx2 = torch.linspace(-1,1,Npts[1],device=device)
     XX_t, YY_t = torch.meshgrid(xx1,xx2,indexing='ij')
@@ -111,7 +113,7 @@ def display_local_movie(field,field_true=None,Npts=(10,10),img_path='',img_type=
     coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
     for k in range(len(field)):
         ## Display quiver
-        displacement = field[k](coordinates)*weights_est
+        displacement = field[k](coordinates*s)*weights_est
         x2 = coordinates[:,0].detach().cpu().numpy()
         y2 = coordinates[:,1].detach().cpu().numpy()
         u2 = displacement[:,0].detach().cpu().numpy()
