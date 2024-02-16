@@ -31,29 +31,29 @@ Please download the [(Shrec 2021)](https://dataverse.nl/dataset.xhtml?persistent
 The structure of the folder should be 'datasets/model_X/grandmodel.mrc', where model_X is specified by the variable volume_name in the config files
 
 ## How to use
-### Simulations
+### Simulations on model 0 of Shrec 2021
 Run the complete pipleine on model0:
 ```
 python -m experiment_scripts.simulation_model0
 ```
 
-### Only data generation
+#### Only data generation
 ```
 python -m experiment_scripts.simulation_model0 --no_train --no_aretomo --no_comparison
 ```
 
-### Only training ICE-TIDE
+#### Only training ICE-TIDE
 ```
 python -m experiment_scripts.simulation_model0 --no_gen_data --no_aretomo --no_comparison
 ```
 
-### Only runing AreTomo
+#### Only runing AreTomo
 Make sure to change the path of Aretomo in the config file
 ```
 python -m experiment_scripts.simulation_model0 --no_gen_data --no_train --no_comparison
 ```
 
-### Only comparisons and display of different methods
+#### Only comparisons and display of different methods
 ```
 python -m experiment_scripts.simulation_model0 --no_gen_data --no_train --no_aretomo
 ```
@@ -67,16 +67,21 @@ python -m experiment_scripts.real_data_tkiuv
 Notice that the optional arguments '--no_gen_data', '--no_train', '--no_aretomo' and '--no_comparison' can be used.
 
 
-
-### Reproduce the timing 
+### Reproduce the timing experiment
 ```
 python -m experiment_scripts.simulation_shrec_timing 
 ```
 
+### Reproduce the experiment on all Shrec 2021 models
+```
+python -m experiment_scripts.simulation_all_shrec_models
+```
 
+### Reproduce the experiment for various SNRs
+```
+python -m experiment_scripts.simulation_SNR_influence
+```
 
-## Warning
-It will only work on Linux and MacOS systems.
 
 
 ## How to cite?
@@ -85,3 +90,7 @@ Please cite the following paper if you use this code into your research:
 XXXXXXXXXXXXXXXXXXXX
 
 
+If you have any furter questions or want to discuss, reach out to one of us!
+-Valentin Debarnot: valentin.debarnot@unibas.ch
+-Vinith Kishore: vinith.kishore@unibas.ch
+-Ivan Dokmanić: ivan.dokmanic@unibas.ch
