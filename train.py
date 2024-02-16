@@ -779,11 +779,11 @@ def train_without_ground_truth(config):
         config.train_local_def = False
         s_est = checkpoint['shift_est']
         r_est = checkpoint['rot_est']
-        # i_est = checkpoint['implicit_deformation_list']
+        i_est = checkpoint['implicit_deformation_list']
         for k in range(config.Nangles):
             shift_est[k] = s_est[k]
             rot_est[k] = r_est[k]
-            # implicit_deformation_list[k].load_state_dict(i_est[k])
+            implicit_deformation_list[k].load_state_dict(i_est[k])
 
     ######################################################################################################
     ## Optimizer
