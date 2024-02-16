@@ -526,6 +526,7 @@ def train(config):
                 np.save(os.path.join(config.path_save,'training','CC_iter.npy'),np.array(CC_icetide_tot))
                 header ='ep,icetide,FBP,FBP_no_deformed'
                 np.savetxt(os.path.join(config.path_save,'training','CC_iter.csv'),np.array([ep_tot,CC_icetide_tot,CC_FBP_tot,CC_FBP_no_deformed_tot]).T,header=header,delimiter=",",comments='')
+        plt.close('all')
 
     print("Saving final state after training...")
     torch.save({
@@ -1231,8 +1232,7 @@ def train_without_ground_truth(config):
                 projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
                 out = mrcfile.new(os.path.join(config.path_save_data,'training',"FBP_icetide_projections_small.mrc"),projections_FBP_icetide.astype(np.float32),overwrite=True)
                 out.close()
-
-
+        plt.close('all')
 
     print("Saving final state after training...")
     if config.load_existing_net:
