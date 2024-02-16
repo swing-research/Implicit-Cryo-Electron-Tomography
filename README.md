@@ -91,6 +91,10 @@ XXXXXXXXXXXXXXXXXXXX
 
 
 If you have any furter questions or want to discuss, reach out to one of us!
--Valentin Debarnot: valentin.debarnot@unibas.ch
--Vinith Kishore: vinith.kishore@unibas.ch
--Ivan Dokmanić: ivan.dokmanic@unibas.ch
+
+* Valentin Debarnot: valentin.debarnot@unibas.ch
+ 
+* Vinith Kishore: vinith.kishore@unibas.ch
+ 
+* Ivan Dokmanić: ivan.dokmanic@unibas.ch
+
