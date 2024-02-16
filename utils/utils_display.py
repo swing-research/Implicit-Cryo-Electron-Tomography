@@ -91,6 +91,8 @@ def display_local_est_and_true(field,field_true=None,Npts=(10,10),img_path='',im
     plt.tight_layout()
     ax = plt.gca()
     ax.quiver(x2,y2,u2,v2,angles='xy',scale=scale,alpha=alpha,color='r',width=width,label='Estimation')
+    if img_path!='': 
+        plt.savefig(img_path+'_est_and_true'+img_type)
     if field_true is not None:
         displacement = field_true(coordinates)
         x2 = coordinates[:,0].detach().cpu().numpy()*wx
