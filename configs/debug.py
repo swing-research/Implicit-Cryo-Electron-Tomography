@@ -95,14 +95,14 @@ def get_config():
     config.lr_volume = 1e-2
     config.lr_shift = 1e-3
     config.lr_rot = 1e-3
-    config.lr_local_def = 1e-3
+    config.lr_local_def = 1e-4
 
     # Training regularization
     config.lamb_volume = 0 # regul parameters on volume regularization
     config.lamb_rot = 1e-5 # regul parameters on inplane rotations
     config.lamb_shifts = 1e-5 # regul parameters on shifts
-    config.lamb_local_ampl = 1e-3 # regul on amplitude of local def.
-    config.lamb_local_mean = 1e-3 # regul on mean of local def.
+    config.lamb_local_ampl = 1e-2 # regul on amplitude of local def.
+    config.lamb_local_mean = 1e-2 # regul on mean of local def.
     config.wd = 5e-6 # weights decay
 
     # Params for implicit deformation
@@ -140,7 +140,7 @@ def get_config():
         config.local_deformation.hidden_size = 32
         config.local_deformation.L = 10
     elif config.local_model == 'interp':
-        config.local_deformation.N_ctrl_pts_net = 15
+        config.local_deformation.N_ctrl_pts_net = 10
         config.maskBoundary = 0
 
     #######################
