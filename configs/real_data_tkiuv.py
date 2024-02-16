@@ -75,7 +75,7 @@ def get_config():
     #############################
     # Estimate Volume from the deformed projections
     config.train_volume = True
-    config.train_local_def = False
+    config.train_local_def = True
     config.train_global_def = True
     config.volume_model = "multi-resolution" # multi-resolution, Fourier-features, grid, MLP
     config.local_model = 'interp' #  'implicit' or 'interp'
@@ -112,8 +112,8 @@ def get_config():
     config.lamb_volume = 0 # regul parameters on volume regularization
     config.lamb_rot = 0#1e-2 # regul parameters on inplane rotations
     config.lamb_shifts = 1e-6 # regul parameters on shifts
-    config.lamb_local_ampl = 0*1e-5 # regul on amplitude of local def.
-    config.lamb_local_mean = 0*1e-5 # regul on mean of local def.
+    config.lamb_local_ampl = 1e-5 # regul on amplitude of local def.
+    config.lamb_local_mean = 1e-5 # regul on mean of local def.
     config.wd = 1e-6 # weights decay
 
     # Params for implicit deformation
