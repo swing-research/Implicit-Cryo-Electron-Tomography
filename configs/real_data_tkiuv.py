@@ -13,7 +13,7 @@ def get_config():
     #######################
     config = ml_collections.ConfigDict()
     config.seed = 42
-    config.device_num = 3
+    config.device_num = 2
     config.torch_type = torch.float
     config.track_memory = False
 
@@ -27,9 +27,9 @@ def get_config():
     config.n3 = 1024
     config.n3 = 1024
     # Size of the patch to crop in the raw volume
-    config.n1_patch = 2048
-    config.n2_patch = 2048
-    config.n3_patch = 1024
+    config.n1_patch = 1024
+    config.n2_patch = 1024
+    config.n3_patch = 512
     # Fixed angle that is approximately known
     config.fixed_angle = 5
     # Sampling operator
@@ -84,8 +84,8 @@ def get_config():
     config.epochs = 100
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
-    config.scheduler_step_size = 1000#300
-    config.scheduler_gamma = 0.1#0.75
+    config.scheduler_step_size = 1000 #300
+    config.scheduler_gamma = 0.1 #0.75
 
     # Sampling strategy
     config.batch_size = 1 # number of viewing direction per iteration
@@ -94,7 +94,7 @@ def get_config():
     config.z_max = 1 #1.2
     config.ray_length = 1500 #int(np.floor(n1*z_max))
     config.rays_scaling = [0.5,0.5,0.5] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
-    config.pad = 0.2 # pad tell if we need to sample the edges or not. It is directly realeted the sampling in the projection
+    config.pad = 0. # pad tell if we need to sample the edges or not. It is directly realeted the sampling in the projection
     # When to start or stop optimizing over a variable
     config.schedule_volume = []
     config.schedule_global = []

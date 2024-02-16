@@ -38,12 +38,6 @@ def main():
         #config.delay_deformations = 25 # Delay before learning deformations
         config.epochs = 1000
         config.load_existing_net = False
-
-        # config.encoding.otype = 'Grid'
-        # config.encoding.type = 'Hash'
-        # config.encoding.n_levels = 9
-        # config.encoding.base_resolution = 8
-
         train.train_without_ground_truth(config)
 
         # refined training
@@ -55,12 +49,12 @@ def main():
         config.load_existing_net = True
         config.delay_deformations = 0 # Delay before learning deformations
 
-        config.encoding.otype = 'Grid'
-        config.encoding.type = 'Hash'
-        config.encoding.log2_hashmap_size = 22
-        config.encoding.n_levels = 14
-        config.encoding.base_resolution = 16
-        config.pad  = 0
+        # config.encoding.otype = 'Grid'
+        # config.encoding.type = 'Hash'
+        # config.encoding.log2_hashmap_size = 22
+        # config.encoding.n_levels = 14
+        # config.encoding.base_resolution = 16
+        # config.pad  = 0
         
         train.train_without_ground_truth(config)
 
