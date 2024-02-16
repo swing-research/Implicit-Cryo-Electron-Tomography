@@ -1491,33 +1491,33 @@ def compare_results_real(config):
     plt.close('all')
 
 
-    # #######################################################################################
-    # ## Save Fourier of volumes
-    # #######################################################################################
-    # scal = 0.3
-    # # ICETIDE volume
-    # index = V_icetide.shape[0]//2
-    # tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_icetide)))[index,:,:]
-    # tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    # tmp = tmp.T**scal
-    # tmp = np.floor(255*tmp).astype(np.uint8)
-    # imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ICETIDE_Fourier_XZ.png"),tmp)
+    #######################################################################################
+    ## Save Fourier of volumes
+    #######################################################################################
+    scal = 0.2
+    # ICETIDE volume
+    index = V_icetide.shape[0]//2
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_icetide)))[index,:,:]
+    tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    tmp = tmp.T**scal
+    tmp = np.floor(255*tmp).astype(np.uint8)
+    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ICETIDE_Fourier_XZ.png"),tmp)
 
-    # # FBP volume
-    # index = V_best.shape[0]//2
-    # tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_best)))[index,:,:]
-    # tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    # tmp = tmp.T**scal
-    # tmp = np.floor(255*tmp).astype(np.uint8)
-    # imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Best_Fourier_XZ.png"),tmp)
+    # FBP volume
+    index = V_best.shape[0]//2
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_best)))[index,:,:]
+    tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    tmp = tmp.T**scal
+    tmp = np.floor(255*tmp).astype(np.uint8)
+    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Best_Fourier_XZ.png"),tmp)
 
-    # # FBP icetide volume
-    # index = V_FBP_icetide.shape[0]//2
-    # tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_icetide)))[index,:,:]
-    # tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    # tmp = tmp.T**scal
-    # tmp = np.floor(255*tmp).astype(np.uint8)
-    # imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE_Fourier_XZ.png"),tmp)
+    # FBP icetide volume
+    index = V_FBP_icetide.shape[0]//2
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_icetide)))[index,:,:]
+    tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    tmp = tmp.T**scal
+    tmp = np.floor(255*tmp).astype(np.uint8)
+    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE_Fourier_XZ.png"),tmp)
     
 
 
