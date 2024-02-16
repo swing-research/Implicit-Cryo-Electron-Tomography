@@ -780,11 +780,10 @@ def train_without_ground_truth(config):
         s_est = checkpoint['shift_est']
         r_est = checkpoint['rot_est']
         i_est = checkpoint['local_deformation_network']
-        import ipdb; ipdb.set_trace()
         for k in range(config.Nangles):
             shift_est[k] = s_est[k]
             rot_est[k] = r_est[k]
-            implicit_deformation_list[k].load_state_dict(i_est[k])
+            implicit_deformation_list[k] = i_est[k]
 
     ######################################################################################################
     ## Optimizer
