@@ -82,7 +82,7 @@ def get_config():
 
     # Training schedule
     config.epochs = 100
-    config.Ntest = 100 # number of epoch before display
+    config.Ntest = 500 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
     config.scheduler_step_size = 1000 #300
     config.scheduler_gamma = 0.1 #0.75

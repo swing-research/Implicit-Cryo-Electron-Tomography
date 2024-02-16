@@ -1293,6 +1293,13 @@ def compare_results_real(config):
             V_icetide[:,:,zz] = estSlice
         V_icetide_t = torch.tensor(V_icetide).type(config.torch_type).to(device)
 
+    # Get the local deformation error plots 
+    for index in range(config.Nangles):
+        # icetide
+        savepath = os.path.join(config.path_save,'evaluation','deformations','ICETIDE','local_deformation_factor10_{}'.format(index))
+        utils_display.display_local_est_and_true(implicit_deformation_icetide[index],None,Npts=(20,20),scale=0.1, img_path=savepath)
+
+
     ######################################################################################################
     # Using only the deformation estimates
     ######################################################################################################
