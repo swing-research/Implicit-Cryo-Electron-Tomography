@@ -1077,7 +1077,7 @@ def train_without_ground_truth(config):
                 for index in range(len(implicit_deformation_list)):
                     utils_display.display_local_movie(implicit_deformation_list,field_true=None,Npts=(20,20),
                                                 img_path=config.path_save+"/training/deformations_x10/local_deformations_",img_type='.png',
-                                                scale=0.1,alpha=0.8,width=0.0015,weights_est=1,s=config.rays_scaling[0]
+                                                scale=0.1,alpha=0.8,width=0.0015,weights_est=1,s=config.rays_scaling[0])
 
                     
                 ## Save global deformation
