@@ -1100,62 +1100,26 @@ def compare_results_real(config):
     # Our method
     if not os.path.exists(config.path_save+"/evaluation/projections/ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/projections/ICETIDE/")
-    if not os.path.exists(config.path_save+"/evaluation/volumes/ICETIDE/"):
-        os.makedirs(config.path_save+"/evaluation/volumes/ICETIDE/")
+    # if not os.path.exists(config.path_save+"/evaluation/volumes/ICETIDE/"):
+    #     os.makedirs(config.path_save+"/evaluation/volumes/ICETIDE/")
     if not os.path.exists(config.path_save+"/evaluation/deformations/ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/deformations/ICETIDE/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/volume_slices/ICETIDE/")
 
-    # # AreTomos method
-    # if not os.path.exists(config.path_save+"/evaluation/projections/AreTomo/"):
-    #     os.makedirs(config.path_save+"/evaluation/projections/AreTomo/")
-    # if not os.path.exists(config.path_save+"/evaluation/volumes/AreTomo/"):
-    #     os.makedirs(config.path_save+"/evaluation/volumes/AreTomo/")
-    # if not os.path.exists(config.path_save+"/evaluation/deformations/AreTomo/"):
-    #     os.makedirs(config.path_save+"/evaluation/deformations/AreTomo/")
-    # if not os.path.exists(config.path_save+"/evaluation/volume_slices/AreTomo/"):
-    #     os.makedirs(config.path_save+"/evaluation/volume_slices/AreTomo/")
-
-    # # Etomo method
-    # if not os.path.exists(config.path_save+"/evaluation/projections/Etomo/"):
-    #     os.makedirs(config.path_save+"/evaluation/projections/Etomo/")   
-    # if not os.path.exists(config.path_save+"/evaluation/volumes/Etomo/"):
-    #     os.makedirs(config.path_save+"/evaluation/volumes/Etomo/")
-    # if not os.path.exists(config.path_save+"/evaluation/deformations/Etomo/"):
-    #     os.makedirs(config.path_save+"/evaluation/deformations/Etomo/")
-    # if not os.path.exists(config.path_save+"/evaluation/volume_slices/Etomo/"):
-    #     os.makedirs(config.path_save+"/evaluation/volume_slices/Etomo/")
-
-    # # True volume
-    # if not os.path.exists(config.path_save+"/evaluation/deformations/true/"):
-    #     os.makedirs(config.path_save+"/evaluation/deformations/true/")
-    # if not os.path.exists(config.path_save+"/evaluation/volume_slices/true/"):
-    #     os.makedirs(config.path_save+"/evaluation/volume_slices/true/")
-    # if not os.path.exists(config.path_save+"/evaluation/volumes/true/"):
-    #     os.makedirs(config.path_save+"/evaluation/volumes/true/")
-
-    # FBP on undistorted projections
-    if not os.path.exists(config.path_save+"/evaluation/projections/FBP_no_deformed/"):
-        os.makedirs(config.path_save+"/evaluation/projections/FBP_no_deformed/")
-    if not os.path.exists(config.path_save+"/evaluation/volumes/FBP_no_deformed/"):
-        os.makedirs(config.path_save+"/evaluation/volumes/FBP_no_deformed/")
-    if not os.path.exists(config.path_save+"/evaluation/volume_slices/FBP_no_deformed/"):
-        os.makedirs(config.path_save+"/evaluation/volume_slices/FBP_no_deformed/")
-
     # FBP
     if not os.path.exists(config.path_save+"/evaluation/projections/Best/"):
         os.makedirs(config.path_save+"/evaluation/projections/Best/")
-    if not os.path.exists(config.path_save+"/evaluation/volumes/Best/"):
-        os.makedirs(config.path_save+"/evaluation/volumes/Best/")
+    # if not os.path.exists(config.path_save+"/evaluation/volumes/Best/"):
+    #     os.makedirs(config.path_save+"/evaluation/volumes/Best/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/Best/"):
         os.makedirs(config.path_save+"/evaluation/volume_slices/Best/")
 
     #FBP ICETIDE deformation estimations
     if not os.path.exists(config.path_save+"/evaluation/projections/FBP_ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/projections/FBP_ICETIDE/")
-    if not os.path.exists(config.path_save+"/evaluation/volumes/FBP_ICETIDE/"):
-        os.makedirs(config.path_save+"/evaluation/volumes/FBP_ICETIDE/")
+    # if not os.path.exists(config.path_save+"/evaluation/volumes/FBP_ICETIDE/"):
+    #     os.makedirs(config.path_save+"/evaluation/volumes/FBP_ICETIDE/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/FBP_ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/volume_slices/FBP_ICETIDE/")
 
@@ -1185,45 +1149,6 @@ def compare_results_real(config):
     config.Nangles = projections_noisy.shape[0]
 
     projections_noisy_resize = torch.Tensor(resize(projections_noisy.detach().cpu().numpy(),(config.Nangles,config.n1,config.n2))).type(config.torch_type).to(device)
-
-    # ## Aretomo
-    # # get the files
-    # eval_AreTomo = False
-    # fsc_AreTomo_list = []
-    # fsc_AreTomo_centered_list = []
-    # for npatch in config.nPatch:
-    #     ARE_TOMO_FILE = f'projections_aligned_aretomo_{npatch}by{npatch}.mrc'
-    #     # ARE_TOMO_FILE_FBP = f'projections_rec_aretomo_{npatch}by{npatch}.mrc'
-    #     path_file = os.path.join(config.path_save,'AreTomo',ARE_TOMO_FILE)
-    #     # path_file_FBP = os.path.join(config.path_save,'AreTomo',ARE_TOMO_FILE_FBP)
-    #     if os.path.isfile(path_file):
-    #         eval_AreTomo = True
-    #         # load projections # need to be reorder and there seem to be a shift in intensity, so we match the mean on the noisy one 
-    #         proj_aligned_aretomo = np.moveaxis(np.float32(mrcfile.open(path_file,permissive=True).data),1,0)
-    #         proj_aligned_aretomo = np.swapaxes(proj_aligned_aretomo,1,2)
-    #         proj_aligned_aretomo = np.rot90(proj_aligned_aretomo,axes=(1,2))*1
-    #         proj_aligned_aretomo = proj_aligned_aretomo + (projections_noisy.detach().cpu().numpy().mean()-proj_aligned_aretomo.mean())
-
-    #         # Reconstruct with accurate FBP operator
-    #         V_FBP_aretomo = reconstruct_FBP_volume(config, torch.tensor(proj_aligned_aretomo).to(device)).detach().cpu().numpy()
-    #         V_FBP_aretomo /= np.linalg.norm(V_FBP_aretomo)
-
-
-
-    # ETOMO_FILE = 'projections_ali.mrc'
-    # path_file = os.path.join(config.path_save,'Etomo',ETOMO_FILE)
-    # eval_Etomo = False
-    # if os.path.isfile(path_file):
-    #     eval_Etomo = True
-    #     etomo_projections = np.double(mrcfile.open(path_file).data)
-    #     etomo_projections_t = torch.tensor(etomo_projections).type(config.torch_type).to(device)
-    #     V_FBP_etomo = reconstruct_FBP_volume(config, etomo_projections_t).detach().cpu().numpy()
-    #     out = mrcfile.new(config.path_save_data+"V_etomo.mrc",np.moveaxis(V_FBP_etomo.astype(np.float32),2,0),overwrite=True)
-    #     out.close()
-    #     out = mrcfile.new(config.path_save_data+"V_etomo_centered.mrc",np.moveaxis(V_etomo_centered.astype(np.float32),2,0),overwrite=True)
-    #     out.close() 
-
-
 
     ######################################################################################################
     ## Load and estimate our volume
@@ -1331,38 +1256,21 @@ def compare_results_real(config):
     #######################################################################################
     ## Save slices of volumes
     #######################################################################################
-    saveIndex = [n3_eval//4,n3_eval//2,int(3*n3_eval//4)] # The slices to save taken from previous plots
-    for index in saveIndex:
+    for index in range(V_icetide.shape[2]):
         # ICETIDE
         tmp = V_icetide[:,:,index]
         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ICETIDE","slice_{}.png".format(index)),tmp)
 
-        # if(eval_AreTomo):
-        #     if index < V_FBP_aretomo.shape[2]:
-        #         tmp = V_FBP_aretomo[:,:,index]
-        #         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-        #         tmp = np.floor(255*tmp).astype(np.uint8)
-        #         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo","slice_{}.png".format(index)),tmp)
-
-        # if(eval_Etomo):
-        #     if index < V_FBP_etomo.shape[2]:
-        #         tmp = V_FBP_etomo[:,:,index]
-        #         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-        #         tmp = np.floor(255*tmp).astype(np.uint8)
-        #         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo","slice_{}.png".format(index)),tmp)
-
+        for index in range(V_FBP_icetide.shape[2]):
         # FBP icetide
-        if index < V_FBP_icetide.shape[2]:
             tmp = V_FBP_icetide[:,:,index]
             tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
             tmp = np.floor(255*tmp).astype(np.uint8)
             imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE","slice_{}.png".format(index)),tmp)
 
-
-    saveIndex = [V_best.shape[2]//4,V_best.shape[2]//2,int(3*V_best.shape[2]//4)] # The slices to save taken from previous plots
-    for index in saveIndex:
+    for index in range(V_best.shape[2]):
         # Best
         tmp = V_best[:,:,index]
         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
@@ -1383,21 +1291,6 @@ def compare_results_real(config):
     operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_best_t.shape[0],V_best_t.shape[1],V_best_t.shape[2]), angles/180*np.pi, fact=1)
     projections_best = operator_ET(V_best_t).detach().cpu().numpy()
     projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
-    # if(eval_AreTomo):
-    #     operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_FBP_aretomo.shape[0],V_FBP_aretomo.shape[1],V_FBP_aretomo.shape[2]), angles/180*np.pi, fact=1)
-    #     V_FBP_aretomo_t = torch.tensor(V_FBP_aretomo).to(device)
-    #     projections_AreTomo = operator_ET(V_FBP_aretomo_t).detach().cpu().numpy()
-    # if(eval_Etomo):
-    #     operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((V_FBP_etomo.shape[0],V_FBP_etomo.shape[1],V_FBP_etomo.shape[2]), angles/180*np.pi, fact=1)
-    #     V_FBP_etomo_t = torch.tensor(V_FBP_etomo).to(device)
-    #     projections_Etomo = operator_ET(V_FBP_etomo_t).detach().cpu().numpy()
-    # if(eval_AreTomo):
-    #     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","AreTomo_projections.mrc"),projections_AreTomo.astype(np.float32),overwrite=True)
-    #     out.close()
-    # if(eval_Etomo):
-    #     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","Etomo_projections.mrc"),projections_Etomo.astype(np.float32),overwrite=True)
-    #     out.close()
-
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","Best_projections.mrc"),projections_best.astype(np.float32),overwrite=True)
     out.close()
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","FBP_icetide_projections.mrc"),projections_FBP_icetide.astype(np.float32),overwrite=True)
@@ -1408,16 +1301,6 @@ def compare_results_real(config):
         tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","ICETIDE","snapshot_{}.png".format(k)),tmp)
-        # if(eval_AreTomo):
-        #     tmp = projections_AreTomo[k]
-        #     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
-        #     tmp = np.floor(255*tmp).astype(np.uint8)
-        #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","AreTomo","snapshot_{}.png".format(k)),tmp)
-        # if(eval_Etomo):
-        #     tmp = projections_Etomo[k]
-        #     tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
-        #     tmp = np.floor(255*tmp).astype(np.uint8)
-        #     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","Etomo","snapshot_{}.png".format(k)),tmp)
         tmp = projections_best[k]
         tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
@@ -1432,15 +1315,6 @@ def compare_results_real(config):
     #######################################################################################
     ## Save volumes
     #######################################################################################
-    # nn = 400
-    # nn3 = 200
-    # V_icetide_t = V_icetide_t[nn:-nn,nn:-nn,nn3:-nn3]
-    # V_FBP_icetide = V_FBP_icetide[nn:-nn,nn:-nn,nn3:-nn3]
-    # V_icetide = V_icetide[nn:-nn,nn:-nn,nn3:-nn3]
-    # nn_best = int(np.floor(V_best.shape[0]*(nn/config.n1)))
-    # nn3_best = int(np.floor(V_best.shape[2]*(nn3/config.n3)))
-    # V_best = V_best[nn_best:-nn_best,nn_best:-nn_best,nn3_best:-nn3_best]
-
     def display_XYZ(tmp,name="true"):
         # tmp = (tmp - tmp.mean(2).max())/(tmp.mean(2).max()-tmp.mean(2).min())
         # tmp = np.floor(255*tmp).astype(np.uint8)
@@ -1463,16 +1337,6 @@ def compare_results_real(config):
     tmp = V_best
     display_XYZ(tmp,name="Best")
 
-    # if(eval_AreTomo):
-    #     # AreTomo volume
-    #     tmp = V_FBP_aretomo
-    #     display_XYZ(tmp,name="AreTomo")
-
-    # if(eval_Etomo):
-    #     # Etomo volume
-    #     tmp = V_FBP_etomo
-    #     display_XYZ(tmp,name="Etomo")
-
     # FBP_ICETIDE volume
     tmp = V_FBP_icetide
     display_XYZ(tmp,name="FBP_ICETIDE")
@@ -1480,14 +1344,6 @@ def compare_results_real(config):
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
                                 "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide.astype(np.float32),2,0),overwrite=True)
     out.close()
-    # if eval_AreTomo:
-    #     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-    #                                 "volumes","AreTomo_volume.mrc"),np.moveaxis(V_FBP_aretomo,2,0),overwrite=True)
-    #     out.close()
-    # if eval_Etomo:
-    #     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-    #                                 "volumes","Etomo_volume.mrc"),np.moveaxis(V_FBP_etomo,2,0),overwrite=True)
-    #     out.close()
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
                                 "Best_volume.mrc"),np.moveaxis(V_best.astype(np.float32),2,0),overwrite=True)
     out.close()
@@ -1527,7 +1383,6 @@ def compare_results_real(config):
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE_Fourier_XZ.png"),tmp)
     
 
-
     #######################################################################################
     ## Compute FSC
     #######################################################################################
@@ -1546,9 +1401,6 @@ def compare_results_real(config):
     fsc_arr[:,1] = fsc_icetide[:,0]
     header ='x,icetide'
     np.savetxt(os.path.join(config.path_save,'evaluation','FSC.csv'),fsc_arr,header=header,delimiter=",",comments='')
-
-
-
 
 
 
