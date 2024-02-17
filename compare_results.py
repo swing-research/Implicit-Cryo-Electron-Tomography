@@ -501,6 +501,7 @@ def compare_results(config):
     tmp = tmp.T**scal
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","true_Fourier_XZ.png"),tmp)
+    import ipdb; ipdb.set_trace()
 
     # ICETIDE
     tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_icetide)))[index,:,:]
