@@ -148,8 +148,6 @@ def compare_results(config):
     # Our method
     if not os.path.exists(config.path_save+"/evaluation/projections/ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/projections/ICETIDE/")
-    if not os.path.exists(config.path_save+"/evaluation/volumes/ICETIDE/"):
-        os.makedirs(config.path_save+"/evaluation/volumes/ICETIDE/")
     if not os.path.exists(config.path_save+"/evaluation/deformations/ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/deformations/ICETIDE/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/ICETIDE/"):
@@ -158,8 +156,6 @@ def compare_results(config):
     # AreTomos method
     if not os.path.exists(config.path_save+"/evaluation/projections/AreTomo/"):
         os.makedirs(config.path_save+"/evaluation/projections/AreTomo/")
-    if not os.path.exists(config.path_save+"/evaluation/volumes/AreTomo/"):
-        os.makedirs(config.path_save+"/evaluation/volumes/AreTomo/")
     if not os.path.exists(config.path_save+"/evaluation/deformations/AreTomo/"):
         os.makedirs(config.path_save+"/evaluation/deformations/AreTomo/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/AreTomo/"):
@@ -167,9 +163,7 @@ def compare_results(config):
 
     # Etomo method
     if not os.path.exists(config.path_save+"/evaluation/projections/Etomo/"):
-        os.makedirs(config.path_save+"/evaluation/projections/Etomo/")   
-    if not os.path.exists(config.path_save+"/evaluation/volumes/Etomo/"):
-        os.makedirs(config.path_save+"/evaluation/volumes/Etomo/")
+        os.makedirs(config.path_save+"/evaluation/projections/Etomo/")
     if not os.path.exists(config.path_save+"/evaluation/deformations/Etomo/"):
         os.makedirs(config.path_save+"/evaluation/deformations/Etomo/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/Etomo/"):
@@ -180,30 +174,22 @@ def compare_results(config):
         os.makedirs(config.path_save+"/evaluation/deformations/true/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/true/"):
         os.makedirs(config.path_save+"/evaluation/volume_slices/true/")
-    if not os.path.exists(config.path_save+"/evaluation/volumes/true/"):
-        os.makedirs(config.path_save+"/evaluation/volumes/true/")
 
     # FBP on undistorted projections
     if not os.path.exists(config.path_save+"/evaluation/projections/FBP_no_deformed/"):
         os.makedirs(config.path_save+"/evaluation/projections/FBP_no_deformed/")
-    if not os.path.exists(config.path_save+"/evaluation/volumes/FBP_no_deformed/"):
-        os.makedirs(config.path_save+"/evaluation/volumes/FBP_no_deformed/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/FBP_no_deformed/"):
         os.makedirs(config.path_save+"/evaluation/volume_slices/FBP_no_deformed/")
 
     # FBP
     if not os.path.exists(config.path_save+"/evaluation/projections/FBP/"):
         os.makedirs(config.path_save+"/evaluation/projections/FBP/")
-    if not os.path.exists(config.path_save+"/evaluation/volumes/FBP/"):
-        os.makedirs(config.path_save+"/evaluation/volumes/FBP/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/FBP/"):
         os.makedirs(config.path_save+"/evaluation/volume_slices/FBP/")
 
     #FBP ICETIDE deformation estimations
     if not os.path.exists(config.path_save+"/evaluation/projections/FBP_ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/projections/FBP_ICETIDE/")
-    if not os.path.exists(config.path_save+"/evaluation/volumes/FBP_ICETIDE/"):
-        os.makedirs(config.path_save+"/evaluation/volumes/FBP_ICETIDE/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/FBP_ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/volume_slices/FBP_ICETIDE/")
 
@@ -673,22 +659,6 @@ def compare_results(config):
     if(eval_Etomo):
         CC_Etomo = CC(V,V_etomo_centered)
 
-    # plt.figure(1)
-    # plt.clf()
-    # plt.plot(x_fsc,CC_icetide,'b',label="icetide")
-    # plt.plot(x_fsc,fsc_FBP_icetide,'--b',label="FBP with our deform. est. ")
-    # if(eval_AreTomo):
-    #     for i, npatch in enumerate(config.nPatch):
-    #         col = ['r','m']
-    #         plt.plot(x_fsc,fsc_AreTomo_list[i],col[i],label=f"AreTomo patch {npatch}")
-    #         plt.plot(x_fsc,fsc_AreTomo_centered_list[i],col[i],linestyle='--',label=f"AreTomo centered patch {npatch}")
-    # if(eval_Etomo):
-    #     plt.plot(x_fsc,fsc_Etomo,'c',label="Etomo")
-    # plt.plot(x_fsc,fsc_FBP,'k',label="FBP")
-    # plt.plot(x_fsc,fsc_FBP_no_deformed,'g',label="FBP no def.")
-    # plt.legend()
-    # plt.savefig(os.path.join(config.path_save,'evaluation','FSC.png'))
-    # plt.savefig(os.path.join(config.path_save,'evaluation','FSC.pdf'))
 
     CC_arr = np.zeros((1,8))
     CC_arr[:,1] = CC_icetide
@@ -707,70 +677,6 @@ def compare_results(config):
     header ='x,icetide,FBP,FBP_no_deformed,AreTomo_patch0,ETOMO,FBP_est_deformed,AreTomo_patch1'
     np.savetxt(os.path.join(config.path_save,'evaluation','CC.csv'),CC_arr,header=header,delimiter=",",comments='')
 
-
-
-    ## Compute error between local deformations
-
-
-    # if eval_AreTomo:
-    #     # Extract the estimated deformations for AreTomo
-
-    #     ARETOMO_FILENAME = 'projections.aln'
-    #     with open(config.path_save+ARETOMO_FILENAME, 'r',encoding="utf-8") as file:
-    #         lines = file.readlines()
-
-    #     comments = []
-    #     affine_transforms_aretomo = []
-    #     local_transforms_aretomo = []
-
-    #     affine_flag = True
-    #     num_patches = 0
-    #     for line in lines:
-    #         if line.startswith('#'):
-    #             comments.append(line.strip())  # Strip removes leading/trailing whitespace
-    #             if line.startswith('# Local Alignment'):
-    #                 affine_flag = False
-    #             if line.startswith('# NumPatches'):
-    #                 num_patches = int(line.split('=')[-1])
-    #         else:
-    #             if affine_flag:
-    #                 affine_transforms_aretomo.append(line.strip().split())
-    #             else:
-    #                 local_transforms_aretomo.append(line.strip().split())  
-
-    #     aretomo_data = pd.DataFrame(affine_transforms_aretomo, 
-    #                                 columns=["SEC", "ROT", "GMAG", "TX", 
-    #                                                         "TY", "SMEAN", "SFIT", "SCALE",
-    #                                                             "BASE", "TILT"])
-        
-    #     x_shifts_aretomo = aretomo_data['TY'].values.astype(np.float32)
-    #     y_shifts_aretomo = aretomo_data['TX'].values.astype(np.float32)
-    #     inplane_rotation_aretomo = aretomo_data['ROT'].values.astype(np.float32)
-
-    #     # The estimates are already in pixels
-    #     error_x_shifts_aretomo = np.around(np.abs(x_shifts*n1_eval/2-x_shifts_aretomo).mean(),decimals=4)
-    #     error_y_shifts_aretomo = np.around(np.abs(y_shifts*n1_eval/2-y_shifts_aretomo).mean(),decimals=4)
-    #     error_inplane_rotation_aretomo = np.around(np.abs(inplane_rotation-
-    #                                                     inplane_rotation_aretomo).mean(),decimals=4)
-        
-    #     error_arr.loc[3] = ['AreTomo',error_x_shifts_aretomo,error_y_shifts_aretomo,
-    #                         error_inplane_rotation_aretomo]
-        
-
-        
-    #     local_AreTomo = np.zeros((config.Nangles,num_patches,4))
-
-    #     for local_est in local_transforms_aretomo:
-    #         angle_index =int(local_est[0])
-    #         patch_index = int(local_est[1])
-
-    #         local_AreTomo[angle_index,patch_index,0] = float(local_est[2])
-    #         local_AreTomo[angle_index,patch_index,1] = float(local_est[3])
-    #         local_AreTomo[angle_index,patch_index,2] = float(local_est[4])
-    #         local_AreTomo[angle_index,patch_index,3] = float(local_est[5])
-
-    # # save the error in a csv file
-    # error_arr.to_csv(os.path.join(config.path_save,'evaluation'+'/affine_error.csv'),index=False)
 
     #######################################################################################
     ## Save Fourier of volumes
@@ -884,7 +790,7 @@ def compare_results(config):
         aa[1,1].axis('off')
         aa[0,1].axis('off')
         plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
-        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name,"XYZ.png"))
+        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ.png"))
 
     # True volume
     tmp = V
