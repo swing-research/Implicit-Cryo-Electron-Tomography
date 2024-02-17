@@ -501,7 +501,6 @@ def compare_results(config):
     tmp = tmp.T**scal
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","true_Fourier_XZ.png"),tmp)
-    import ipdb; ipdb.set_trace()
 
     # ICETIDE
     tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_icetide)))[index,:,:]
@@ -677,55 +676,6 @@ def compare_results(config):
     # CC_arr[:,6] = CC_icetide_isonet
     header ='x,icetide,FBP,FBP_no_deformed,AreTomo_patch0,ETOMO,FBP_est_deformed,AreTomo_patch1'
     np.savetxt(os.path.join(config.path_save,'evaluation','CC.csv'),CC_arr,header=header,delimiter=",",comments='')
-
-
-    #######################################################################################
-    ## Save Fourier of volumes
-    #######################################################################################
-    index = n2_eval//2
-    # True volume
-    tmp = np.abs(np.fft.fftn(V))[:,index,:]
-    tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","true_Fourier_XZ.png"),tmp)
-
-    # ICETIDE
-    tmp = np.abs(np.fft.fftn(V_icetide))[:,index,:]
-    tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ICETIDE_Fourier_XZ.png"),tmp)
-
-    # FBP
-    tmp = np.abs(np.fft.fftn(V_FBP))[:,index,:]
-    tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_Fourier_XZ.png"),tmp)
-
-    # FBP no deformed
-    tmp = np.abs(np.fft.fftn(V_FBP_no_deformed))[:,index,:]
-    tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_no_deformed_Fourier_XZ.png"),tmp)
-
-    if(eval_AreTomo):
-        tmp = np.abs(np.fft.fftn(V_aretomo_centered))[:,index,:]
-        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo_Fourier_XZ.png"),tmp)
-
-    if(eval_Etomo):
-        tmp = np.abs(np.fft.fftn(V_etomo_centered))[:,index,:]
-        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo_Fourier_XZ.png"),tmp)
-
-    # FBP icetide
-    tmp = np.abs(np.fft.fftn(V_FBP_icetide))[:,index,:]
-    tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-    tmp = np.floor(255*tmp).astype(np.uint8)
-    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE_Fourier_XZ.png"),tmp) 
-
-
 
 
     #######################################################################################
