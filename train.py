@@ -750,7 +750,7 @@ def train_without_ground_truth(config):
         depl_ctr_pts_net = torch.zeros((2,config.local_deformation.N_ctrl_pts_net,config.local_deformation.N_ctrl_pts_net)).to(device).type(config.torch_type)/max([config.n1,config.n2,config.n3])/10
         implicit_deformation_list = []
         for k in range(config.Nangles):
-            field = utils_deformation.deformation_field(depl_ctr_pts_net.clone(),maskBoundary=2)
+            field = utils_deformation.deformation_field(depl_ctr_pts_net.clone(),maskBoundary=config.maskBoundary)
             implicit_deformation_list.append(field)
         num_param = sum(p.numel() for p in implicit_deformation_list[0].parameters() if p.requires_grad)
         print('---> Number of trainable parameters in implicit net: {}'.format(num_param))

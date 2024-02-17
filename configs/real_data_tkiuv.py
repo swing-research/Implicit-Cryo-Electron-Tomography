@@ -174,6 +174,7 @@ def get_config():
         config.local_deformation.L = 10
     elif config.local_model == 'interp':
         config.local_deformation.N_ctrl_pts_net = 10
+        config.maskBoundary = 0
 
     #######################
     ## AreTomo ##
