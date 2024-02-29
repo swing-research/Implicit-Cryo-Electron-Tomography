@@ -1187,6 +1187,7 @@ def compare_results_real(config):
         plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ.png"))
 
     # ICETIDE
+    import ipdb; ipdb.set_trace()
     tmp = V_icetide
     display_XYZ(tmp,name="ICETIDE")
 
