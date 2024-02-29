@@ -1111,58 +1111,6 @@ def compare_results_real(config):
 
 
 
-
-    #######################################################################################
-    ## Save volumes
-    #######################################################################################
-    def display_XYZ(tmp,name="true"):
-        # tmp = (tmp - tmp.mean(2).max())/(tmp.mean(2).max()-tmp.mean(2).min())
-        # tmp = np.floor(255*tmp).astype(np.uint8)
-        f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
-        aa[0,0].imshow(tmp.mean(0).T,cmap='gray')
-        aa[0,0].axis('off')
-        aa[1,0].imshow(tmp.mean(2),cmap='gray')
-        aa[1,0].axis('off')
-        aa[1,1].imshow(tmp.mean(1),cmap='gray')
-        aa[1,1].axis('off')
-        aa[0,1].axis('off')
-        plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
-        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ.png"))
-
-    # ICETIDE
-    import ipdb; ipdb.set_trace()
-    tmp = V_icetide
-    display_XYZ(tmp,name="ICETIDE")
-
-    # FBP volume
-    tmp = V_best
-    display_XYZ(tmp,name="Best")
-
-    # FBP_ICETIDE volume
-    tmp = V_FBP_icetide
-    display_XYZ(tmp,name="FBP_ICETIDE")
-
-    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-                                "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide.astype(np.float32),2,0),overwrite=True)
-    out.close()
-    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
-                                "Best_volume.mrc"),np.moveaxis(V_best.astype(np.float32),2,0),overwrite=True)
-    out.close()
-    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
-                                "FBP_icetide_volume.mrc"),np.moveaxis(V_FBP_icetide.astype(np.float32),2,0),overwrite=True)
-    out.close()
-
-    plt.close('all')
-
-
-
-
-
-
-
-
-
-
     #######################################################################################
     ## Save slices of volumes
     #######################################################################################
@@ -1244,7 +1192,7 @@ def compare_results_real(config):
     display_XYZ(tmp,name="ICETIDE")
 
     # FBP volume
-    tmp = V_best
+    tmp = V_best[:,:,::-1]
     display_XYZ(tmp,name="Best")
 
     # FBP_ICETIDE volume
