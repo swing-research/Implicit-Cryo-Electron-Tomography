@@ -1050,7 +1050,7 @@ def compare_results_real(config):
                                                     network_config=config_network["network"]).to(device)
     num_param = sum(p.numel() for p in impl_volume.parameters() if p.requires_grad) 
     print('---> Number of trainable parameters in volume net: {}'.format(num_param))
-    checkpoint = torch.load(os.path.join(config.path_save,'training','model_trained_2.pt'),map_location=device)
+    checkpoint = torch.load(os.path.join(config.path_save,'training','model_trained_old.pt'),map_location=device)
     impl_volume.load_state_dict(checkpoint['implicit_volume'])
     shift_icetide = checkpoint['shift_est']
     rot_icetide = checkpoint['rot_est']
@@ -1158,6 +1158,7 @@ def compare_results_real(config):
 
     # ICETIDE
     tmp = V_icetide
+    import ipdb; ipdb.set_trace()
     display_XYZ(tmp,name="ICETIDE")
 
     # FBP volume
