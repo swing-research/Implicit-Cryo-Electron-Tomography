@@ -1133,7 +1133,7 @@ def compare_results_real(config):
 
         sl0 = 1024-320
         sl1 = 890
-        sl2 = 190
+        sl2 = 210
         f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
         aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray')
         aa[0,0].axis('off')
@@ -1161,8 +1161,6 @@ def compare_results_real(config):
     # ICETIDE
     tmp = V_icetide
     display_XYZ(tmp,name="ICETIDE")
-
-    import ipdb; ipdb.set_trace()
 
     # FBP volume
     tmp = V_best[:,:,::-1]
