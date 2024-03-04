@@ -1157,9 +1157,20 @@ def compare_results_real(config):
         plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_proj.png"))
 
     # ICETIDE
-    tmp = V_icetide
+    tmp = np.clip(V_icetide,a_min=-0.5,a_max=3)
     import ipdb; ipdb.set_trace()
     display_XYZ(tmp,name="ICETIDE")
+
+
+
+    # Find best affine transformation between volumes
+    V_sk = sitk.GetImageFromArray(V_icetide.astype(np.float32)/np.linalg.norm(V_icetide))
+    V_best_sk = sitk.GetImageFromArray(V_best[:,:,::-1]/np.linalg.norm(V_best[:,:,::-1]))
+    final_transform = perform_3d_registration(V_sk, V_best_sk)
+    # Apply the final transform to the moving image
+    registered_image = sitk.Resample(V_best_sk, V_sk, final_transform, sitk.sitkLinear, 0.0, V_best_sk.GetPixelID())
+    V_best_centered = sitk.GetArrayFromImage(registered_image)
+
 
     # FBP volume
     tmp = V_best[:,:,::-1]
