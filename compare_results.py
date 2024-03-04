@@ -1116,7 +1116,7 @@ def compare_results_real(config):
     def display_XYZ(tmp,name="true"):
         # tmp = (tmp - tmp.mean(2).max())/(tmp.mean(2).max()-tmp.mean(2).min())
         # tmp = np.floor(255*tmp).astype(np.uint8)
-        avg = 5
+        avg = 10
         sl0 = tmp.shape[0]//2
         sl1 = tmp.shape[1]//2
         sl2 = tmp.shape[2]//2
@@ -1131,9 +1131,9 @@ def compare_results_real(config):
         plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
         plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_slice.png"))
 
-        sl0 = 321
+        sl0 = 1024-320
         sl1 = 890
-        sl2 = 290
+        sl2 = 190
         f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
         aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray')
         aa[0,0].axis('off')
@@ -1161,6 +1161,8 @@ def compare_results_real(config):
     # ICETIDE
     tmp = V_icetide
     display_XYZ(tmp,name="ICETIDE")
+
+    import ipdb; ipdb.set_trace()
 
     # FBP volume
     tmp = V_best[:,:,::-1]
