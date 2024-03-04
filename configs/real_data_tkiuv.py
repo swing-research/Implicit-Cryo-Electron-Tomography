@@ -13,7 +13,7 @@ def get_config():
     #######################
     config = ml_collections.ConfigDict()
     config.seed = 42
-    config.device_num = 0
+    config.device_num = 3
     config.torch_type = torch.float
     config.track_memory = False
 
@@ -66,7 +66,7 @@ def get_config():
     config.multires_params = ml_collections.ConfigDict()
     config.multires_params.startResolution = 4
     config.multires_params.ray_change_epoch = [50, 100, 400, 800]
-    config.multires_params.batch_set = [10, 5 , 4, 3,2,1]
+    config.multires_params.batch_set = [10, 5 , 4, 3]
     config.nRays =  [100,200,400,800]
     config.multires_params.upsample = False
 
@@ -84,8 +84,8 @@ def get_config():
     config.epochs = 100
     config.Ntest = 500 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
-    config.scheduler_step_size = 1000 #300
-    config.scheduler_gamma = 0.1 #0.75
+    config.scheduler_step_size = 500 #300
+    config.scheduler_gamma = 0.75 #0.75
 
     # Sampling strategy
     config.batch_size = 1 # number of viewing direction per iteration

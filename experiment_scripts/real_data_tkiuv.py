@@ -45,7 +45,7 @@ def main():
         config.delay_deformations = 0 # Delay before learning deformations
         config.schedule_global = []
         config.schedule_local = []
-        config.epochs = 4000
+        config.epochs = 10000
         config.load_existing_net = True
         config.delay_deformations = 0 # Delay before learning deformations
 
