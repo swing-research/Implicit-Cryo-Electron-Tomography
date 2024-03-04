@@ -1123,9 +1123,9 @@ def compare_results_real(config):
         f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
         aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray')
         aa[0,0].axis('off')
-        aa[1,1].imshow(tmp[:,:,sl2-avg//2:sl2+avg//2+1].mean(2),cmap='gray')
+        aa[1,0].imshow(tmp[:,:,sl2-avg//2:sl2+avg//2+1].mean(2),cmap='gray')
         aa[1,0].axis('off')
-        aa[1,0].imshow(tmp[:,sl1-avg//2:sl1+avg//2+1,:].mean(1),cmap='gray')
+        aa[1,1].imshow(tmp[:,sl1-avg//2:sl1+avg//2+1,:].mean(1),cmap='gray')
         aa[1,1].axis('off')
         aa[0,1].axis('off')
         plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
@@ -1137,13 +1137,13 @@ def compare_results_real(config):
         f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
         aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray')
         aa[0,0].axis('off')
-        aa[1,1].imshow(tmp[:,:,sl2-avg//2:sl2+avg//2+1].mean(2),cmap='gray')
+        aa[1,0].imshow(tmp[:,:,sl2-avg//2:sl2+avg//2+1].mean(2),cmap='gray')
         aa[1,0].axis('off')
-        aa[1,0].imshow(tmp[:,sl1-avg//2:sl1+avg//2+1,:].mean(1),cmap='gray')
+        aa[1,1].imshow(tmp[:,sl1-avg//2:sl1+avg//2+1,:].mean(1),cmap='gray')
         aa[1,1].axis('off')
         aa[0,1].axis('off')
         plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
-        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_slice.png"))
+        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_slice_custom.png"))
 
 
 
