@@ -79,7 +79,7 @@ def get_config():
     config.volume_model = "multi-resolution" # multi-resolution, Fourier-features, grid, MLP
     config.local_model = 'interp' #  'implicit' or 'interp'
     config.denoise = True #Use the denoised projection
-    config.bm3d_param = 0.1
+    config.bm3d_param = 0.05
 
     # Training schedule
     config.epochs = 10000
