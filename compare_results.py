@@ -1192,8 +1192,6 @@ def compare_results_real(config):
     tmp = np.clip(tmp,a_min=np.quantile(tmp,0.05),a_max=np.quantile(tmp,0.95))
     display_XYZ(tmp,name="FBP_denoise")
 
-    import ipdb; ipdb.set_trace()
-
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
                                 "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide.astype(np.float32),2,0),overwrite=True)
     out.close()
@@ -1205,6 +1203,7 @@ def compare_results_real(config):
     out.close()
 
     plt.close('all')
+
 
 
 
