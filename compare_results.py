@@ -1163,8 +1163,6 @@ def compare_results_real(config):
     tmp = np.clip(tmp,a_min=np.quantile(tmp,0.05),a_max=np.quantile(tmp,0.95))
     display_XYZ(tmp,name="ICETIDE")
 
-    import ipdb;ipdb.set_trace()
-
     # Find best affine transformation between volumes
     V_best_resize = resize(V_best[:,:,::-1],(V_icetide.shape[0],V_icetide.shape[1],V_icetide.shape[2]))
     V_sk = sitk.GetImageFromArray(V_icetide.astype(np.float32)/np.linalg.norm(V_icetide))
@@ -1186,6 +1184,9 @@ def compare_results_real(config):
     tmp = (tmp-tmp.min())/(tmp.max()-tmp.min())
     tmp = np.clip(tmp,a_min=np.quantile(tmp,0.05),a_max=np.quantile(tmp,0.95))
     display_XYZ(tmp,name="FBP_ICETIDE")
+
+
+    import ipdb;ipdb.set_trace()
 
     V_FBP_t =  torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_FBP_denoise.mrc").data),0,2)).type(config.torch_type).to(device)
     V_FBP = V_FBP_t.detach().cpu().numpy()
