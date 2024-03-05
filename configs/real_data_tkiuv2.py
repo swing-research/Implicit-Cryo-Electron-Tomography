@@ -20,7 +20,6 @@ def get_config():
     ########################################
     ## Parameters for the data generation ##
     ########################################
-
     # Size of volume, if not none will be resize to that
     config.n1 = 2048
     config.n2 = 2048
@@ -79,6 +78,8 @@ def get_config():
     config.train_global_def = True
     config.volume_model = "multi-resolution" # multi-resolution, Fourier-features, grid, MLP
     config.local_model = 'interp' #  'implicit' or 'interp'
+    config.denoise = True #Use the denoised projection
+    config.bm3d_param = 0.1
 
     # Training schedule
     config.epochs = 10000

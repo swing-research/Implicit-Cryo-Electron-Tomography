@@ -613,26 +613,12 @@ def train_without_ground_truth(config):
 
     ## Load data that was previously saved
     data = np.load(config.path_save_data+"volume_and_projections.npz")
-    projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
+    if config.denoise:
+        projections_noisy = torch.Tensor(data['projections_denoise']).type(config.torch_type).to(device)
+    else:
+        projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
     config.Nangles = projections_noisy.shape[0]
 
-
-    import bm3d
-    projection_noisy_np = projections_noisy.detach().cpu().numpy()
-    for k in range(projection_noisy_np.shape[0]):
-        projection_noisy_np[k] = bm3d.bm3d(projection_noisy_np[k],0.1)
-    projections_noisy = torch.Tensor(projection_noisy_np).type(config.torch_type).to(device)
-
-
-    import imageio
-    for k in range(projections_noisy.shape[0]):
-        tmp = projections_noisy[k].detach().cpu().numpy()
-        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(os.path.join(config.path_save_data,'training',"projections"+str(k)+".png"),tmp)
-
-
-    # import ipdb; ipdb.set_trace()
 
     if config.multiresolution:
         print("Computing multiscale...")

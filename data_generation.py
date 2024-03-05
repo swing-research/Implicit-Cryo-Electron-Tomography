@@ -4,6 +4,7 @@ The goal is to compare different approaches on this dataset that is suppose
 to mimic the CryoET image formation model.
 '''
 import os
+import bm3d
 import torch
 import mrcfile
 import imageio
@@ -215,6 +216,8 @@ def data_generation_real_data(config):
         os.makedirs(config.path_save_data+"projections/")
     if not os.path.exists(config.path_save_data+"projections/noisy/"):
         os.makedirs(config.path_save_data+"projections/noisy/")
+    if not os.path.exists(config.path_save_data+"projections/denoise/"):
+        os.makedirs(config.path_save_data+"projections/denoise/")
 
     #######################################################################################
     ## Load data
@@ -228,7 +231,12 @@ def data_generation_real_data(config):
         config.Nangles, config.n1, config.n2 = projections_noisy.shape
         config.n3 = config.n1*2
 
-    np.savez(config.path_save_data+"volume_and_projections.npz",projections_noisy=projections_noisy)
+    projections_denoise = np.zeros_like(projections_noisy)
+    if config.denoise:
+        for k in range(projections_noisy.shape[0]):
+            projections_denoise[k] = bm3d.bm3d(projections_noisy[k],config.bm3d_param)
+
+    np.savez(config.path_save_data+"volume_and_projections.npz",projections_noisy=projections_noisy,projections_denoise=projections_denoise)
 
     # save projections
     for k in range(config.Nangles):
@@ -236,6 +244,10 @@ def data_generation_real_data(config):
         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(config.path_save_data+"projections/noisy/noisy_"+str(k)+".png",tmp)
+        tmp = projections_denoise[k]
+        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+        tmp = np.floor(255*tmp).astype(np.uint8)
+        imageio.imwrite(config.path_save_data+"projections/denoise/denoise_"+str(k)+".png",tmp)
 
 
     angles = np.loadtxt(os.path.join(config.path_load,config.angle_name))
