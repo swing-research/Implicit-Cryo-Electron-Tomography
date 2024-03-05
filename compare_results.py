@@ -1121,11 +1121,11 @@ def compare_results_real(config):
         sl1 = tmp.shape[1]//2
         sl2 = tmp.shape[2]//2
         f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
-        aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray')
+        aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray',vmin=0,vmax=1)
         aa[0,0].axis('off')
-        aa[1,0].imshow(tmp[:,:,sl2-avg//2:sl2+avg//2+1].mean(2),cmap='gray')
+        aa[1,0].imshow(tmp[:,:,sl2-avg//2:sl2+avg//2+1].mean(2),cmap='gray',vmin=0,vmax=1)
         aa[1,0].axis('off')
-        aa[1,1].imshow(tmp[:,sl1-avg//2:sl1+avg//2+1,:].mean(1),cmap='gray')
+        aa[1,1].imshow(tmp[:,sl1-avg//2:sl1+avg//2+1,:].mean(1),cmap='gray',vmin=0,vmax=1)
         aa[1,1].axis('off')
         aa[0,1].axis('off')
         plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
@@ -1135,22 +1135,22 @@ def compare_results_real(config):
         sl1 = 875
         sl2 = 210
         f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
-        aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray')
+        aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray',vmin=0,vmax=1)
         aa[0,0].axis('off')
-        aa[1,0].imshow(tmp[:,:,sl2-avg//2:sl2+avg//2+1].mean(2),cmap='gray')
+        aa[1,0].imshow(tmp[:,:,sl2-avg//2:sl2+avg//2+1].mean(2),cmap='gray',vmin=0,vmax=1)
         aa[1,0].axis('off')
-        aa[1,1].imshow(tmp[:,sl1-avg//2:sl1+avg//2+1,:].mean(1),cmap='gray')
+        aa[1,1].imshow(tmp[:,sl1-avg//2:sl1+avg//2+1,:].mean(1),cmap='gray',vmin=0,vmax=1)
         aa[1,1].axis('off')
         aa[0,1].axis('off')
         plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
         plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_slice_custom.png"))
 
         f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
-        aa[0,0].imshow(tmp.mean(0).T,cmap='gray')
+        aa[0,0].imshow(tmp.mean(0).T,cmap='gray',vmin=0,vmax=1)
         aa[0,0].axis('off')
-        aa[1,0].imshow(tmp.mean(2),cmap='gray')
+        aa[1,0].imshow(tmp.mean(2),cmap='gray',vmin=0,vmax=1)
         aa[1,0].axis('off')
-        aa[1,1].imshow(tmp.mean(1),cmap='gray')
+        aa[1,1].imshow(tmp.mean(1),cmap='gray',vmin=0,vmax=1)
         aa[1,1].axis('off')
         aa[0,1].axis('off')
         plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
@@ -1158,7 +1158,8 @@ def compare_results_real(config):
 
     # ICETIDE
     tmp = V_icetide
-    tmp = np.clip(V_icetide,a_min=-0.5,a_max=3)
+    tmp = (tmp-tmp.min())/(tmp.max()-tmp.min())
+    tmp = np.clip(tmp,a_min=0.1,a_max=1)
     display_XYZ(tmp,name="ICETIDE")
 
     # Find best affine transformation between volumes
@@ -1173,6 +1174,7 @@ def compare_results_real(config):
     # Best volume
     # tmp = V_best[:,:,::-1]
     tmp = V_best_centered
+    tmp = np.clip(V_best_centered,a_min=-0.5,a_max=3)
     display_XYZ(tmp,name="Best")
 
     # FBP_ICETIDE volume
