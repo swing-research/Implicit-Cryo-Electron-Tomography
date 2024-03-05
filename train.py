@@ -1055,13 +1055,12 @@ def train_without_ground_truth(config):
             l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader)*trainLoader.batch_size:])
             print("Epoch: {}, loss_avg: {:.3e} || Loss data fidelity: {:.3e}, regul volume: {:.2e}, regul shifts: {:.2e}, regul inplane: {:.2e}, regul local: {:.2e}, time: {:2.0f} s".format(
                 ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
-            print(outputValues.max(),outputValues.min())
+            # print(outputValues.max(),outputValues.min())
         if config.track_memory:
             memory_used.append(torch.cuda.memory_allocated())
 
         # Save and display some results
         if (ep%config.Ntest==0) and check_point_training:
-            print(ep)
             with torch.no_grad():
                 ## Avergae loss over until the last test
                 loss_current_epoch = np.mean(loss_tot[-len(trainLoader)*config.Ntest:])
@@ -1106,7 +1105,7 @@ def train_without_ground_truth(config):
                 step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
                 plt.figure(figsize=(10,10))
                 plt.plot(loss_tot_avg[10:])
-                plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 100))
+                # plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 100))
                 plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
                 plt.grid()
                 plt.savefig(os.path.join(config.path_save,'training','loss_iter.png'))
@@ -1299,8 +1298,6 @@ def train_without_ground_truth(config):
     shift_estimates_np = np.array(shift_estimates)
     rot_estimates_np = np.array(rot_estimates)
 
-
-    print(shift_estimates_np.shape)
 
     np.save(os.path.join(config.path_save,'training','shiftEstimates.npy'),shift_estimates_np)
     np.save(os.path.join(config.path_save,'training','rotestiamtes.npy'),rot_estimates_np)

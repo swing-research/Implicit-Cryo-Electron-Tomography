@@ -1179,6 +1179,13 @@ def compare_results_real(config):
     tmp = V_FBP_icetide
     display_XYZ(tmp,name="FBP_ICETIDE")
 
+    V_FBP_t =  torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_FBP_denoise.mrc").data),0,2)).type(config.torch_type).to(device)
+    V_FBP = V_FBP_t.detach().cpu().numpy()
+    tmp = V_FBP
+    display_XYZ(tmp,name="FBP_denoise")
+
+    import ipdb; ipdb.set_trace()
+
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
                                 "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide.astype(np.float32),2,0),overwrite=True)
     out.close()
