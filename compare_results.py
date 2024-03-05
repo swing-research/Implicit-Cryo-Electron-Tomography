@@ -1050,7 +1050,7 @@ def compare_results_real(config):
                                                     network_config=config_network["network"]).to(device)
     num_param = sum(p.numel() for p in impl_volume.parameters() if p.requires_grad) 
     print('---> Number of trainable parameters in volume net: {}'.format(num_param))
-    checkpoint = torch.load(os.path.join(config.path_save,'training','model_trained_old.pt'),map_location=device)
+    checkpoint = torch.load(os.path.join(config.path_save,'training','model_trained_2.pt'),map_location=device)
     impl_volume.load_state_dict(checkpoint['implicit_volume'])
     shift_icetide = checkpoint['shift_est']
     rot_icetide = checkpoint['rot_est']
@@ -1132,7 +1132,7 @@ def compare_results_real(config):
         plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_slice.png"))
 
         sl0 = 1024-320
-        sl1 = 890
+        sl1 = 875
         sl2 = 210
         f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
         aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray')
@@ -1157,23 +1157,23 @@ def compare_results_real(config):
         plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_proj.png"))
 
     # ICETIDE
+    tmp = V_icetide
     tmp = np.clip(V_icetide,a_min=-0.5,a_max=3)
     import ipdb; ipdb.set_trace()
     display_XYZ(tmp,name="ICETIDE")
 
-
-
     # Find best affine transformation between volumes
+    V_best_resize = resize(V_best[:,:,::-1],(V_icetide.shape[0],V_icetide.shape[1],V_icetide.shape[2]))
     V_sk = sitk.GetImageFromArray(V_icetide.astype(np.float32)/np.linalg.norm(V_icetide))
-    V_best_sk = sitk.GetImageFromArray(V_best[:,:,::-1]/np.linalg.norm(V_best[:,:,::-1]))
+    V_best_sk = sitk.GetImageFromArray(V_best_resize/np.linalg.norm(V_best_resize))
     final_transform = perform_3d_registration(V_sk, V_best_sk)
     # Apply the final transform to the moving image
     registered_image = sitk.Resample(V_best_sk, V_sk, final_transform, sitk.sitkLinear, 0.0, V_best_sk.GetPixelID())
     V_best_centered = sitk.GetArrayFromImage(registered_image)
 
-
-    # FBP volume
-    tmp = V_best[:,:,::-1]
+    # Best volume
+    # tmp = V_best[:,:,::-1]
+    tmp = V_best_centered
     display_XYZ(tmp,name="Best")
 
     # FBP_ICETIDE volume
@@ -1211,9 +1211,9 @@ def compare_results_real(config):
             tmp = np.floor(255*tmp).astype(np.uint8)
             imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE","slice_{}.png".format(index)),tmp)
 
-    for index in range(V_best.shape[2]):
+    for index in range(V_best_resize.shape[2]):
         # Best
-        tmp = V_best[:,:,index]
+        tmp = V_best_resize[:,:,index]
         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Best","slice_{}.png".format(index)),tmp)
@@ -1267,9 +1267,9 @@ def compare_results_real(config):
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ICETIDE_Fourier_XZ.png"),tmp)
 
-    # FBP volume
-    index = V_best.shape[0]//2
-    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_best)))[index,:,:]
+    # Best volume
+    index = V_best_resize.shape[0]//2
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_best_resize)))[index,:,:]
     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
     tmp = tmp.T**scal
     tmp = np.floor(255*tmp).astype(np.uint8)
