@@ -234,9 +234,8 @@ def data_generation_real_data(config):
     projections_denoise = np.zeros_like(projections_noisy)
     if config.denoise:
         for k in range(projections_noisy.shape[0]):
+            import ipdb; ipdb.set_trace()
             projections_denoise[k] = bm3d.bm3d(projections_noisy[k],config.bm3d_param)
-
-    np.savez(config.path_save_data+"volume_and_projections.npz",projections_noisy=projections_noisy,projections_denoise=projections_denoise)
 
     # save projections
     for k in range(config.Nangles):
@@ -248,6 +247,9 @@ def data_generation_real_data(config):
         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(config.path_save_data+"projections/denoise/denoise_"+str(k)+".png",tmp)
+
+
+    np.savez(config.path_save_data+"volume_and_projections.npz",projections_noisy=projections_noisy,projections_denoise=projections_denoise)
 
 
     angles = np.loadtxt(os.path.join(config.path_load,config.angle_name))
