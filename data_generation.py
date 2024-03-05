@@ -254,7 +254,7 @@ def data_generation_real_data(config):
     angles = np.loadtxt(os.path.join(config.path_load,config.angle_name))
     angles_t = torch.tensor(angles).type(config.torch_type).to(device)
     operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
-    V_FBP = operator_ET.pinv(torch.tensor(projections_noisy).to(device).detach().requires_grad_(False))
+    # V_FBP = operator_ET.pinv(torch.tensor(projections_noisy).to(device).detach().requires_grad_(False))
     V_FBP_denoise = operator_ET.pinv(torch.tensor(projections_denoise).to(device).detach().requires_grad_(False))
     out = mrcfile.new(config.path_save_data+"V_FBP_denoise.mrc",np.moveaxis(V_FBP_denoise.detach().cpu().numpy().reshape(config.n1,config.n2,config.n3),2,0),overwrite=True)
     out.close() 
