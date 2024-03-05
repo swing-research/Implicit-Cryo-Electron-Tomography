@@ -1159,7 +1159,6 @@ def compare_results_real(config):
     # ICETIDE
     tmp = V_icetide
     tmp = np.clip(V_icetide,a_min=-0.5,a_max=3)
-    import ipdb; ipdb.set_trace()
     display_XYZ(tmp,name="ICETIDE")
 
     # Find best affine transformation between volumes

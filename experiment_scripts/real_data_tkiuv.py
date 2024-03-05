@@ -5,7 +5,7 @@ It creates the dataset (projections, FBP), train ICE-TIDE and compare the result
 """
 
 import argparse
-import configs.real_data_tkiuv as config_file
+import configs.real_data_tkiuv2 as config_file
 import subprocess
 import time
 
@@ -41,13 +41,13 @@ def main():
         # train.train_without_ground_truth(config)
 
         # refined training
-        config.multiresolution = False
-        config.delay_deformations = 0 # Delay before learning deformations
-        config.schedule_global = []
-        config.schedule_local = []
-        config.epochs = 10000
-        config.load_existing_net = True
-        config.delay_deformations = 0 # Delay before learning deformations
+        # config.multiresolution = False
+        # config.delay_deformations = 0 # Delay before learning deformations
+        # config.schedule_global = []
+        # config.schedule_local = []
+        # config.epochs = 10000
+        # config.load_existing_net = True
+        # config.delay_deformations = 0 # Delay before learning deformations
 
         # config.encoding.otype = 'Grid'
         # config.encoding.type = 'Hash'

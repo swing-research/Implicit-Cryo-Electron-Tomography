@@ -632,7 +632,7 @@ def train_without_ground_truth(config):
         imageio.imwrite(os.path.join(config.path_save_data,'training',"projections"+str(k)+".png"),tmp)
 
 
-    import ipdb; ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
 
     if config.multiresolution:
         print("Computing multiscale...")
