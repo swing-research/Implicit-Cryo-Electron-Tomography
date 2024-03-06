@@ -13,7 +13,7 @@ def get_config():
     #######################
     config = ml_collections.ConfigDict()
     config.seed = 42
-    config.device_num = 2
+    config.device_num = 1
     config.torch_type = torch.float
     config.track_memory = False
 
@@ -56,8 +56,8 @@ def get_config():
     config.volume_name = 'tomo2_L1G1-dose_filt'
     config.angle_name = 'tomo2_L1G1-dose_filt.tlt'
     config.path_load = "./datasets/tkiuv/"
-    config.path_save_data = "./results/tkiuv2_"+str(config.volume_name)+"/"
-    config.path_save = "./results/tkiuv2_"+str(config.volume_name)+"/"
+    config.path_save_data = "./results/tkiuv3_"+str(config.volume_name)+"/"
+    config.path_save = "./results/tkiuv3_"+str(config.volume_name)+"/"
     config.name_best_volume = "emd_15056_additional_1.map"
     config.load_existing_net = False
 
@@ -94,7 +94,7 @@ def get_config():
     # config.z_max = 2*config.n3/max(config.n1,config.n2)/np.cos((90-np.max([config.view_angle_min,config.view_angle_max]))*np.pi/180)
     config.z_max = 1 #1.2
     config.ray_length = 1500 #int(np.floor(n1*z_max))
-    config.rays_scaling = [0.5,0.5,0.5] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
+    config.rays_scaling = [0.5,0.5,0.75] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
     config.pad = 0. # pad tell if we need to sample the edges or not. It is directly realeted the sampling in the projection
     # When to start or stop optimizing over a variable
     config.schedule_volume = []
