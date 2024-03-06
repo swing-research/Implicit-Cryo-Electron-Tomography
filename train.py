@@ -1107,7 +1107,7 @@ def train_without_ground_truth(config):
                 plt.plot(loss_tot_avg[10:])
                 # plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 100))
                 plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
-                plt.grid()
+                # plt.grid()
                 plt.savefig(os.path.join(config.path_save,'training','loss_iter.png'))
                 
                 ## Save slice of the volume
