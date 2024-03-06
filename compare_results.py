@@ -1066,7 +1066,7 @@ def compare_results_real(config):
         XX, YY = np.meshgrid(x_lin1,x_lin2,indexing='ij')
         grid2d = np.concatenate([XX.reshape(-1,1),YY.reshape(-1,1)],1)
         grid2d_t = torch.tensor(grid2d).type(config.torch_type)
-        z_range = np.linspace(-1,1,n3_eval)*rays_scaling[0,0,0,2].item()*(n3_eval/n1_eval)/2+0.5
+        z_range = config.z_max*np.linspace(-1,1,n3_eval)*rays_scaling[0,0,0,2].item()*(n3_eval/n1_eval)/2+0.5
         V_icetide = np.zeros((n1_eval, n2_eval, n3_eval))
         for zz, zval in enumerate(z_range):
             grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
