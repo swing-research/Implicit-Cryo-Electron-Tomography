@@ -1116,7 +1116,7 @@ def compare_results_real(config):
     def display_XYZ(tmp,name="true"):
         # tmp = (tmp - tmp.mean(2).max())/(tmp.mean(2).max()-tmp.mean(2).min())
         # tmp = np.floor(255*tmp).astype(np.uint8)
-        avg = 30
+        avg = 10
         sl0 = tmp.shape[0]//2
         sl1 = tmp.shape[1]//2
         sl2 = tmp.shape[2]//2
