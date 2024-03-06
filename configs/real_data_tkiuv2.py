@@ -13,7 +13,7 @@ def get_config():
     #######################
     config = ml_collections.ConfigDict()
     config.seed = 42
-    config.device_num = 1
+    config.device_num = 2
     config.torch_type = torch.float
     config.track_memory = False
 
@@ -56,8 +56,8 @@ def get_config():
     config.volume_name = 'tomo2_L1G1-dose_filt'
     config.angle_name = 'tomo2_L1G1-dose_filt.tlt'
     config.path_load = "./datasets/tkiuv/"
-    config.path_save_data = "./results/tkiuv3_"+str(config.volume_name)+"/"
-    config.path_save = "./results/tkiuv3_"+str(config.volume_name)+"/"
+    config.path_save_data = "./results/tkiuv2_"+str(config.volume_name)+"/"
+    config.path_save = "./results/tkiuv2_"+str(config.volume_name)+"/"
     config.name_best_volume = "emd_15056_additional_1.map"
     config.load_existing_net = False
 
