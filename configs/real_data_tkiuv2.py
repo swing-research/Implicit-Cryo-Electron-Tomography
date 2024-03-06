@@ -94,7 +94,7 @@ def get_config():
     # config.z_max = 2*config.n3/max(config.n1,config.n2)/np.cos((90-np.max([config.view_angle_min,config.view_angle_max]))*np.pi/180)
     config.z_max = 1 #1.2
     config.ray_length = 1500 #int(np.floor(n1*z_max))
-    config.rays_scaling = [0.5,0.5,0.25] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
+    config.rays_scaling = [0.5,0.5,0.75] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
     config.pad = 0. # pad tell if we need to sample the edges or not. It is directly realeted the sampling in the projection
     # When to start or stop optimizing over a variable
     config.schedule_volume = []
