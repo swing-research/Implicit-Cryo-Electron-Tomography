@@ -605,6 +605,9 @@ def train_without_ground_truth(config):
             pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
 
 
+            print(detectorLocations.max().item(),detectorLocations.min().item())
+            
+            import ipdb; ipdb.set_trace()
 
             # #print(proj.shape)
             # ## Sample the rays
