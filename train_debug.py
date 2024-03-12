@@ -43,7 +43,7 @@ OUTPUT:
 
 def generate_rays_batch(detectorLocations, anglesSet, z_max_value=1, ray_n=100, std_noise=0):
     nBatch, nRays, _ = detectorLocations.shape
-    rays_rotated = torch.zeros((nBatch,nRays, ray_n,3)).to(device)
+    rays_rotated = torch.zeros((nBatch,nRays, ray_n,3)).to(detectorLocations.device)
     for i in range(nBatch):
         rays_rotated[i] = generate_ray(detectorLocations[i], anglesSet[i], z_max_value, ray_n, std_noise)
     return rays_rotated
@@ -117,6 +117,8 @@ OUTPUT:
 """
 def generate_ray(detectorLocations, angle, z_max_value=1, ray_n=100, std_noise=0):
     nBatch, _ = detectorLocations.shape
+    device = detectorLocations.device
+    torch_type = detectorLocations.dtype
     # Define the ray geometry (length, discretization, position)
     zlin = torch.linspace(-1,1,ray_n+2)[1:-1].reshape(1,-1).to(device)
     dxz = torch.mean(zlin[0,1:]-zlin[0,:-1])
