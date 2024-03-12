@@ -584,7 +584,7 @@ def train_without_ground_truth(config):
             size_max_vol = 1.2*np.max([size_xy_vol,config.size_z_vol]) # increase by some small factor to account for deformations
 
             # Define the detector locations
-            detectorLocations = torch.rand(proj.shape[0],N_RAYS,2).to(device)
+            detectorLocations = torch.rand(proj.shape[0],N_RAYS,2).to(device)*2-1
 
             # Apply deformations in the 2D space
             detectorLocationsDeformed = apply_deformations_to_locations(detectorLocations,rot_deformSet,shift_deformSet,local_deformSet,fixedRotSet,scale=config.deformationScale)
@@ -607,7 +607,7 @@ def train_without_ground_truth(config):
 
             print(detectorLocations.max().item(),detectorLocations.min().item())
             
-            import ipdb; ipdb.set_trace()
+            # import ipdb; ipdb.set_trace()
 
             # #print(proj.shape)
             # ## Sample the rays
