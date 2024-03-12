@@ -142,12 +142,13 @@ INPUT:
     - shift_deformSet: global shift deformations. Instance of utils_deformation.shiftNet.
     - local_deformSet: local deformations. Instance of utils_deformation.deformation_field.
     - fixedRotSet: fixed inplane rotation deformation. Instance of utils_deformation.rotNet.
+    - scale, float: scale the local deformation amplitudes.
 
 OUTPUT:
     - raysSet, (nBatch,nRays,2): locations of the sampling points after apply the deformations.
 """
 def apply_deformations_to_locations(detectorLocations,rot_deformSet=None,shift_deformSet=None,
-                        local_deformSet=None,fixedRotSet=None):
+                        local_deformSet=None,fixedRotSet=None,scale=1):
     nBatch, nRays, _ = detectorLocations.shape
     device = detectorLocations.device
     raysSet = torch.zeros((nBatch,nRays,2)).to(device)
@@ -584,7 +585,7 @@ def train_without_ground_truth(config):
             detectorLocations = torch.rand(proj.shape[0],N_RAYS,2).to(device)
 
             # Apply deformations in the 2D space
-            detectorLocationsDeformed = apply_deformations_to_locations(detectorLocations,rot_deformSet,shift_deformSet,local_deformSet,fixedRotSet)
+            detectorLocationsDeformed = apply_deformations_to_locations(detectorLocations,rot_deformSet,shift_deformSet,local_deformSet,fixedRotSet,scale=config.deformationScale)
 
             # generate the rays in 3D
             rays_rotated = generate_rays_batch(detectorLocationsDeformed, angle, z_max_value, config.ray_length, std_noise=config.std_noise_z)
