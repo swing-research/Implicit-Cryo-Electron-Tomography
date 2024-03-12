@@ -15,6 +15,7 @@ from utils import utils_deformation, utils_display
 from torch.autograd import Variable
 import json
 from utils.utils_sampling import sample_implicit_batch_lowComp, generate_rays_batch_bilinear
+from utils import utils_sampling
 
 from utils.utils_deformation import cropper
 # from compare_results import reconstruct_FBP_volume
