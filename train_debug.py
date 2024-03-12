@@ -578,7 +578,6 @@ def train_without_ground_truth(config):
             fixedRotSet = list(map(fixed_rot.__getitem__, idx_loader))
 
 
-            import ipdb; ipdb.set_trace()
 
             # Define geometry of sampling
             size_xy_vol, z_max_value = get_sampling_geometry(config.size_z_vol, config.view_angle_min, config.view_angle_max, config.sampling_domain_lx, config.sampling_domain_ly)
