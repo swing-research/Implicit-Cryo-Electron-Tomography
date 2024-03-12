@@ -603,7 +603,7 @@ def train_without_ground_truth(config):
             projEstimate = torch.sum(support*outputValues,2)/config.n3
 
 
-
+            pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
 
 
 
