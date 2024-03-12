@@ -5,7 +5,7 @@ It creates the dataset (projections, FBP), train ICE-TIDE and compare the result
 """
 
 import argparse
-import configs.real_data_tkiuv2 as config_file
+import configs.real_data_tkiuv_debug as config_file
 import subprocess
 import time
 
