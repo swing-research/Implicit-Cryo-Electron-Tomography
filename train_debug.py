@@ -702,10 +702,8 @@ def train_without_ground_truth(config):
             print(outputValues.max(),outputValues.min())
 
 
-
-
-
             for ii, ang in enumerate(angles_t):
+                print(ii)
                 import ipdb; ipdb.set_trace()
 
                 # Define geometry of sampling
