@@ -599,7 +599,7 @@ def train_without_ground_truth(config):
             outputValues = impl_volume((rays_rotated_scaled/2+0.5).reshape(-1,3)).reshape(proj.shape[0],N_RAYS,config.ray_length)
 
             support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)[0]
-            projEstimate = torch.sum(support*outputValues,2)/config.n3
+            projEstimate = torch.sum(support*outputValues,2)/config.n3/torch.sum(support,2)
 
 
             pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
