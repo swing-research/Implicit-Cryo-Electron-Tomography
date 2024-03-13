@@ -600,7 +600,7 @@ def train_without_ground_truth(config):
 
 
             support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)*1
-            projEstimate = torch.sum(support*outputValues,2)/config.n3#/torch.sum(support,2)
+            projEstimate = torch.sum(support*outputValues,2)/config.n3/torch.sum(support,2)
 
 
             pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
