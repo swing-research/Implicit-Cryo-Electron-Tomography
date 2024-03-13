@@ -157,7 +157,7 @@ def apply_deformations_to_locations(detectorLocations,rot_deformSet=None,shift_d
     raysSet = torch.zeros((nBatch,nRays,2)).to(device)
 
     for i in range(nBatch):
-        pixelPositions_ = torch.unsqueeze(raysSet[i],dim=2)
+        pixelPositions_ = torch.unsqueeze(detectorLocations[i],dim=2)
         # Get deformations on the 2D detector grid
         if(fixedRotSet!=None):
             fixed_rot_deform = fixedRotSet[i](dim=2)
