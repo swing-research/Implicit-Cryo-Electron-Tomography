@@ -75,7 +75,7 @@ def main():
 
     # Compare the results and save the figures
     if args.no_comparison:
-        import compare_results
+        import compare_results_debug
         compare_results.compare_results_real(config)
 
 
