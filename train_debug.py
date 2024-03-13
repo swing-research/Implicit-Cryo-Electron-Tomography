@@ -605,8 +605,6 @@ def train_without_ground_truth(config):
             pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
 
 
-            print(detectorLocations.max().item(),detectorLocations.min().item())
-
             # check projections that are sample iter per iter
             # check support
             # check train a single volume
@@ -699,7 +697,6 @@ def train_without_ground_truth(config):
             l_loc = np.mean(loss_regul_local_ampl[-len(trainLoader)*trainLoader.batch_size:])
             print("Epoch: {}, loss_avg: {:.3e} || Loss data fidelity: {:.3e}, regul volume: {:.2e}, regul shifts: {:.2e}, regul inplane: {:.2e}, regul local: {:.2e}, time: {:2.0f} s".format(
                 ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
-            print(outputValues.max(),outputValues.min())
 
 
         if (ep%config.Ntest==0) and check_point_training:
