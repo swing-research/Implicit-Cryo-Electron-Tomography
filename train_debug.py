@@ -702,6 +702,7 @@ def train_without_ground_truth(config):
             print(outputValues.max(),outputValues.min())
 
 
+        if (ep%config.Ntest==0) and check_point_training:
             for ii, ang in enumerate(angles_t):
                 print(ii)
                 import ipdb; ipdb.set_trace()
