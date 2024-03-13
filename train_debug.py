@@ -606,6 +606,12 @@ def train_without_ground_truth(config):
 
 
             print(detectorLocations.max().item(),detectorLocations.min().item())
+
+            # check projections that are sample iter per iter
+            # check support
+            # check train a single volume
+
+
             
             # import ipdb; ipdb.set_trace()
 
@@ -694,6 +700,58 @@ def train_without_ground_truth(config):
             print("Epoch: {}, loss_avg: {:.3e} || Loss data fidelity: {:.3e}, regul volume: {:.2e}, regul shifts: {:.2e}, regul inplane: {:.2e}, regul local: {:.2e}, time: {:2.0f} s".format(
                 ep,loss_current_epoch,l_fid,l_v,l_sh,l_rot,l_loc,time.time()-t0))
             print(outputValues.max(),outputValues.min())
+
+
+
+
+
+            for ii, ang in enumerate(angles_t):
+                import ipdb; ipdb.set_trace()
+
+                # Define geometry of sampling
+                size_xy_vol, z_max_value = get_sampling_geometry(config.size_z_vol, config.view_angle_min, config.view_angle_max, config.sampling_domain_lx, config.sampling_domain_ly)
+                size_max_vol = 1.2*np.max([size_xy_vol,config.size_z_vol]) # increase by some small factor to account for deformations
+
+                # Define the detector locations
+                detectorLocations = grid2d_t.reshape(1,-1,2)
+
+                # Apply deformations in the 2D space
+                detectorLocationsDeformed = apply_deformations_to_locations(detectorLocations,None,None,None,None,scale=config.deformationScale)
+
+                # generate the rays in 3D
+                rays_rotated = generate_rays_batch(detectorLocationsDeformed, ang.reshape(1), z_max_value, config.ray_length, std_noise=config.std_noise_z)
+
+                # Scale the rays so that they are trully in [-1,1] 
+                rays_rotated_scaled = rays_rotated/size_max_vol 
+
+                # Sample the implicit volume by making the input in [0,1]
+                outputValues = impl_volume((rays_rotated_scaled/2+0.5).reshape(-1,3)).reshape(proj.shape[0],N_RAYS,config.ray_length)
+
+                support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)[0]
+                projEstimate = torch.sum(support*outputValues,2)/config.n3
+
+                pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
+
+
+                if not os.path.exists(config.path_save+"training/projections/"):
+                    os.makedirs(config.path_save+"training/projections/")
+
+                tmp = projEstimate.reshape(config.n1_patch,config.n2_patch)
+                tmp = proj[0].detach().cpu().numpy()
+                tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+                tmp = np.floor(255*tmp).astype(np.uint8)
+                imageio.imwrite(os.path.join(config.path_save_data,'training','projections',"projections_est_"+str(ii)+".png"),tmp)
+
+                tmp = pixelValues.reshape(config.n1_patch,config.n2_patch)
+                tmp = proj[0].detach().cpu().numpy()
+                tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+                tmp = np.floor(255*tmp).astype(np.uint8)
+                imageio.imwrite(os.path.join(config.path_save_data,'training','projections',"projections_obs_"+str(ii)+".png"),tmp)
+
+
+
+
+
         if config.track_memory:
             memory_used.append(torch.cuda.memory_allocated())
 
