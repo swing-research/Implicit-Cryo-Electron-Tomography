@@ -765,41 +765,41 @@ def train_without_ground_truth(config):
                 
                 print('Running and saving tests')  
 
-                ## Save local deformation
-                utils_display.display_local_movie(implicit_deformation_list,field_true=None,Npts=(20,20),
-                                            img_path=config.path_save+"/training/deformations/local_deformations_",img_type='.png',
-                                            scale=1,alpha=0.8,width=0.0015,weights_est=1,s=config.rays_scaling[0])
-                for index in range(len(implicit_deformation_list)):
-                    utils_display.display_local_movie(implicit_deformation_list,field_true=None,Npts=(20,20),
-                                                img_path=config.path_save+"/training/deformations_x10/local_deformations_",img_type='.png',
-                                                scale=0.1,alpha=0.8,width=0.0015,weights_est=1,s=config.rays_scaling[0])
+                # ## Save local deformation
+                # utils_display.display_local_movie(implicit_deformation_list,field_true=None,Npts=(20,20),
+                #                             img_path=config.path_save+"/training/deformations/local_deformations_",img_type='.png',
+                #                             scale=1,alpha=0.8,width=0.0015,weights_est=1,s=config.rays_scaling[0])
+                # for index in range(len(implicit_deformation_list)):
+                #     utils_display.display_local_movie(implicit_deformation_list,field_true=None,Npts=(20,20),
+                #                                 img_path=config.path_save+"/training/deformations_x10/local_deformations_",img_type='.png',
+                #                                 scale=0.1,alpha=0.8,width=0.0015,weights_est=1,s=config.rays_scaling[0])
 
                     
-                ## Save global deformation
-                shiftEstimate, rotEstimate = globalDeformationValues(shift_est,rot_est)
-                plt.figure(1)
-                plt.clf()
-                plt.hist(shiftEstimate.reshape(-1)*config.n1,alpha=1)
-                plt.legend(['est.'])
-                plt.savefig(os.path.join(config.path_save+"/training/deformations/shifts.png"))
+                # ## Save global deformation
+                # shiftEstimate, rotEstimate = globalDeformationValues(shift_est,rot_est)
+                # plt.figure(1)
+                # plt.clf()
+                # plt.hist(shiftEstimate.reshape(-1)*config.n1,alpha=1)
+                # plt.legend(['est.'])
+                # plt.savefig(os.path.join(config.path_save+"/training/deformations/shifts.png"))
 
-                plt.figure(1)
-                plt.clf()
-                plt.hist(rotEstimate*180/np.pi,15)
-                plt.legend(['est.'])
-                plt.title('Angles in degrees')
-                plt.savefig(os.path.join(config.path_save+"/training/deformations/rotations.png"))
+                # plt.figure(1)
+                # plt.clf()
+                # plt.hist(rotEstimate*180/np.pi,15)
+                # plt.legend(['est.'])
+                # plt.title('Angles in degrees')
+                # plt.savefig(os.path.join(config.path_save+"/training/deformations/rotations.png"))
 
-                ## Save the loss    
-                # loss_tot_avg = np.array(loss_tot).reshape(config.Nangles//config.batch_size,-1).mean(0)
-                loss_tot_avg = np.array(loss_tot)
-                step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
-                plt.figure(figsize=(10,10))
-                plt.plot(loss_tot_avg[10:])
-                plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 100))
-                plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
-                plt.grid()
-                plt.savefig(os.path.join(config.path_save,'training','loss_iter.png'))
+                # ## Save the loss    
+                # # loss_tot_avg = np.array(loss_tot).reshape(config.Nangles//config.batch_size,-1).mean(0)
+                # loss_tot_avg = np.array(loss_tot)
+                # step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
+                # plt.figure(figsize=(10,10))
+                # plt.plot(loss_tot_avg[10:])
+                # plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 100))
+                # plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
+                # plt.grid()
+                # plt.savefig(os.path.join(config.path_save,'training','loss_iter.png'))
                 
                 ## Save slice of the volume
                 z_range = np.linspace(-1,1,config.n3_patch//5)*config.size_z_vol
@@ -814,16 +814,16 @@ def train_without_ground_truth(config):
                     plt.savefig(os.path.join(config.path_save+"/training/volume/volume_est_slice_{}.png".format(zz)))
                     
                                     
-                if config.save_volume:
-                    z_range = np.linspace(-1,1,config.n3_patch)*config.size_z_vol
-                    V_ours = np.zeros((config.n1_patch,config.n2_patch,config.n3_patch))
-                    for zz, zval in enumerate(z_range):
-                        grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
-                        grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
-                        estSlice = impl_volume(grid3d_slice/size_max_vol/2+0.5).detach().cpu().numpy().reshape(config.n1_patch,config.n2_patch)
-                        V_ours[:,:,zz] = estSlice
-                    out = mrcfile.new(config.path_save+"/training/V_est"+".mrc",np.moveaxis(V_ours.astype(np.float32),2,0),overwrite=True)
-                    out.close() 
+                # if config.save_volume:
+                #     z_range = np.linspace(-1,1,config.n3_patch)*config.size_z_vol
+                #     V_ours = np.zeros((config.n1_patch,config.n2_patch,config.n3_patch))
+                #     for zz, zval in enumerate(z_range):
+                #         grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
+                #         grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
+                #         estSlice = impl_volume(grid3d_slice/size_max_vol/2+0.5).detach().cpu().numpy().reshape(config.n1_patch,config.n2_patch)
+                #         V_ours[:,:,zz] = estSlice
+                #     out = mrcfile.new(config.path_save+"/training/V_est"+".mrc",np.moveaxis(V_ours.astype(np.float32),2,0),overwrite=True)
+                #     out.close() 
                         
                 if config.load_existing_net:
                     torch.save({
