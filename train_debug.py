@@ -599,9 +599,9 @@ def train_without_ground_truth(config):
             outputValues = impl_volume((rays_rotated_scaled/2+0.5).reshape(-1,3)).reshape(proj.shape[0],N_RAYS,config.ray_length)
 
 
-            support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)[0]
+            support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)*1
 
-
+            print(rays_rotated.shape)
             print(support.shape,outputValues.shape)
             print(torch.sum(support,2).shape)
             print(torch.sum(support*outputValues,2).shape)
