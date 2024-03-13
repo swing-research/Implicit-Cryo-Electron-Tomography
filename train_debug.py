@@ -729,7 +729,7 @@ def train_without_ground_truth(config):
                 support = ((rays_rotated[:,:,:,2].abs()<config.size_z_vol)[0])
                 projEstimate = torch.sum(support*outputValues,1)/config.n3
 
-                pixelValues = sample_projections(projections_noisy[ii], detectorLocations, interp='bilinear')
+                pixelValues = sample_projections(projections_noisy[ii::ii+1], detectorLocations, interp='bilinear')
 
 
                 if not os.path.exists(config.path_save+"training/projections/"):
