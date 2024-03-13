@@ -1185,12 +1185,12 @@ def compare_results_real(config):
     tmp = np.clip(tmp,a_min=np.quantile(tmp,0.05),a_max=np.quantile(tmp,0.95))
     display_XYZ(tmp,name="FBP_ICETIDE")
 
-    V_FBP_t =  torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_FBP_denoise.mrc").data),0,2)).type(config.torch_type).to(device)
-    V_FBP = V_FBP_t.detach().cpu().numpy()
-    tmp = V_FBP[::2,::2,::2]
-    tmp = (tmp-tmp.min())/(tmp.max()-tmp.min())
-    tmp = np.clip(tmp,a_min=np.quantile(tmp,0.05),a_max=np.quantile(tmp,0.95))
-    display_XYZ(tmp,name="FBP_denoise")
+    # V_FBP_t =  torch.tensor(np.moveaxis(np.double(mrcfile.open(config.path_save_data+"V_FBP_denoise.mrc").data),0,2)).type(config.torch_type).to(device)
+    # V_FBP = V_FBP_t.detach().cpu().numpy()
+    # tmp = V_FBP[::2,::2,::2]
+    # tmp = (tmp-tmp.min())/(tmp.max()-tmp.min())
+    # tmp = np.clip(tmp,a_min=np.quantile(tmp,0.05),a_max=np.quantile(tmp,0.95))
+    # display_XYZ(tmp,name="FBP_denoise")
 
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
                                 "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide.astype(np.float32),2,0),overwrite=True)

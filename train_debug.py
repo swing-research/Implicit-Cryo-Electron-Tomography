@@ -802,7 +802,7 @@ def train_without_ground_truth(config):
                 # plt.savefig(os.path.join(config.path_save,'training','loss_iter.png'))
                 
                 ## Save slice of the volume
-                z_range = np.linspace(-1,1,config.n3_patch//5)*config.size_z_vol
+                z_range = np.linspace(-1,1,config.n3_patch)*config.size_z_vol
                 for zz, zval in enumerate(z_range):
                     grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
                     grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
