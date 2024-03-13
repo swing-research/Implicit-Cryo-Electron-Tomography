@@ -718,13 +718,13 @@ def train_without_ground_truth(config):
                 detectorLocationsDeformed = apply_deformations_to_locations(detectorLocations,None,None,None,None,scale=config.deformationScale)
 
                 # generate the rays in 3D
-                rays_rotated = generate_rays_batch(detectorLocationsDeformed, ang.reshape(1), z_max_value, config.ray_length, std_noise=config.std_noise_z)
+                rays_rotated = generate_rays_batch(detectorLocationsDeformed, ang.reshape(1), z_max_value, config.ray_length//10, std_noise=config.std_noise_z)
 
                 # Scale the rays so that they are trully in [-1,1] 
                 rays_rotated_scaled = rays_rotated/size_max_vol 
 
                 # Sample the implicit volume by making the input in [0,1]
-                outputValues = impl_volume((rays_rotated_scaled/2+0.5).reshape(-1,3)).reshape(proj.shape[0],N_RAYS,config.ray_length)
+                outputValues = impl_volume((rays_rotated_scaled/2+0.5).reshape(-1,3)).reshape(proj.shape[0],N_RAYS,config.ray_length//10)
 
                 support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)[0]
                 projEstimate = torch.sum(support*outputValues,2)/config.n3
