@@ -593,7 +593,7 @@ def train_without_ground_truth(config):
             rays_rotated = generate_rays_batch(detectorLocationsDeformed, angle, z_max_value, config.ray_length, std_noise=config.std_noise_z)
 
             # Scale the rays so that they are trully in [-1,1] 
-            rays_rotated_scaled = rays_rotated/size_max_vol 
+            rays_rotated_scaled = rays_rotated/size_max_vol
 
             # Sample the implicit volume by making the input in [0,1]
             outputValues = impl_volume((rays_rotated_scaled/2+0.5).reshape(-1,3)).reshape(proj.shape[0],N_RAYS,config.ray_length)
@@ -712,7 +712,7 @@ def train_without_ground_truth(config):
                 size_max_vol = 1.2*np.max([size_xy_vol,config.size_z_vol]) # increase by some small factor to account for deformations
 
                 # Define the detector locations
-                detectorLocations = grid2d_t.reshape(1,-1,2)
+                detectorLocations = grid2d_t.reshape(1,-1,2).to(device)
 
                 # Apply deformations in the 2D space
                 detectorLocationsDeformed = apply_deformations_to_locations(detectorLocations,None,None,None,None,scale=config.deformationScale)
@@ -721,13 +721,13 @@ def train_without_ground_truth(config):
                 rays_rotated = generate_rays_batch(detectorLocationsDeformed, ang.reshape(1), z_max_value, config.ray_length//10, std_noise=config.std_noise_z)
 
                 # Scale the rays so that they are trully in [-1,1] 
-                rays_rotated_scaled = rays_rotated/size_max_vol 
+                rays_rotated_scaled = rays_rotated/size_max_vol
 
                 # Sample the implicit volume by making the input in [0,1]
-                outputValues = impl_volume((rays_rotated_scaled/2+0.5).reshape(-1,3)).reshape(proj.shape[0],N_RAYS,config.ray_length//10)
+                outputValues = impl_volume((rays_rotated_scaled/2+0.5).reshape(-1,3)).reshape(-1,config.ray_length//10)
 
-                support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)[0]
-                projEstimate = torch.sum(support*outputValues,2)/config.n3
+                support = ((rays_rotated[:,:,:,2].abs()<config.size_z_vol)[0])
+                projEstimate = torch.sum(support*outputValues,1)/config.n3
 
                 pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
 
@@ -735,13 +735,13 @@ def train_without_ground_truth(config):
                 if not os.path.exists(config.path_save+"training/projections/"):
                     os.makedirs(config.path_save+"training/projections/")
 
-                tmp = projEstimate.reshape(config.n1_patch,config.n2_patch)
+                tmp = projEstimate.reshape(config.n1_patch,config.n2_patch).detach().cpu().numpy()
                 tmp = proj[0].detach().cpu().numpy()
                 tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
                 tmp = np.floor(255*tmp).astype(np.uint8)
                 imageio.imwrite(os.path.join(config.path_save_data,'training','projections',"projections_est_"+str(ii)+".png"),tmp)
 
-                tmp = pixelValues.reshape(config.n1_patch,config.n2_patch)
+                tmp = pixelValues.reshape(config.n1_patch,config.n2_patch).detach().cpu().numpy()
                 tmp = proj[0].detach().cpu().numpy()
                 tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
                 tmp = np.floor(255*tmp).astype(np.uint8)
