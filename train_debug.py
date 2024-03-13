@@ -736,13 +736,11 @@ def train_without_ground_truth(config):
                     os.makedirs(config.path_save+"training/projections/")
 
                 tmp = projEstimate.reshape(config.n1_patch,config.n2_patch).detach().cpu().numpy()
-                tmp = proj[0].detach().cpu().numpy()
                 tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
                 tmp = np.floor(255*tmp).astype(np.uint8)
                 imageio.imwrite(os.path.join(config.path_save_data,'training','projections',"projections_est_"+str(ii)+".png"),tmp)
 
                 tmp = pixelValues.reshape(config.n1_patch,config.n2_patch).detach().cpu().numpy()
-                tmp = proj[0].detach().cpu().numpy()
                 tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
                 tmp = np.floor(255*tmp).astype(np.uint8)
                 imageio.imwrite(os.path.join(config.path_save_data,'training','projections',"projections_obs_"+str(ii)+".png"),tmp)
