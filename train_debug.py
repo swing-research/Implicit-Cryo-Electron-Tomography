@@ -705,7 +705,7 @@ def train_without_ground_truth(config):
         if (ep%config.Ntest==0) and check_point_training:
             for ii, ang in enumerate(angles_t):
                 print(ii)
-                import ipdb; ipdb.set_trace()
+                # import ipdb; ipdb.set_trace()
 
                 # Define geometry of sampling
                 size_xy_vol, z_max_value = get_sampling_geometry(config.size_z_vol, config.view_angle_min, config.view_angle_max, config.sampling_domain_lx, config.sampling_domain_ly)
