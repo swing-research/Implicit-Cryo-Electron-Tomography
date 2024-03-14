@@ -804,16 +804,67 @@ def train_without_ground_truth(config):
                 
                 ## Save slice of the volume
                 z_range = np.linspace(-1,1,config.n3_patch)*config.size_z_vol
+                V_icetide = np.zeros((config.n1_patch,config.n2_patch,config.n3_patch))
                 for zz, zval in enumerate(z_range):
                     grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
                     grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
                     estSlice = impl_volume(grid3d_slice/size_max_vol/2+0.5).detach().cpu().numpy().reshape(config.n1_patch,config.n2_patch)
                     pp = (estSlice)*1.
+                    V_icetide[:,:,zz] = estSlice
                     plt.figure(1)
                     plt.clf()
                     plt.imshow(pp,cmap='gray')
                     plt.savefig(os.path.join(config.path_save+"/training/volume/volume_est_slice_{}.png".format(zz)))
                     
+                def display_XYZ(tmp,name="true"):
+                    # tmp = (tmp - tmp.mean(2).max())/(tmp.mean(2).max()-tmp.mean(2).min())
+                    # tmp = np.floor(255*tmp).astype(np.uint8)
+                    avg = 0
+                    sl0 = tmp.shape[0]//2
+                    sl1 = tmp.shape[1]//2
+                    sl2 = tmp.shape[2]//2
+                    f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
+                    aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray')#,vmin=tmp.min(),vmax=tmp.max())
+                    aa[0,0].axis('off')
+                    aa[1,0].imshow(tmp[:,:,sl2-avg//2:sl2+avg//2+1].mean(2),cmap='gray')#,vmin=tmp.min(),vmax=tmp.max())
+                    aa[1,0].axis('off')
+                    aa[1,1].imshow(tmp[:,sl1-avg//2:sl1+avg//2+1,:].mean(1),cmap='gray')#,vmin=tmp.min(),vmax=tmp.max())
+                    aa[1,1].axis('off')
+                    aa[0,1].axis('off')
+                    plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+                    plt.savefig(os.path.join("tmp.png"))
+                    plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_slice.png"))
+
+                    # sl0 = 1024-320
+                    # sl1 = 875
+                    # sl2 = 210
+                    # f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
+                    # aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray')#,vmin=tmp.min(),vmax=tmp.max())
+                    # aa[0,0].axis('off')
+                    # aa[1,0].imshow(tmp[:,:,sl2-avg//2:sl2+avg//2+1].mean(2),cmap='gray')#,vmin=tmp.min(),vmax=tmp.max())
+                    # aa[1,0].axis('off')
+                    # aa[1,1].imshow(tmp[:,sl1-avg//2:sl1+avg//2+1,:].mean(1),cmap='gray')#,vmin=tmp.min(),vmax=tmp.max())
+                    # aa[1,1].axis('off')
+                    # aa[0,1].axis('off')
+                    # plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+                    # plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_slice_custom.png"))
+
+                    f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
+                    aa[0,0].imshow(tmp.mean(0).T,cmap='gray')#,vmin=tmp.min(),vmax=tmp.max())
+                    aa[0,0].axis('off')
+                    aa[1,0].imshow(tmp.mean(2),cmap='gray')#,vmin=tmp.min(),vmax=tmp.max())
+                    aa[1,0].axis('off')
+                    aa[1,1].imshow(tmp.mean(1),cmap='gray')#,vmin=tmp.min(),vmax=tmp.max())
+                    aa[1,1].axis('off')
+                    aa[0,1].axis('off')
+                    plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+                    plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_proj.png"))
+
+                # ICETIDE
+                tmp = V_icetide
+                tmp = (tmp-tmp.min())/(tmp.max()-tmp.min())
+                tmp = np.clip(tmp,a_min=np.quantile(tmp,0.05),a_max=np.quantile(tmp,0.95))
+                display_XYZ(tmp,name="ICETIDE")
                                     
                 # if config.save_volume:
                 #     z_range = np.linspace(-1,1,config.n3_patch)*config.size_z_vol
