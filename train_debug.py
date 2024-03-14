@@ -733,10 +733,10 @@ def train_without_ground_truth(config):
                 support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)*1
                 # TODO: make that batchwise
                 dist = torch.zeros((outputValues.shape[0])).to(device)
-                for ii in range(outputValues.shape[0]):
-                    ind_st = torch.where(support[ii,0]==1)[0][0]
-                    ind_end = torch.where(support[ii,0]==1)[0][-1]
-                    dist[ii] = torch.sqrt(torch.sum((rays_rotated[ii,0,ind_st,:]-rays_rotated[ii,0,ind_end,:])**2,0))
+                for iii in range(outputValues.shape[0]):
+                    ind_st = torch.where(support[iii,0]==1)[0][0]
+                    ind_end = torch.where(support[iii,0]==1)[0][-1]
+                    dist[iii] = torch.sqrt(torch.sum((rays_rotated[iii,0,ind_st,:]-rays_rotated[iii,0,ind_end,:])**2,0))
 
                 projEstimate = torch.sum(support*outputValues,2)/config.n3*(dist.view(-1,1,1))
                 # support = ((rays_rotated[:,:,:,2].abs()<config.size_z_vol)[0])
