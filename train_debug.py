@@ -728,21 +728,20 @@ def train_without_ground_truth(config):
                 rays_rotated_scaled = rays_rotated/size_max_vol
 
                 # Sample the implicit volume by making the input in [0,1]
-                outputValues = impl_volume((rays_rotated_scaled/2+0.5).reshape(-1,3)).reshape(-1,config.ray_length//10)
+                outputValues = impl_volume((rays_rotated_scaled/2+0.5).reshape(-1,3)).reshape(rays_rotated_scaled.shape[0],-1,config.ray_length//10)
+
 
                 support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)*1
                 # TODO: make that batchwise
                 dist = torch.zeros((outputValues.shape[0])).to(device)
-                for iii in range(outputValues.shape[0]):
-                    ind_st = torch.where(support[iii,0]==1)[0][0]
-                    ind_end = torch.where(support[iii,0]==1)[0][-1]
-                    dist[iii] = torch.sqrt(torch.sum((rays_rotated[iii,0,ind_st,:]-rays_rotated[iii,0,ind_end,:])**2,0))
+                for kk in range(outputValues.shape[0]):
+                    ind_st = torch.where(support[kk,0]==1)[0][0]
+                    ind_end = torch.where(support[kk,0]==1)[0][-1]
+                    dist[kk] = torch.sqrt(torch.sum((rays_rotated[kk,0,ind_st,:]-rays_rotated[kk,0,ind_end,:])**2,0))
 
                 projEstimate = torch.sum(support*outputValues,2)/config.n3*(dist.view(-1,1,1))
-                # support = ((rays_rotated[:,:,:,2].abs()<config.size_z_vol)[0])
-                # projEstimate = torch.sum(support*outputValues,1)/config.n3
 
-                pixelValues = sample_projections(projections_noisy[ii::ii+1], detectorLocations, interp='bilinear')
+                pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
 
 
                 if not os.path.exists(config.path_save+"training/projections/"):
