@@ -599,11 +599,15 @@ def train_without_ground_truth(config):
             outputValues = impl_volume((rays_rotated_scaled/2+0.5).reshape(-1,3)).reshape(proj.shape[0],N_RAYS,config.ray_length)
 
 
-            import ipdb; ipdb.set_trace()
-            dist = torch.sqrt(torch.sum((rays_rotated[:,:,-1,:]-rays_rotated[:,:,0,:])**2,2))
+            # TODO: make that batchwise
+            dist = torch.zeros((outputValues.shape[0]))
+            for ii in range(outputValues.shape[0]):
+                ind_st = torch.where(support[ii,0]==1)[0][0]
+                ind_end = torch.where(support[ii,0]==1)[0][-1]
+                dist[ii] = torch.sqrt(torch.sum((rays_rotated[ii,0,ind_st,:]-rays_rotated[ii,0,ind_end,:])**2,0))
 
             support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)*1
-            projEstimate = torch.sum(support*outputValues,2)/config.n3*(dist[:,0:1])#*(torch.sum(support,2)/support.shape[2])
+            projEstimate = torch.sum(support*outputValues,2)/config.n3*(dist.view(-1,1,1))
 
             pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
 
@@ -726,8 +730,17 @@ def train_without_ground_truth(config):
                 # Sample the implicit volume by making the input in [0,1]
                 outputValues = impl_volume((rays_rotated_scaled/2+0.5).reshape(-1,3)).reshape(-1,config.ray_length//10)
 
-                support = ((rays_rotated[:,:,:,2].abs()<config.size_z_vol)[0])
-                projEstimate = torch.sum(support*outputValues,1)/config.n3
+                # TODO: make that batchwise
+                dist = torch.zeros((outputValues.shape[0]))
+                for ii in range(outputValues.shape[0]):
+                    ind_st = torch.where(support[ii,0]==1)[0][0]
+                    ind_end = torch.where(support[ii,0]==1)[0][-1]
+                    dist[ii] = torch.sqrt(torch.sum((rays_rotated[ii,0,ind_st,:]-rays_rotated[ii,0,ind_end,:])**2,0))
+
+                support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)*1
+                projEstimate = torch.sum(support*outputValues,2)/config.n3*(dist.view(-1,1,1))
+                # support = ((rays_rotated[:,:,:,2].abs()<config.size_z_vol)[0])
+                # projEstimate = torch.sum(support*outputValues,1)/config.n3
 
                 pixelValues = sample_projections(projections_noisy[ii::ii+1], detectorLocations, interp='bilinear')
 
