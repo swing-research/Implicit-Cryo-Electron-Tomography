@@ -598,6 +598,8 @@ def train_without_ground_truth(config):
             # Sample the implicit volume by making the input in [0,1]
             outputValues = impl_volume((rays_rotated_scaled/2+0.5).reshape(-1,3)).reshape(proj.shape[0],N_RAYS,config.ray_length)
 
+
+            import ipdb; ipdb.set_trace()
             dist = torch.sqrt(torch.sum((rays_rotated[:,:,-1,:]-rays_rotated[:,:,0,:])**2,2))
 
             support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)*1
