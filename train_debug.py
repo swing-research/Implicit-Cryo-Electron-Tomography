@@ -598,12 +598,10 @@ def train_without_ground_truth(config):
             # Sample the implicit volume by making the input in [0,1]
             outputValues = impl_volume((rays_rotated_scaled/2+0.5).reshape(-1,3)).reshape(proj.shape[0],N_RAYS,config.ray_length)
 
+            dist = torch.sqrt(torch.sum((rays_rotated[:,:,-1,:]-rays_rotated[:,:,0,:])**2,2))
 
             support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)*1
-            projEstimate = torch.sum(support*outputValues,2)/config.n3*(torch.sum(support,2)/support.shape[2])
-            
-            dist = torch.sqrt(torch.sum((rays_rotated[:,:,-1,:]-rays_rotated[:,:,0,:])**2,2))
-            print(dist[0],dist[-1])
+            projEstimate = torch.sum(support*outputValues,2)/config.n3*(dist[:,0:1])#*(torch.sum(support,2)/support.shape[2])
 
             pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
 
