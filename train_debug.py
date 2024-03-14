@@ -577,7 +577,7 @@ def train_without_ground_truth(config):
                 shift_deformSet = None
             fixedRotSet = list(map(fixed_rot.__getitem__, idx_loader))
 
-
+            proj_ = (proj-proj.mean())/torch.abs(proj).max()
 
             # Define geometry of sampling
             size_xy_vol, z_max_value = get_sampling_geometry(config.size_z_vol, config.view_angle_min, config.view_angle_max, config.sampling_domain_lx, config.sampling_domain_ly)
@@ -607,9 +607,9 @@ def train_without_ground_truth(config):
                 ind_end = torch.where(support[ii,0]==1)[0][-1]
                 dist[ii] = torch.sqrt(torch.sum((rays_rotated[ii,0,ind_st,:]-rays_rotated[ii,0,ind_end,:])**2,0))
 
-            projEstimate = torch.sum(support*outputValues,2)/config.n3*(dist.view(-1,1,1))
+            projEstimate = torch.sum(support*outputValues,2)/config.n3#*(dist.view(-1,1,1))
 
-            pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
+            pixelValues = sample_projections(proj_, detectorLocations, interp='bilinear')
 
 
             # check projections that are sample iter per iter
@@ -739,7 +739,7 @@ def train_without_ground_truth(config):
                     ind_end = torch.where(support[kk,0]==1)[0][-1]
                     dist[kk] = torch.sqrt(torch.sum((rays_rotated[kk,0,ind_st,:]-rays_rotated[kk,0,ind_end,:])**2,0))
 
-                projEstimate = torch.sum(support*outputValues,2)/config.n3*(dist.view(-1,1,1))
+                projEstimate = torch.sum(support*outputValues,2)/config.n3#*(dist.view(-1,1,1)**2)
 
                 pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
 
@@ -877,7 +877,7 @@ def train_without_ground_truth(config):
                 # ICETIDE
                 tmp = V_icetide
                 tmp = (tmp-tmp.min())/(tmp.max()-tmp.min())
-                tmp = np.clip(tmp,a_min=np.quantile(tmp,0.05),a_max=np.quantile(tmp,0.95))
+                # tmp = np.clip(tmp,a_min=np.quantile(tmp,0.05),a_max=np.quantile(tmp,0.95))
                 display_XYZ(tmp,name="ICETIDE")
                                     
                 # if config.save_volume:
