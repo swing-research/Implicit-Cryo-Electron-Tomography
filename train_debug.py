@@ -601,7 +601,7 @@ def train_without_ground_truth(config):
 
             support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)*1
             # TODO: make that batchwise
-            dist = torch.zeros((outputValues.shape[0]))
+            dist = torch.zeros((outputValues.shape[0])).to(device)
             for ii in range(outputValues.shape[0]):
                 ind_st = torch.where(support[ii,0]==1)[0][0]
                 ind_end = torch.where(support[ii,0]==1)[0][-1]
@@ -732,7 +732,7 @@ def train_without_ground_truth(config):
 
                 support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)*1
                 # TODO: make that batchwise
-                dist = torch.zeros((outputValues.shape[0]))
+                dist = torch.zeros((outputValues.shape[0])).to(device)
                 for ii in range(outputValues.shape[0]):
                     ind_st = torch.where(support[ii,0]==1)[0][0]
                     ind_end = torch.where(support[ii,0]==1)[0][-1]
