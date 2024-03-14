@@ -1163,7 +1163,7 @@ def compare_results_real(config):
     # ICETIDE
     tmp = V_icetide
     tmp = (tmp-tmp.min())/(tmp.max()-tmp.min())
-    # tmp = np.clip(tmp,a_min=np.quantile(tmp,0.05),a_max=np.quantile(tmp,0.95))
+    tmp = np.clip(tmp,a_min=np.quantile(tmp,0.05),a_max=np.quantile(tmp,0.95))
     display_XYZ(tmp,name="ICETIDE")
 
     # Find best affine transformation between volumes
