@@ -137,9 +137,9 @@ def get_config():
     config.encoding = ml_collections.ConfigDict()
     config.encoding.otype = 'Grid'
     config.encoding.type = 'Hash'
-    config.encoding.n_levels = 10
+    config.encoding.n_levels = 9
     config.encoding.n_features_per_level = 8
-    config.encoding.log2_hashmap_size = 24
+    config.encoding.log2_hashmap_size = 22
     config.encoding.base_resolution = 4
     config.encoding.per_level_scale = 2
     config.encoding.interpolation = 'Linear'
