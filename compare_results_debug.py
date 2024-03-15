@@ -1165,10 +1165,11 @@ def compare_results_real(config):
     tmp = (tmp-tmp.min())/(tmp.max()-tmp.min())
     tmp = np.clip(tmp,a_min=np.quantile(tmp,0.05),a_max=np.quantile(tmp,0.95))
     display_XYZ(tmp,name="ICETIDE")
-    
+
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
                             "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide.astype(np.float32),2,0),overwrite=True)
     out.close()
+    print("ICE-TIDE saved")
 
     # Find best affine transformation between volumes
     V_best_resize = resize(V_best[:,:,::-1],(V_icetide.shape[0],V_icetide.shape[1],V_icetide.shape[2]))
