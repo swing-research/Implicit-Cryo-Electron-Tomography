@@ -499,6 +499,7 @@ def train_without_ground_truth(config):
     loss_regul_rot = []
     shift_estimates = []
     rot_estimates = []
+    loss2 = []
     if config.multiresolution:
         N_RAYS = config.nRays[0]
     else:
@@ -674,6 +675,7 @@ def train_without_ground_truth(config):
         
         
 
+        loss2.append(np.mean(loss_tot[-len(trainLoader):]))
         # Track loss and display values
         if ((ep%10)==0 and (ep%config.Ntest!=0)):
             loss_current_epoch = np.mean(loss_tot[-len(trainLoader):])
@@ -884,11 +886,11 @@ def train_without_ground_truth(config):
 
 
 
-                loss_tot_avg = np.array(loss_tot)
+                loss_tot_avg = np.array(loss2)
                 step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
                 plt.figure(figsize=(10,10))
                 plt.plot(loss_tot_avg[10:])
-                plt.xticks(np.arange(0, len(loss_tot_avg[1:]), len(loss_tot_avg[1:])//20))
+                plt.xticks(np.arange(0, len(loss_tot_avg[1:]), len(loss_tot_avg[1:])//10))
                 plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
                 # plt.grid()
                 plt.savefig(os.path.join(config.path_save,'training','loss.png'))
