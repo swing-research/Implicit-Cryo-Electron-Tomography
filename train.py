@@ -1215,7 +1215,7 @@ def train_without_ground_truth(config):
                 plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 15))
                 plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
                 # plt.grid()
-                plt.savefig(os.path.join(config.path_save,'training','loss.png'))
+                plt.xticks(np.arange(0, len(loss_tot_avg[1:]), len(loss_tot_avg[1:])//20))
                 plt.savefig(os.path.join(config.path_save,'training','loss.pdf'))
 
 

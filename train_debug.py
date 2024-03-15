@@ -688,7 +688,7 @@ def train_without_ground_truth(config):
 
         if (ep%config.Ntest==0) and check_point_training:
             for ii, ang in enumerate(angles_t):
-                print(ii)
+                # print(ii)
                 # import ipdb; ipdb.set_trace()
 
                 # Define geometry of sampling
@@ -888,7 +888,7 @@ def train_without_ground_truth(config):
                 step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
                 plt.figure(figsize=(10,10))
                 plt.plot(loss_tot_avg[10:])
-                plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 15))
+                plt.xticks(np.arange(0, len(loss_tot_avg[1:]), len(loss_tot_avg[1:])//20))
                 plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
                 # plt.grid()
                 plt.savefig(os.path.join(config.path_save,'training','loss.png'))

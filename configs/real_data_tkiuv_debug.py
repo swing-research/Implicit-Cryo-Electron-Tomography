@@ -72,9 +72,9 @@ def get_config():
     config.multiresolution = False
     config.multires_params = ml_collections.ConfigDict()
     config.multires_params.startResolution = 4
-    config.multires_params.ray_change_epoch = [50, 100, 400, 800]
-    config.multires_params.batch_set = [10, 5 , 4, 3,2,1]
-    config.nRays =  [100,200,400,800]
+    config.multires_params.ray_change_epoch = [0]
+    config.multires_params.batch_set = [5]
+    config.nRays =  [1000]
     config.multires_params.upsample = False
 
     #############################
