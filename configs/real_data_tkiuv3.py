@@ -91,15 +91,15 @@ def get_config():
     config.epochs = 10000
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
-    config.scheduler_step_size = 1000 #300
-    config.scheduler_gamma = 0.75 #0.75
+    config.scheduler_step_size = 500 #300
+    config.scheduler_gamma = 0.5 #0.75
 
     # Sampling strategy
     config.batch_size = 5 # number of viewing direction per iteration
     #config.nRays =  512 # number of sampling rays per viewing direction
     # config.z_max = 2*config.n3/max(config.n1,config.n2)/np.cos((90-np.max([config.view_angle_min,config.view_angle_max]))*np.pi/180)
     config.z_max = 1 #1.2
-    config.ray_length = 500 #int(np.floor(n1*z_max))
+    config.ray_length = 1000 #int(np.floor(n1*z_max))
     config.rays_scaling = [0.5,0.5,0.5] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
     config.pad = 0. # pad tell if we need to sample the edges or not. It is directly realeted the sampling in the projection
     # When to start or stop optimizing over a variable
@@ -110,7 +110,7 @@ def get_config():
 
     # Training learning rates for Adam optimizer
     config.loss_data = torch.nn.L1Loss()
-    config.lr_volume = 1e-3
+    config.lr_volume = 1e-2
     config.lr_shift = 1e-3
     config.lr_rot = 0 # 1e-3
     config.lr_local_def = 1e-4
