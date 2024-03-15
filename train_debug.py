@@ -244,6 +244,13 @@ def train_without_ground_truth(config):
     projections_noisy = (projections_noisy - p_mean)/p_den
     config.Nangles = projections_noisy.shape[0]
 
+    print(projections_noisy.min(),projections_noisy.max())
+    plt.figure(1)
+    plt.clf()
+    plt.hist(projections_noisy.detach().cpu().numpy().reshape())
+    plt.savefig('hist.png')
+
+
     if config.multiresolution:
         print("Computing multiscale...")
         projection_noisy_np = projections_noisy.detach().cpu().numpy()
@@ -615,7 +622,7 @@ def train_without_ground_truth(config):
 
             projEstimate = torch.sum(support*outputValues,2)/config.n3#*(dist.view(-1,1,1))
 
-            pixelValues = sample_projections(proj_, detectorLocations, interp='bilinear')
+            pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
 
 
             # Take the datafidelity loss
@@ -772,20 +779,20 @@ def train_without_ground_truth(config):
                 #                                 scale=0.1,alpha=0.8,width=0.0015,weights_est=1,s=config.rays_scaling[0])
 
                     
-                # ## Save global deformation
-                # shiftEstimate, rotEstimate = globalDeformationValues(shift_est,rot_est)
-                # plt.figure(1)
-                # plt.clf()
-                # plt.hist(shiftEstimate.reshape(-1)*config.n1,alpha=1)
-                # plt.legend(['est.'])
-                # plt.savefig(os.path.join(config.path_save+"/training/deformations/shifts.png"))
+                ## Save global deformation
+                shiftEstimate, rotEstimate = globalDeformationValues(shift_est,rot_est)
+                plt.figure(1)
+                plt.clf()
+                plt.hist(shiftEstimate.reshape(-1)*config.n1,alpha=1)
+                plt.legend(['est.'])
+                plt.savefig(os.path.join(config.path_save+"/training/deformations/shifts.png"))
 
-                # plt.figure(1)
-                # plt.clf()
-                # plt.hist(rotEstimate*180/np.pi,15)
-                # plt.legend(['est.'])
-                # plt.title('Angles in degrees')
-                # plt.savefig(os.path.join(config.path_save+"/training/deformations/rotations.png"))
+                plt.figure(1)
+                plt.clf()
+                plt.hist(rotEstimate*180/np.pi,15)
+                plt.legend(['est.'])
+                plt.title('Angles in degrees')
+                plt.savefig(os.path.join(config.path_save+"/training/deformations/rotations.png"))
 
                 # ## Save the loss    
                 # # loss_tot_avg = np.array(loss_tot).reshape(config.Nangles//config.batch_size,-1).mean(0)
