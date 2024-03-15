@@ -1031,10 +1031,10 @@ def train_without_ground_truth(config):
             loss_tot.append(loss.item())
 
         import imageio
-        tmp = proj[0].detach().cpu().numpy()
-        tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(os.path.join(config.path_save_data,'training',"projections.png"),tmp)
+        # tmp = proj[0].detach().cpu().numpy()
+        # tmp = (tmp - tmp.max())/(tmp.max()-tmp.min())
+        # tmp = np.floor(255*tmp).astype(np.uint8)
+        # imageio.imwrite(os.path.join(config.path_save_data,'training',"projections.png"),tmp)
 
         scheduler_volume.step()
         if len(list_params_deformations_glob)!=0:
@@ -1077,53 +1077,53 @@ def train_without_ground_truth(config):
                 
                 print('Running and saving tests')  
 
-                ## Save local deformation
-                utils_display.display_local_movie(implicit_deformation_list,field_true=None,Npts=(20,20),
-                                            img_path=config.path_save+"/training/deformations/local_deformations_",img_type='.png',
-                                            scale=1,alpha=0.8,width=0.0015,weights_est=1,s=config.rays_scaling[0])
-                for index in range(len(implicit_deformation_list)):
-                    utils_display.display_local_movie(implicit_deformation_list,field_true=None,Npts=(20,20),
-                                                img_path=config.path_save+"/training/deformations_x10/local_deformations_",img_type='.png',
-                                                scale=0.1,alpha=0.8,width=0.0015,weights_est=1,s=config.rays_scaling[0])
+                # ## Save local deformation
+                # utils_display.display_local_movie(implicit_deformation_list,field_true=None,Npts=(20,20),
+                #                             img_path=config.path_save+"/training/deformations/local_deformations_",img_type='.png',
+                #                             scale=1,alpha=0.8,width=0.0015,weights_est=1,s=config.rays_scaling[0])
+                # for index in range(len(implicit_deformation_list)):
+                #     utils_display.display_local_movie(implicit_deformation_list,field_true=None,Npts=(20,20),
+                #                                 img_path=config.path_save+"/training/deformations_x10/local_deformations_",img_type='.png',
+                #                                 scale=0.1,alpha=0.8,width=0.0015,weights_est=1,s=config.rays_scaling[0])
 
                     
-                ## Save global deformation
-                shiftEstimate, rotEstimate = globalDeformationValues(shift_est,rot_est)
-                plt.figure(1)
-                plt.clf()
-                plt.hist(shiftEstimate.reshape(-1)*config.n1,alpha=1)
-                plt.legend(['est.'])
-                plt.savefig(os.path.join(config.path_save+"/training/deformations/shifts.png"))
+                # ## Save global deformation
+                # shiftEstimate, rotEstimate = globalDeformationValues(shift_est,rot_est)
+                # plt.figure(1)
+                # plt.clf()
+                # plt.hist(shiftEstimate.reshape(-1)*config.n1,alpha=1)
+                # plt.legend(['est.'])
+                # plt.savefig(os.path.join(config.path_save+"/training/deformations/shifts.png"))
 
-                plt.figure(1)
-                plt.clf()
-                plt.hist(rotEstimate*180/np.pi,15)
-                plt.legend(['est.'])
-                plt.title('Angles in degrees')
-                plt.savefig(os.path.join(config.path_save+"/training/deformations/rotations.png"))
+                # plt.figure(1)
+                # plt.clf()
+                # plt.hist(rotEstimate*180/np.pi,15)
+                # plt.legend(['est.'])
+                # plt.title('Angles in degrees')
+                # plt.savefig(os.path.join(config.path_save+"/training/deformations/rotations.png"))
 
-                ## Save the loss    
-                # loss_tot_avg = np.array(loss_tot).reshape(config.Nangles//config.batch_size,-1).mean(0)
-                loss_tot_avg = np.array(loss_tot)
-                step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
-                plt.figure(figsize=(10,10))
-                plt.plot(loss_tot_avg[10:])
-                # plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 100))
-                plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
-                # plt.grid()
-                plt.savefig(os.path.join(config.path_save,'training','loss_iter.png'))
+                # ## Save the loss    
+                # # loss_tot_avg = np.array(loss_tot).reshape(config.Nangles//config.batch_size,-1).mean(0)
+                # loss_tot_avg = np.array(loss_tot)
+                # step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
+                # plt.figure(figsize=(10,10))
+                # plt.plot(loss_tot_avg[10:])
+                # # plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 100))
+                # plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
+                # # plt.grid()
+                # plt.savefig(os.path.join(config.path_save,'training','loss_iter.png'))
                 
-                ## Save slice of the volume
-                z_range = config.z_max*np.linspace(-1,1,config.n3_patch//5)*rays_scaling[0,0,0,2].item()*(config.n3_patch/config.n1_patch)/2+0.5
-                for zz, zval in enumerate(z_range):
-                    grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
-                    grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
-                    estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1_patch,config.n2_patch)
-                    pp = (estSlice)*1.
-                    plt.figure(1)
-                    plt.clf()
-                    plt.imshow(pp,cmap='gray')
-                    plt.savefig(os.path.join(config.path_save+"/training/volume/volume_est_slice_{}.png".format(zz)))
+                # ## Save slice of the volume
+                # z_range = config.z_max*np.linspace(-1,1,config.n3_patch)*rays_scaling[0,0,0,2].item()*(config.n3_patch/config.n1_patch)/2+0.5
+                # for zz, zval in enumerate(z_range):
+                #     grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
+                #     grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
+                #     estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1_patch,config.n2_patch)
+                #     pp = (estSlice)*1.
+                #     plt.figure(1)
+                #     plt.clf()
+                #     plt.imshow(pp,cmap='gray')
+                #     plt.savefig(os.path.join(config.path_save+"/training/volume/volume_est_slice_{}.png".format(zz)))
                     
                                     
                 if config.save_volume:
@@ -1134,8 +1134,49 @@ def train_without_ground_truth(config):
                         grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
                         estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1_patch,config.n2_patch)
                         V_ours[:,:,zz] = estSlice
+                        pp = (estSlice)*1.
+                        plt.figure(1)
+                        plt.clf()
+                        plt.imshow(pp,cmap='gray')
+                        plt.savefig(os.path.join(config.path_save+"/training/volume/volume_est_slice_{}.png".format(zz)))
                     out = mrcfile.new(config.path_save+"/training/V_est"+".mrc",np.moveaxis(V_ours.astype(np.float32),2,0),overwrite=True)
                     out.close() 
+
+                def display_XYZ(tmp,name="true"):
+                    # tmp = (tmp - tmp.mean(2).max())/(tmp.mean(2).max()-tmp.mean(2).min())
+                    # tmp = np.floor(255*tmp).astype(np.uint8)
+                    avg = 0
+                    sl0 = tmp.shape[0]//2
+                    sl1 = tmp.shape[1]//2
+                    sl2 = tmp.shape[2]//2
+                    f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
+                    aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray')#,vmin=tmp.min(),vmax=tmp.max())
+                    aa[0,0].axis('off')
+                    aa[1,0].imshow(tmp[:,:,sl2-avg//2:sl2+avg//2+1].mean(2),cmap='gray')#,vmin=tmp.min(),vmax=tmp.max())
+                    aa[1,0].axis('off')
+                    aa[1,1].imshow(tmp[:,sl1-avg//2:sl1+avg//2+1,:].mean(1),cmap='gray')#,vmin=tmp.min(),vmax=tmp.max())
+                    aa[1,1].axis('off')
+                    aa[0,1].axis('off')
+                    plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+                    plt.savefig(os.path.join("tmp.png"))
+                    plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_slice.png"))
+
+                    f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
+                    aa[0,0].imshow(tmp.mean(0).T,cmap='gray')#,vmin=tmp.min(),vmax=tmp.max())
+                    aa[0,0].axis('off')
+                    aa[1,0].imshow(tmp.mean(2),cmap='gray')#,vmin=tmp.min(),vmax=tmp.max())
+                    aa[1,0].axis('off')
+                    aa[1,1].imshow(tmp.mean(1),cmap='gray')#,vmin=tmp.min(),vmax=tmp.max())
+                    aa[1,1].axis('off')
+                    aa[0,1].axis('off')
+                    plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+                    plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_proj.png"))
+
+                # ICETIDE
+                tmp = V_ours
+                tmp = (tmp-tmp.min())/(tmp.max()-tmp.min())
+                tmp = np.clip(tmp,a_min=np.quantile(tmp,0.05),a_max=np.quantile(tmp,0.95))
+                display_XYZ(tmp,name="ICETIDE")
                         
                 if config.load_existing_net:
                     torch.save({
@@ -1163,81 +1204,89 @@ def train_without_ground_truth(config):
                     }, os.path.join(config.path_save,'training','model_trained.pt'))
 
 
+                loss_tot_avg = np.array(loss_tot)
+                step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
+                plt.figure(figsize=(10,10))
+                plt.plot(loss_tot_avg[10:])
+                plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 15))
+                plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
+                # plt.grid()
+                plt.savefig(os.path.join(config.path_save,'training','loss.png'))
+                plt.savefig(os.path.join(config.path_save,'training','loss.pdf'))
 
 
 
+                # ######################################################################################################
+                # # Using only the deformation estimates
+                # ######################################################################################################
+                # if ep == 0:
+                #     projections_noisy_resize = torch.Tensor(resize(projections_noisy.detach().cpu().numpy(),(config.Nangles,config.n1,config.n2))).type(config.torch_type).to(device)
+                # projections_noisy_undeformed = torch.zeros_like(projections_noisy_resize)
+                # xx1 = torch.linspace(-1,1,config.n1,dtype=config.torch_type,device=device)
+                # xx2 = torch.linspace(-1,1,config.n2,dtype=config.torch_type,device=device)
+                # XX_t, YY_t = torch.meshgrid(xx1,xx2,indexing='ij')
+                # XX_t = torch.unsqueeze(XX_t, dim = 2)
+                # YY_t = torch.unsqueeze(YY_t, dim = 2)
+                # for i in range(config.Nangles):
+                #     coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
+                #     #field = utils_deformation.deformation_field(-implicit_deformation_icetide[i].depl_ctr_pts[0].detach().clone())
+                #     thetas = torch.tensor(-rot_est[i].thetas.item()).to(device)
+                #     thetas_fixed = torch.tensor(-fixed_rot[i].thetas.item()).to(device)
+                #     rot_deform = torch.stack(
+                #                     [torch.stack([torch.cos(thetas),torch.sin(thetas)],0),
+                #                     torch.stack([-torch.sin(thetas),torch.cos(thetas)],0)]
+                #                     ,0)
+                #     rot_fixed = torch.stack(
+                #                     [torch.stack([torch.cos(thetas_fixed),torch.sin(thetas_fixed)],0),
+                #                     torch.stack([-torch.sin(thetas_fixed),torch.cos(thetas_fixed)],0)]
+                #                     ,0)
+                #     if use_local_def:
+                #         coordinates = coordinates - config.deformationScale*implicit_deformation_list[i](coordinates)
+                #     coordinates = coordinates - shift_est[i].shifts_arr/rays_scaling[0,0,0,0].item()
+                #     coordinates = torch.transpose(torch.matmul(rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
+                #     coordinates = torch.transpose(torch.matmul(rot_fixed,torch.transpose(coordinates,0,1)),0,1) ## do rotation
+                #     x = projections_noisy_resize[i].clone().view(1,1,config.n1,config.n2)
+                #     x = x.expand(config.n1*config.n2, -1, -1, -1)
+                #     out = cropper(x,coordinates,output_size = 1).reshape(config.n1,config.n2)
+                #     projections_noisy_undeformed[i] = out
+                # # V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
+                # projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
+                # out = mrcfile.new(os.path.join(config.path_save_data,'training',"FBP_icetide_projections.mrc"),projections_FBP_icetide.astype(np.float32),overwrite=True)
+                # out.close()
 
-                ######################################################################################################
-                # Using only the deformation estimates
-                ######################################################################################################
-                if ep == 0:
-                    projections_noisy_resize = torch.Tensor(resize(projections_noisy.detach().cpu().numpy(),(config.Nangles,config.n1,config.n2))).type(config.torch_type).to(device)
-                projections_noisy_undeformed = torch.zeros_like(projections_noisy_resize)
-                xx1 = torch.linspace(-1,1,config.n1,dtype=config.torch_type,device=device)
-                xx2 = torch.linspace(-1,1,config.n2,dtype=config.torch_type,device=device)
-                XX_t, YY_t = torch.meshgrid(xx1,xx2,indexing='ij')
-                XX_t = torch.unsqueeze(XX_t, dim = 2)
-                YY_t = torch.unsqueeze(YY_t, dim = 2)
-                for i in range(config.Nangles):
-                    coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
-                    #field = utils_deformation.deformation_field(-implicit_deformation_icetide[i].depl_ctr_pts[0].detach().clone())
-                    thetas = torch.tensor(-rot_est[i].thetas.item()).to(device)
-                    thetas_fixed = torch.tensor(-fixed_rot[i].thetas.item()).to(device)
-                    rot_deform = torch.stack(
-                                    [torch.stack([torch.cos(thetas),torch.sin(thetas)],0),
-                                    torch.stack([-torch.sin(thetas),torch.cos(thetas)],0)]
-                                    ,0)
-                    rot_fixed = torch.stack(
-                                    [torch.stack([torch.cos(thetas_fixed),torch.sin(thetas_fixed)],0),
-                                    torch.stack([-torch.sin(thetas_fixed),torch.cos(thetas_fixed)],0)]
-                                    ,0)
-                    if use_local_def:
-                        coordinates = coordinates - config.deformationScale*implicit_deformation_list[i](coordinates)
-                    coordinates = coordinates - shift_est[i].shifts_arr/rays_scaling[0,0,0,0].item()
-                    coordinates = torch.transpose(torch.matmul(rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
-                    coordinates = torch.transpose(torch.matmul(rot_fixed,torch.transpose(coordinates,0,1)),0,1) ## do rotation
-                    x = projections_noisy_resize[i].clone().view(1,1,config.n1,config.n2)
-                    x = x.expand(config.n1*config.n2, -1, -1, -1)
-                    out = cropper(x,coordinates,output_size = 1).reshape(config.n1,config.n2)
-                    projections_noisy_undeformed[i] = out
-                # V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
-                projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
-                out = mrcfile.new(os.path.join(config.path_save_data,'training',"FBP_icetide_projections.mrc"),projections_FBP_icetide.astype(np.float32),overwrite=True)
-                out.close()
-
-                N_small = 256
-                projections_noisy_undeformed = torch.zeros(config.Nangles,N_small,N_small)
-                xx1 = torch.linspace(-1,1,N_small,dtype=config.torch_type,device=device)
-                xx2 = torch.linspace(-1,1,N_small,dtype=config.torch_type,device=device)
-                XX_t, YY_t = torch.meshgrid(xx1,xx2,indexing='ij')
-                XX_t = torch.unsqueeze(XX_t, dim = 2)
-                YY_t = torch.unsqueeze(YY_t, dim = 2)
-                for i in range(config.Nangles):
-                    coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
-                    #field = utils_deformation.deformation_field(-implicit_deformation_icetide[i].depl_ctr_pts[0].detach().clone())
-                    thetas = torch.tensor(-rot_est[i].thetas.item()).to(device)
-                    thetas_fixed = torch.tensor(-fixed_rot[i].thetas.item()).to(device)
-                    rot_deform = torch.stack(
-                                    [torch.stack([torch.cos(thetas),torch.sin(thetas)],0),
-                                    torch.stack([-torch.sin(thetas),torch.cos(thetas)],0)]
-                                    ,0)
-                    rot_fixed = torch.stack(
-                                    [torch.stack([torch.cos(thetas_fixed),torch.sin(thetas_fixed)],0),
-                                    torch.stack([-torch.sin(thetas_fixed),torch.cos(thetas_fixed)],0)]
-                                    ,0)
-                    if use_local_def:
-                        coordinates = coordinates - config.deformationScale*implicit_deformation_list[i](coordinates)
-                    coordinates = coordinates - shift_est[i].shifts_arr/rays_scaling[0,0,0,0].item()
-                    coordinates = torch.transpose(torch.matmul(rot_fixed,torch.transpose(coordinates,0,1)),0,1) ## do rotation
-                    coordinates = torch.transpose(torch.matmul(rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
-                    x = projections_noisy_resize[i].clone().view(1,1,config.n1,config.n2)
-                    x = x.expand(N_small*N_small, -1, -1, -1)
-                    out = cropper(x,coordinates,output_size = 1).reshape(N_small,N_small)
-                    projections_noisy_undeformed[i] = out
-                # V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
-                projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
-                out = mrcfile.new(os.path.join(config.path_save_data,'training',"FBP_icetide_projections_small.mrc"),projections_FBP_icetide.astype(np.float32),overwrite=True)
-                out.close()
+                # N_small = 256
+                # projections_noisy_undeformed = torch.zeros(config.Nangles,N_small,N_small)
+                # xx1 = torch.linspace(-1,1,N_small,dtype=config.torch_type,device=device)
+                # xx2 = torch.linspace(-1,1,N_small,dtype=config.torch_type,device=device)
+                # XX_t, YY_t = torch.meshgrid(xx1,xx2,indexing='ij')
+                # XX_t = torch.unsqueeze(XX_t, dim = 2)
+                # YY_t = torch.unsqueeze(YY_t, dim = 2)
+                # for i in range(config.Nangles):
+                #     coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
+                #     #field = utils_deformation.deformation_field(-implicit_deformation_icetide[i].depl_ctr_pts[0].detach().clone())
+                #     thetas = torch.tensor(-rot_est[i].thetas.item()).to(device)
+                #     thetas_fixed = torch.tensor(-fixed_rot[i].thetas.item()).to(device)
+                #     rot_deform = torch.stack(
+                #                     [torch.stack([torch.cos(thetas),torch.sin(thetas)],0),
+                #                     torch.stack([-torch.sin(thetas),torch.cos(thetas)],0)]
+                #                     ,0)
+                #     rot_fixed = torch.stack(
+                #                     [torch.stack([torch.cos(thetas_fixed),torch.sin(thetas_fixed)],0),
+                #                     torch.stack([-torch.sin(thetas_fixed),torch.cos(thetas_fixed)],0)]
+                #                     ,0)
+                #     if use_local_def:
+                #         coordinates = coordinates - config.deformationScale*implicit_deformation_list[i](coordinates)
+                #     coordinates = coordinates - shift_est[i].shifts_arr/rays_scaling[0,0,0,0].item()
+                #     coordinates = torch.transpose(torch.matmul(rot_fixed,torch.transpose(coordinates,0,1)),0,1) ## do rotation
+                #     coordinates = torch.transpose(torch.matmul(rot_deform,torch.transpose(coordinates,0,1)),0,1) ## do rotation
+                #     x = projections_noisy_resize[i].clone().view(1,1,config.n1,config.n2)
+                #     x = x.expand(N_small*N_small, -1, -1, -1)
+                #     out = cropper(x,coordinates,output_size = 1).reshape(N_small,N_small)
+                #     projections_noisy_undeformed[i] = out
+                # # V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
+                # projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
+                # out = mrcfile.new(os.path.join(config.path_save_data,'training',"FBP_icetide_projections_small.mrc"),projections_FBP_icetide.astype(np.float32),overwrite=True)
+                # out.close()
         plt.close('all')
 
     print("Saving final state after training...")
@@ -1292,9 +1341,9 @@ def train_without_ground_truth(config):
     step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
     plt.figure(figsize=(10,10))
     plt.plot(loss_tot_avg[10:])
-    plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 100))
+    plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 15))
     plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
-    plt.grid()
+    # plt.grid()
     plt.savefig(os.path.join(config.path_save,'training','loss.png'))
     plt.savefig(os.path.join(config.path_save,'training','loss.pdf'))
 

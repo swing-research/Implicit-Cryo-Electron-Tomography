@@ -981,9 +981,9 @@ def compare_results_real(config):
         os.makedirs(config.path_save+"/evaluation/volume_slices/FBP_ICETIDE/")
 
 
-    config.n1 = config.n1_patch
-    config.n2 = config.n2_patch
-    config.n3 = config.n3_patch
+    # config.n1 = config.n1_patch
+    # config.n2 = config.n2_patch
+    # config.n3 = config.n3_patch
 
     ######################################################################################################
     ## Load data

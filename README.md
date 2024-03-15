@@ -95,6 +95,8 @@ If you have any furter questions or want to discuss, reach out to one of us!
 * Valentin Debarnot: valentin.debarnot@unibas.ch
  
 * Vinith Kishore: vinith.kishore@unibas.ch
+
+* Ricardo D. Righetto: ricardo.righetto@unibas.ch
  
 * Ivan Dokmanić: ivan.dokmanic@unibas.ch
 
