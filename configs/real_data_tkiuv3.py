@@ -74,7 +74,7 @@ def get_config():
     # config.multires_params.startResolution = 4
     # config.multires_params.ray_change_epoch = [0]
     # config.multires_params.batch_set = [5]
-    config.nRays =  [1000]
+    config.nRays =  [800]
     # config.multires_params.upsample = False
 
     #############################
@@ -95,7 +95,7 @@ def get_config():
     config.scheduler_gamma = 0.5 #0.75
 
     # Sampling strategy
-    config.batch_size = 3 # number of viewing direction per iteration
+    config.batch_size = 2 # number of viewing direction per iteration
     #config.nRays =  512 # number of sampling rays per viewing direction
     # config.z_max = 2*config.n3/max(config.n1,config.n2)/np.cos((90-np.max([config.view_angle_min,config.view_angle_max]))*np.pi/180)
     config.z_max = 1 #1.2
