@@ -616,7 +616,10 @@ def train_without_ground_truth(config):
     if config.denoise:
         projections_noisy = torch.Tensor(data['projections_denoise']).type(config.torch_type).to(device)
     else:
-        projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
+        # projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
+        projections_noisy = torch.Tensor(np.float32(mrcfile.open(os.path.join(config.path_load,config.volume_name+".mrc"),permissive=True).data)).type(config.torch_type).to(device)
+        import ipdb; ipdb.set_trace()
+        # projections_noisy = 
     config.Nangles = projections_noisy.shape[0]
 
 
@@ -971,12 +974,12 @@ def train_without_ground_truth(config):
                 shift_deformSet = None
             fixedRotSet = list(map(fixed_rot.__getitem__, idx_loader))
 
-            proj_ = (proj-proj.mean())/torch.abs(proj).max()
+            
 
 
             #print(proj.shape)
             ## Sample the rays
-            raysSet,raysRot, isOutsideSet, pixelValues = generate_rays_batch_bilinear(proj_,angle,N_RAYS,config.ray_length,
+            raysSet,raysRot, isOutsideSet, pixelValues = generate_rays_batch_bilinear(proj,angle,N_RAYS,config.ray_length,
                                                                                                 randomZ=2,zmax=config.z_max,
                                                                                                 choosenLocations_all=choosenLocations_all,
                                                                                                 pad = config.pad,
