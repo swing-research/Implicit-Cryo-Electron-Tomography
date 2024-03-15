@@ -75,7 +75,7 @@ def get_config():
     # config.multires_params.ray_change_epoch = [0]
     # config.multires_params.batch_set = [5]
     config.nRays =  [1000]
-    config.multires_params.upsample = False
+    # config.multires_params.upsample = False
 
     #############################
     ## Parameters for training ##
