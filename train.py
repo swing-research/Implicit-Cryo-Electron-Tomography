@@ -618,8 +618,6 @@ def train_without_ground_truth(config):
     else:
         # projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
         projections_noisy = torch.Tensor(np.float32(mrcfile.open(os.path.join(config.path_load,config.volume_name+".mrc"),permissive=True).data)).type(config.torch_type).to(device)
-        import ipdb; ipdb.set_trace()
-        (proj-proj.mean())/torch.abs(proj).max()
         p_mean = torch.mean(projections_noisy.view(projections_noisy.shape[0],-1),1).view(-1,1,1)
         p_den = torch.max(torch.abs(projections_noisy).view(projections_noisy.shape[0],-1),1)[0].view(-1,1,1)
         projections_noisy = (projections_noisy - p_mean)/p_den
