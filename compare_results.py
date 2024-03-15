@@ -981,9 +981,9 @@ def compare_results_real(config):
         os.makedirs(config.path_save+"/evaluation/volume_slices/FBP_ICETIDE/")
 
 
-    # config.n1 = config.n1_patch
-    # config.n2 = config.n2_patch
-    # config.n3 = config.n3_patch
+    config.n1 = config.n1_eval
+    config.n2 = config.n2_eval
+    config.n3 = config.n3_eval
 
     ######################################################################################################
     ## Load data
@@ -1132,19 +1132,19 @@ def compare_results_real(config):
         plt.savefig(os.path.join("tmp.png"))
         plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_slice.png"))
 
-        sl0 = 1024-320
-        sl1 = 875
-        sl2 = 210
-        f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
-        aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray',vmin=tmp.min(),vmax=tmp.max())
-        aa[0,0].axis('off')
-        aa[1,0].imshow(tmp[:,:,sl2-avg//2:sl2+avg//2+1].mean(2),cmap='gray',vmin=tmp.min(),vmax=tmp.max())
-        aa[1,0].axis('off')
-        aa[1,1].imshow(tmp[:,sl1-avg//2:sl1+avg//2+1,:].mean(1),cmap='gray',vmin=tmp.min(),vmax=tmp.max())
-        aa[1,1].axis('off')
-        aa[0,1].axis('off')
-        plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
-        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_slice_custom.png"))
+        # sl0 = 1024-320
+        # sl1 = 875
+        # sl2 = 210
+        # f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
+        # aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray',vmin=tmp.min(),vmax=tmp.max())
+        # aa[0,0].axis('off')
+        # aa[1,0].imshow(tmp[:,:,sl2-avg//2:sl2+avg//2+1].mean(2),cmap='gray',vmin=tmp.min(),vmax=tmp.max())
+        # aa[1,0].axis('off')
+        # aa[1,1].imshow(tmp[:,sl1-avg//2:sl1+avg//2+1,:].mean(1),cmap='gray',vmin=tmp.min(),vmax=tmp.max())
+        # aa[1,1].axis('off')
+        # aa[0,1].axis('off')
+        # plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+        # plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_slice_custom.png"))
 
         f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
         aa[0,0].imshow(tmp.mean(0).T,cmap='gray',vmin=tmp.min(),vmax=tmp.max())

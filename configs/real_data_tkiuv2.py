@@ -29,6 +29,10 @@ def get_config():
     config.n1_patch = 256
     config.n2_patch = 256
     config.n3_patch = 128
+    # Size of the patch to eval in the raw volume
+    config.n1_eval = 1024
+    config.n2_eval = 1024
+    config.n3_eval = 512
     # Fixed angle that is approximately known
     config.fixed_angle = 5
     # Sampling operator
