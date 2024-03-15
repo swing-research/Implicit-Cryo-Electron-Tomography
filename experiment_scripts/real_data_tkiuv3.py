@@ -32,7 +32,7 @@ def main():
 
     # Train ICE-TIDE
     if args.no_train:
-        import train
+        import train_debug as train
         # # Initial training
         # config.multiresolution = True
         # #config.delay_deformations = 25 # Delay before learning deformations
@@ -75,7 +75,7 @@ def main():
 
     # Compare the results and save the figures
     if args.no_comparison:
-        import compare_results
+        import compare_results_debug as compare_results
         compare_results.compare_results_real(config)
 
 

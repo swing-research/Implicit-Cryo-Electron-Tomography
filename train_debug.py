@@ -247,7 +247,7 @@ def train_without_ground_truth(config):
     print(projections_noisy.min(),projections_noisy.max())
     plt.figure(1)
     plt.clf()
-    plt.hist(projections_noisy.detach().cpu().numpy().reshape())
+    plt.hist(projections_noisy.detach().cpu().numpy().reshape(-1))
     plt.savefig('hist.png')
 
 
