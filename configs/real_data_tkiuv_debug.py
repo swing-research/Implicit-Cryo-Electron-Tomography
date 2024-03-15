@@ -113,7 +113,7 @@ def get_config():
 
     # Training regularization
     config.lamb_volume = 0 # regul parameters on volume regularization
-    config.lamb_rot = 0#1e-2 # regul parameters on inplane rotations
+    config.lamb_rot = 0 #1e-2 # regul parameters on inplane rotations
     config.lamb_shifts = 1e-6 # regul parameters on shifts
     config.lamb_local_ampl = 1e-5 # regul on amplitude of local def.
     config.lamb_local_mean = 1e-5 # regul on mean of local def.
@@ -122,29 +122,7 @@ def get_config():
     # Params for implicit deformation
     config.deformationScale = 1
     config.grid_positive = True
-
-    # # params of implicit volume
-    # config.input_size_volume = 3 # always 3 for 3d tomography
-    # config.output_size_volume = 1 # always 1 for 3d tomography
-    # config.num_layers_volume = 5
-    # config.hidden_size_volume = 64
-    # config.L_volume = 3
-    # # params for the multi-resolution grids encoding
-    # config.encoding = ml_collections.ConfigDict()
-    # config.encoding.otype = 'Grid'
-    # config.encoding.type = 'Hash'
-    # config.encoding.n_levels = 5
-    # config.encoding.n_features_per_level = 2
-    # config.encoding.log2_hashmap_size = 24
-    # config.encoding.base_resolution = 64
-    # config.encoding.per_level_scale = 2
-    # config.encoding.interpolation = 'Smoothstep'
-    # # params specific to Tiny cuda network
-    # config.network = ml_collections.ConfigDict()
-    # config.network.otype = 'FullyFusedMLP'
-    # config.network.activation = 'ReLU'
-    # config.network.output_activation = 'None'
-
+    
     # params of implicit volume
     config.input_size_volume = 3 # always 3 for 3d tomography
     config.output_size_volume = 1 # always 1 for 3d tomography
@@ -155,10 +133,10 @@ def get_config():
     config.encoding = ml_collections.ConfigDict()
     config.encoding.otype = 'Grid'
     config.encoding.type = 'Hash'
-    config.encoding.n_levels = 14
+    config.encoding.n_levels = 10
     config.encoding.n_features_per_level = 8
-    config.encoding.log2_hashmap_size = 22
-    config.encoding.base_resolution = 16
+    config.encoding.log2_hashmap_size = 24
+    config.encoding.base_resolution = 4
     config.encoding.per_level_scale = 2
     config.encoding.interpolation = 'Linear'
     # params specific to Tiny cuda network
