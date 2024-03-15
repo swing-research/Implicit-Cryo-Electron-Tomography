@@ -74,7 +74,7 @@ def get_config():
     # config.multires_params.startResolution = 4
     # config.multires_params.ray_change_epoch = [0]
     # config.multires_params.batch_set = [5]
-    config.nRays =  [1000]
+    config.nRays =  [2000]
     # config.multires_params.upsample = False
 
     #############################
@@ -99,7 +99,7 @@ def get_config():
     #config.nRays =  512 # number of sampling rays per viewing direction
     # config.z_max = 2*config.n3/max(config.n1,config.n2)/np.cos((90-np.max([config.view_angle_min,config.view_angle_max]))*np.pi/180)
     config.z_max = 1 #1.2
-    config.ray_length = 1000 #int(np.floor(n1*z_max))
+    config.ray_length = 2500 #int(np.floor(n1*z_max))
     config.rays_scaling = [0.5,0.5,0.5] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
     config.pad = 0. # pad tell if we need to sample the edges or not. It is directly realeted the sampling in the projection
     # When to start or stop optimizing over a variable
@@ -110,7 +110,7 @@ def get_config():
 
     # Training learning rates for Adam optimizer
     config.loss_data = torch.nn.L1Loss()
-    config.lr_volume = 1e-2
+    config.lr_volume = 1e-3
     config.lr_shift = 1e-3
     config.lr_rot = 0 # 1e-3
     config.lr_local_def = 1e-4
