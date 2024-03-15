@@ -13,7 +13,7 @@ def get_config():
     #######################
     config = ml_collections.ConfigDict()
     config.seed = 42
-    config.device_num = 0
+    config.device_num = 3
     config.torch_type = torch.float
     config.track_memory = False
 
