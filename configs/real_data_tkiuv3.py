@@ -74,7 +74,7 @@ def get_config():
     # config.multires_params.startResolution = 4
     # config.multires_params.ray_change_epoch = [0]
     # config.multires_params.batch_set = [5]
-    config.nRays =  [2000]
+    config.nRays =  [1000]
     # config.multires_params.upsample = False
 
     #############################
@@ -116,7 +116,7 @@ def get_config():
     config.lr_local_def = 1e-4
 
     # Training regularization
-    config.lamb_volume = 0 # regul parameters on volume regularization
+    config.lamb_volume = 1e-4 # regul parameters on volume regularization
     config.lamb_rot = 0 #1e-2 # regul parameters on inplane rotations
     config.lamb_shifts = 1e-6 # regul parameters on shifts
     config.lamb_local_ampl = 1e-5 # regul on amplitude of local def.
