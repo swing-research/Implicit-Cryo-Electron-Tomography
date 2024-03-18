@@ -743,7 +743,7 @@ def train_without_ground_truth(config):
 
                 projEstimate = torch.sum(support*outputValues,2)/config.n3#*(dist.view(-1,1,1)**2)
 
-                pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
+                pixelValues = sample_projections(projections_noisy[ii:ii+1], detectorLocations, interp='bilinear')
 
 
                 if not os.path.exists(config.path_save+"training/projections/"):
@@ -797,15 +797,20 @@ def train_without_ground_truth(config):
                 plt.figure(1)
                 plt.clf()
                 plt.hist(shiftEstimate.reshape(-1)*config.n1,alpha=1)
-                plt.legend(['est.'])
                 plt.savefig(os.path.join(config.path_save+"/training/deformations/shifts.png"))
 
                 plt.figure(1)
                 plt.clf()
                 plt.hist(rotEstimate*180/np.pi,15)
-                plt.legend(['est.'])
                 plt.title('Angles in degrees')
                 plt.savefig(os.path.join(config.path_save+"/training/deformations/rotations.png"))
+
+                plt.figure(1)
+                plt.clf()
+                plt.hist(gains.detach().cpu().numpy().reshape(-1),15)
+                plt.title('Gains')
+                plt.savefig(os.path.join(config.path_save+"/training/deformations/gains.png"))
+                
 
                 # ## Save the loss    
                 # # loss_tot_avg = np.array(loss_tot).reshape(config.Nangles//config.batch_size,-1).mean(0)
