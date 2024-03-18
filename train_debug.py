@@ -445,9 +445,9 @@ def train_without_ground_truth(config):
                     list_params_deformations_glob.append({"params": rot_est[k].parameters(), "lr": config.lr_rot})
             if train_local_def:
                 list_params_deformations_loc.append({"params": implicit_deformation_list[k].parameters(), "lr": config.lr_local_def})
-    # gains = Variable(torch.rand(config.Nangles).to(device)/5+1, requires_grad=True) 
-    # optimizer_volume = torch.optim.Adam(list(impl_volume.parameters())+[gains], lr=config.lr_volume, weight_decay=config.wd)
-    optimizer_volume = torch.optim.Adam(list(impl_volume.parameters()), lr=config.lr_volume, weight_decay=config.wd)
+    gains = Variable(torch.rand(config.Nangles).to(device)/5+1, requires_grad=True) 
+    optimizer_volume = torch.optim.Adam(list(impl_volume.parameters())+[gains], lr=config.lr_volume, weight_decay=config.wd)
+    # optimizer_volume = torch.optim.Adam(list(impl_volume.parameters()), lr=config.lr_volume, weight_decay=config.wd)
     if len(list_params_deformations_glob)!=0:
         optimizer_deformations_glob = torch.optim.Adam(list_params_deformations_glob, weight_decay=config.wd)
         scheduler_deformation_glob = torch.optim.lr_scheduler.StepLR(
@@ -635,7 +635,7 @@ def train_without_ground_truth(config):
             else:
                 projEstimate = torch.sum(support*outputValues,2)/config.ray_length
 
-            pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
+            pixelValues = sample_projections(proj*gains[idx_loader,None], detectorLocations, interp='bilinear')
 
 
             # Take the datafidelity loss
