@@ -635,11 +635,11 @@ def train_without_ground_truth(config):
             else:
                 projEstimate = torch.sum(support*outputValues,2)/config.ray_length
 
-            pixelValues = sample_projections(proj*gains[idx_loader,None], detectorLocations, interp='bilinear')
+            pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
 
 
             # Take the datafidelity loss
-            loss = loss_data(projEstimate,pixelValues.to(projEstimate.dtype))
+            loss = loss_data(projEstimate*gains[idx_loader,None],pixelValues.to(projEstimate.dtype))
             loss_data_fidelity.append(loss.item())
 
             # # update sampling
