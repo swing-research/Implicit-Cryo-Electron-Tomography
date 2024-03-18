@@ -59,6 +59,7 @@ def get_config():
     config.sampling_domain_lx = config.sampling_domain_ly = 1 # dimension of the sampling domain
     config.size_z_vol = 0.5 # size of the volume in the z direction, knowing that [-sampling_domain_lx,sampling_domain_lx] is the sampling domain
     config.std_noise_z = 1 # std of the noise perturbation to apply on the z direction of the rays. std_noise=1 means there is a perturbation of at most one pixel.
+    config.normalize_rays = False # normalize rays according to the number of elements in the support of the rays
     
     # # Parameters for the data generation
     config.volume_name = 'tomo2_L1G1-dose_filt'
@@ -92,14 +93,14 @@ def get_config():
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
     config.scheduler_step_size = 500 #300
-    config.scheduler_gamma = 0.5 #0.75
+    config.scheduler_gamma = 0.75 #0.75
 
     # Sampling strategy
     config.batch_size = 2 # number of viewing direction per iteration
     #config.nRays =  512 # number of sampling rays per viewing direction
     # config.z_max = 2*config.n3/max(config.n1,config.n2)/np.cos((90-np.max([config.view_angle_min,config.view_angle_max]))*np.pi/180)
     config.z_max = 1 #1.2
-    config.ray_length = 2500 #int(np.floor(n1*z_max))
+    config.ray_length = 1500 #int(np.floor(n1*z_max))
     config.rays_scaling = [0.5,0.5,0.5] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
     config.pad = 0. # pad tell if we need to sample the edges or not. It is directly realeted the sampling in the projection
     # When to start or stop optimizing over a variable
@@ -116,7 +117,7 @@ def get_config():
     config.lr_local_def = 1e-4
 
     # Training regularization
-    config.lamb_volume = 1e-4 # regul parameters on volume regularization
+    config.lamb_volume = 0 # regul parameters on volume regularization
     config.lamb_rot = 0 #1e-2 # regul parameters on inplane rotations
     config.lamb_shifts = 1e-6 # regul parameters on shifts
     config.lamb_local_ampl = 1e-5 # regul on amplitude of local def.

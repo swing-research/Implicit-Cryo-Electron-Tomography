@@ -247,9 +247,10 @@ def train_without_ground_truth(config):
     plt.savefig('hist.png')
 
     p_mean = torch.mean(projections_noisy.view(projections_noisy.shape[0],-1),1).view(-1,1,1)
-    p_den = torch.max(torch.abs(projections_noisy).view(projections_noisy.shape[0],-1),1)[0].view(-1,1,1)
+    p_den = torch.median(torch.abs(projections_noisy).view(projections_noisy.shape[0],-1),1)[0].view(-1,1,1)
     projections_noisy = (projections_noisy)/p_den
     config.Nangles = projections_noisy.shape[0]
+    projections_noisy = projections_noisy/torch.abs(projections_noisy).max() # make sure that values to predict are between -1 and 1
 
 
     print(projections_noisy.min(),projections_noisy.max())
@@ -598,7 +599,7 @@ def train_without_ground_truth(config):
                 shift_deformSet = None
             fixedRotSet = list(map(fixed_rot.__getitem__, idx_loader))
 
-            proj_ = (proj-proj.mean())/torch.abs(proj).max()
+            # proj_ = (proj-proj.mean())/torch.abs(proj).max()
 
             # Define geometry of sampling
             size_xy_vol, z_max_value = get_sampling_geometry(config.size_z_vol, config.view_angle_min, config.view_angle_max, config.sampling_domain_lx, config.sampling_domain_ly)
@@ -628,7 +629,11 @@ def train_without_ground_truth(config):
                 ind_end = torch.where(support[ii,0]==1)[0][-1]
                 dist[ii] = torch.sqrt(torch.sum((rays_rotated[ii,0,ind_st,:]-rays_rotated[ii,0,ind_end,:])**2,0))
 
-            projEstimate = torch.sum(support*outputValues,2)/config.ray_length#*(dist.view(-1,1,1))
+            if config.normalize_rays:
+                projEstimate = torch.sum(support*outputValues,2)/torch.sum(support,2)
+                # projEstimate = torch.sum(support*outputValues,2)/config.ray_length#*(dist.view(-1,1,1))
+            else:
+                projEstimate = torch.sum(support*outputValues,2)/config.ray_length
 
             pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
 

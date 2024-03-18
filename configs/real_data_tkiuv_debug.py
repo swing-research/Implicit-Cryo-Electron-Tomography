@@ -59,7 +59,8 @@ def get_config():
     config.sampling_domain_lx = config.sampling_domain_ly = 1 # dimension of the sampling domain
     config.size_z_vol = 0.5 # size of the volume in the z direction, knowing that [-sampling_domain_lx,sampling_domain_lx] is the sampling domain
     config.std_noise_z = 1 # std of the noise perturbation to apply on the z direction of the rays. std_noise=1 means there is a perturbation of at most one pixel.
-    
+    config.normalize_rays = True # normalize rays according to the number of elements in the support of the rays
+
     # # Parameters for the data generation
     config.volume_name = 'tomo2_L1G1-dose_filt'
     config.angle_name = 'tomo2_L1G1-dose_filt.tlt'
@@ -96,8 +97,6 @@ def get_config():
 
     # Sampling strategy
     config.batch_size = 5 # number of viewing direction per iteration
-    #config.nRays =  512 # number of sampling rays per viewing direction
-    # config.z_max = 2*config.n3/max(config.n1,config.n2)/np.cos((90-np.max([config.view_angle_min,config.view_angle_max]))*np.pi/180)
     config.z_max = 1 #1.2
     config.ray_length = 1500 #int(np.floor(n1*z_max))
     config.rays_scaling = [0.5,0.5,0.5] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
