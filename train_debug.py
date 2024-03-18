@@ -910,15 +910,15 @@ def train_without_ground_truth(config):
                     }, os.path.join(config.path_save,'training','model_trained.pt'))
 
 
-
-                loss_tot_avg = np.array(loss2)
-                step = (loss_tot_avg[10:].max()-loss_tot_avg[10:].min())*0.02
-                plt.figure(figsize=(10,10))
-                plt.plot(loss_tot_avg[10:])
-                plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 1+len(loss_tot_avg[1:])//10))
-                plt.yticks(np.linspace(loss_tot_avg[10:].min()-step,loss_tot_avg[10:].max()+step, 14))
-                # plt.grid()
-                plt.savefig(os.path.join(config.path_save,'training','loss.png'))
+                if ep>10:
+                    loss_tot_avg = np.array(loss2)
+                    step = (loss_tot_avg[10:].max()-loss_tot_avg[10:].min())*0.02
+                    plt.figure(figsize=(10,10))
+                    plt.plot(loss_tot_avg[10:])
+                    plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 1+len(loss_tot_avg[1:])//10))
+                    plt.yticks(np.linspace(loss_tot_avg[10:].min()-step,loss_tot_avg[10:].max()+step, 14))
+                    # plt.grid()
+                    plt.savefig(os.path.join(config.path_save,'training','loss.png'))
 
 
                 # ######################################################################################################
