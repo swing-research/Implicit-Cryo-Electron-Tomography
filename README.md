@@ -1,6 +1,8 @@
 # ICE-TIDE: Implicit Cryo-Electron Tomography: Inference and Deformation Estimation
 Official repo for ICE-TIDE [(paper)](https://arxiv.org/abs/2403.02182)
 
+This code is still under active development. A stable version should be available soon.
+
 ICE-TIDE is a self-supervised machine learnign method to perform jointly alignment of tilt series in cryogenic electron tomography (cryo-ET) iand reconstruction.
 ICE-TIDE relies on a fast and efficient implicit neural network [tiny cuda](https://github.com/NVlabs/tiny-cuda-nn). 
 We show the benefits of using an implicit neural network to estimate a three-dimensional volume in a high-noise regime. 
