@@ -238,6 +238,7 @@ def train_without_ground_truth(config):
     ## Load data that was previously saved
     data = np.load(config.path_save_data+"volume_and_projections.npz")
     if config.denoise:
+        print('load denoised projections')
         projections_noisy = torch.Tensor(data['projections_denoise']).type(config.torch_type).to(device)
     else:
         # projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
