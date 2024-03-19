@@ -57,8 +57,8 @@ def get_config():
     config.N_ctrl_pts_local_def = (5,5) # number of different interpolation to interpolate
 
     config.sampling_domain_lx = config.sampling_domain_ly = 1 # dimension of the sampling domain
-    config.size_z_vol = 0.75 # size of the volume in the z direction, knowing that [-sampling_domain_lx,sampling_domain_lx] is the sampling domain
-    config.std_noise_z = 1 # std of the noise perturbation to apply on the z direction of the rays. std_noise=1 means there is a perturbation of at most one pixel.
+    config.size_z_vol = 0.5 # size of the volume in the z direction, knowing that [-sampling_domain_lx,sampling_domain_lx] is the sampling domain
+    config.std_noise_z = 0 # std of the noise perturbation to apply on the z direction of the rays. std_noise=1 means there is a perturbation of at most one pixel.
     config.normalize_rays = True # normalize rays according to the number of elements in the support of the rays
 
     # # Parameters for the data generation
@@ -75,7 +75,7 @@ def get_config():
     # config.multires_params.startResolution = 4
     # config.multires_params.ray_change_epoch = [0]
     # config.multires_params.batch_set = [5]
-    config.nRays =  [1000]
+    config.nRays =  [2000]
     # config.multires_params.upsample = False
 
     #############################
@@ -93,14 +93,14 @@ def get_config():
     config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
     config.scheduler_step_size = 500 #300
-    config.scheduler_gamma = 0.75 #0.75
+    config.scheduler_gamma = 0.5 #0.75
 
     # Sampling strategy
     config.batch_size = 5 # number of viewing direction per iteration
-    config.z_max = 1 #1.2
+    # config.z_max = 1 #1.2
     config.ray_length = 1500 #int(np.floor(n1*z_max))
-    config.rays_scaling = [0.5,0.5,0.5] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
-    config.pad = 0. # pad tell if we need to sample the edges or not. It is directly realeted the sampling in the projection
+    # config.rays_scaling = [0.5,0.5,0.5] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
+    # config.pad = 0. # pad tell if we need to sample the edges or not. It is directly realeted the sampling in the projection
     # When to start or stop optimizing over a variable
     config.schedule_volume = []
     config.schedule_global = []
@@ -124,7 +124,7 @@ def get_config():
 
     # Params for implicit deformation
     config.deformationScale = 1
-    config.grid_positive = True
+    # config.grid_positive = True
     
     # params of implicit volume
     config.input_size_volume = 3 # always 3 for 3d tomography
