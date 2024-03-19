@@ -254,7 +254,7 @@ def train_without_ground_truth(config):
         # p_mean = torch.mean(projections_noisy.view(projections_noisy.shape[0],-1),1).view(-1,1,1)
         p_den = torch.median(torch.abs(projections_noisy).view(projections_noisy.shape[0],-1),1)[0].view(-1,1,1)
         projections_noisy = (projections_noisy)/p_den
-        config.Nangles = projections_noisy.shape[0]
+    config.Nangles = projections_noisy.shape[0]
     projections_noisy = projections_noisy/torch.abs(projections_noisy).max() # make sure that values to predict are between -1 and 1
 
 
