@@ -233,10 +233,10 @@ def data_generation_real_data(config):
 
     if config.normalize_proj:
         # p_mean = torch.mean(projections_noisy.view(projections_noisy.shape[0],-1),1).view(-1,1,1)
-        p_den = torch.median(torch.abs(projections_noisy).view(projections_noisy.shape[0],-1),1)[0].view(-1,1,1)
+        p_den = np.median(np.abs(projections_noisy).reshape(projections_noisy.shape[0],-1),1)[0].reshape(-1,1,1)
         projections_noisy = (projections_noisy)/p_den
         config.Nangles = projections_noisy.shape[0]
-    projections_noisy = projections_noisy/torch.abs(projections_noisy).max() # make sure that values to predict are between -1 and 1
+    projections_noisy = projections_noisy/np.abs(projections_noisy).max() # make sure that values to predict are between -1 and 1
 
     projections_denoise = np.zeros_like(projections_noisy)
     if config.denoise:
