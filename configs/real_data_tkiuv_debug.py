@@ -62,6 +62,7 @@ def get_config():
     config.normalize_rays = True # normalize rays according to the number of elements in the support of the rays
     config.normalize_proj = True
     config.denoise = False
+    config.bm3d_param = 0.05
 
     # # Parameters for the data generation
     config.volume_name = 'tomo2_L1G1-dose_filt'
