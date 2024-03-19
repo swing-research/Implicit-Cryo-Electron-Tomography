@@ -58,9 +58,9 @@ def get_config():
 
     config.sampling_domain_lx = config.sampling_domain_ly = 1 # dimension of the sampling domain
     config.size_z_vol = 0.5 # size of the volume in the z direction, knowing that [-sampling_domain_lx,sampling_domain_lx] is the sampling domain
-    config.std_noise_z = 0 # std of the noise perturbation to apply on the z direction of the rays. std_noise=1 means there is a perturbation of at most one pixel.
-    config.normalize_rays = True # normalize rays according to the number of elements in the support of the rays
-    config.normalize_proj = True
+    config.std_noise_z = 1 # std of the noise perturbation to apply on the z direction of the rays. std_noise=1 means there is a perturbation of at most one pixel.
+    config.normalize_rays = False # normalize rays according to the number of elements in the support of the rays
+    config.normalize_proj = False
     config.denoise = False
     config.bm3d_param = 0.05
 
