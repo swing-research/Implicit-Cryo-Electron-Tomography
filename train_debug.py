@@ -296,7 +296,7 @@ def train_without_ground_truth(config):
     ######################################################################################################
     print("Loading models and setting parameters...")
     # Some processing
-    rays_scaling = torch.tensor(np.array(config.rays_scaling))[None,None,None].type(config.torch_type).to(device)
+    # rays_scaling = torch.tensor(np.array(config.rays_scaling))[None,None,None].type(config.torch_type).to(device)
     # Define the neural networks
     if(config.volume_model=="Fourier-features"):
         from models.fourier_net import FourierNet,FourierNet_Features
