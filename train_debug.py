@@ -1042,15 +1042,15 @@ def train_without_ground_truth(config):
     #     out = mrcfile.new(config.path_save+"/training/V_est_final.mrc",np.moveaxis(V_ours.astype(np.float32),2,0),overwrite=True)
     #     out.close() 
 
-    loss_tot_avg = np.array(loss_tot)
-    step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
-    plt.figure(figsize=(10,10))
-    plt.plot(loss_tot_avg[10:])
-    plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 15))
-    plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
-    # plt.grid()
-    plt.savefig(os.path.join(config.path_save,'training','loss.png'))
-    plt.savefig(os.path.join(config.path_save,'training','loss.pdf'))
+    # loss_tot_avg = np.array(loss_tot)
+    # step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
+    # plt.figure(figsize=(10,10))
+    # plt.plot(loss_tot_avg[10:])
+    # plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 15))
+    # plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
+    # # plt.grid()
+    # plt.savefig(os.path.join(config.path_save,'training','loss.png'))
+    # plt.savefig(os.path.join(config.path_save,'training','loss.pdf'))
 
     shift_estimates_np = np.array(shift_estimates)
     rot_estimates_np = np.array(rot_estimates)

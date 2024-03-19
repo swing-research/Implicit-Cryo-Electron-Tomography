@@ -68,7 +68,7 @@ def get_config():
     config.path_save_data = "./results/tkiuv3_"+str(config.volume_name)+"/"
     config.path_save = "./results/tkiuv3_"+str(config.volume_name)+"/"
     config.name_best_volume = "emd_15056_additional_1.map"
-    config.load_existing_net = False
+    config.load_existing_net = True
 
     config.multiresolution = False
     config.multires_params = ml_collections.ConfigDict()
