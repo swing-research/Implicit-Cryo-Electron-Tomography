@@ -33,21 +33,21 @@ def main():
     # Train ICE-TIDE
     if args.no_train:
         import train_debug as train
-        # Initial training
-        config.multiresolution = True
-        #config.delay_deformations = 25 # Delay before learning deformations
-        config.epochs = 1000
-        config.load_existing_net = False
-        train.train_without_ground_truth(config)
+        # # Initial training
+        # config.multiresolution = True
+        # #config.delay_deformations = 25 # Delay before learning deformations
+        # config.epochs = 1000
+        # config.load_existing_net = False
+        # train.train_without_ground_truth(config)
 
-        # refined training
-        config.multiresolution = False
-        config.delay_deformations = 0 # Delay before learning deformations
-        config.schedule_global = []
-        config.schedule_local = []
-        config.epochs = 10000
-        config.load_existing_net = True
-        config.delay_deformations = 0 # Delay before learning deformations
+        # # refined training
+        # config.multiresolution = False
+        # config.delay_deformations = 0 # Delay before learning deformations
+        # config.schedule_global = []
+        # config.schedule_local = []
+        # config.epochs = 10000
+        # config.load_existing_net = True
+        # config.delay_deformations = 0 # Delay before learning deformations
         
         train.train_without_ground_truth(config)
 

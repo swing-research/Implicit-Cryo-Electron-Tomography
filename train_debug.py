@@ -237,8 +237,11 @@ def train_without_ground_truth(config):
 
     ## Load data that was previously saved
     data = np.load(config.path_save_data+"volume_and_projections.npz")
-    # projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
-    projections_noisy = torch.Tensor(np.float32(mrcfile.open(os.path.join(config.path_load,config.volume_name+".mrc"),permissive=True).data)).type(config.torch_type).to(device)
+    if config.denoise:
+        projections_noisy = torch.Tensor(data['projections_denoise']).type(config.torch_type).to(device)
+    else:
+        # projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
+        projections_noisy = torch.Tensor(np.float32(mrcfile.open(os.path.join(config.path_load,config.volume_name+".mrc"),permissive=True).data)).type(config.torch_type).to(device)
 
     print(projections_noisy.min(),projections_noisy.max())
     plt.figure(1)
@@ -246,10 +249,11 @@ def train_without_ground_truth(config):
     plt.hist(projections_noisy.detach().cpu().numpy().reshape(-1))
     plt.savefig('hist.png')
 
-    p_mean = torch.mean(projections_noisy.view(projections_noisy.shape[0],-1),1).view(-1,1,1)
-    p_den = torch.median(torch.abs(projections_noisy).view(projections_noisy.shape[0],-1),1)[0].view(-1,1,1)
-    projections_noisy = (projections_noisy)/p_den
-    config.Nangles = projections_noisy.shape[0]
+    if config.normalize_proj:
+        # p_mean = torch.mean(projections_noisy.view(projections_noisy.shape[0],-1),1).view(-1,1,1)
+        p_den = torch.median(torch.abs(projections_noisy).view(projections_noisy.shape[0],-1),1)[0].view(-1,1,1)
+        projections_noisy = (projections_noisy)/p_den
+        config.Nangles = projections_noisy.shape[0]
     projections_noisy = projections_noisy/torch.abs(projections_noisy).max() # make sure that values to predict are between -1 and 1
 
 

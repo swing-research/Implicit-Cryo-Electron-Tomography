@@ -60,6 +60,8 @@ def get_config():
     config.size_z_vol = 0.5 # size of the volume in the z direction, knowing that [-sampling_domain_lx,sampling_domain_lx] is the sampling domain
     config.std_noise_z = 1 # std of the noise perturbation to apply on the z direction of the rays. std_noise=1 means there is a perturbation of at most one pixel.
     config.normalize_rays = True # normalize rays according to the number of elements in the support of the rays
+    config.normalize_proj = True
+    config.denoise  = True
     
     # # Parameters for the data generation
     config.volume_name = 'tomo2_L1G1-dose_filt'
@@ -68,7 +70,7 @@ def get_config():
     config.path_save_data = "./results/tkiuv3_"+str(config.volume_name)+"/"
     config.path_save = "./results/tkiuv3_"+str(config.volume_name)+"/"
     config.name_best_volume = "emd_15056_additional_1.map"
-    config.load_existing_net = True
+    config.load_existing_net = False
 
     config.multiresolution = False
     config.multires_params = ml_collections.ConfigDict()
