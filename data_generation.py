@@ -229,13 +229,8 @@ def data_generation_real_data(config):
         config.Nangles, config.n1, config.n2 = projections_noisy.shape
         config.n3 = config.n1*2
 
-    if config.normalize_proj:
-        # p_mean = torch.mean(projections_noisy.view(projections_noisy.shape[0],-1),1).view(-1,1,1)
-        p_den = np.median(np.abs(projections_noisy).reshape(projections_noisy.shape[0],-1),1)[0].reshape(-1,1,1)
-        projections_noisy = (projections_noisy)/p_den
-        config.Nangles = projections_noisy.shape[0]
+    config.Nangles = projections_noisy.shape[0]
     projections_noisy = projections_noisy/np.abs(projections_noisy).max() # make sure that values to predict are between -1 and 1
-
 
     # save projections
     for k in range(config.Nangles):
@@ -243,19 +238,16 @@ def data_generation_real_data(config):
         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(config.path_save_data+"projections/noisy/noisy_"+str(k)+".png",tmp)
-
-
     np.savez(config.path_save_data+"volume_and_projections.npz",projections_noisy=projections_noisy)
 
-
-    angles = np.loadtxt(os.path.join(config.path_load,config.angle_name))
-    angles_t = torch.tensor(angles).type(config.torch_type).to(device)
-    operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
+    out = mrcfile.new(config.path_save_data+"projections.mrc",projections_noisy,overwrite=True)
+    out.close() 
+    # angles = np.loadtxt(os.path.join(config.path_load,config.angle_name))
+    # angles_t = torch.tensor(angles).type(config.torch_type).to(device)
+    # operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
     # V_FBP = operator_ET.pinv(torch.tensor(projections_noisy).to(device).detach().requires_grad_(False))
     # out = mrcfile.new(config.path_save_data+"V_FBP.mrc",np.moveaxis(V_FBP.detach().cpu().numpy().reshape(config.n1,config.n2,config.n3),2,0),overwrite=True)
     # out.close() 
-    out = mrcfile.new(config.path_save_data+"projections.mrc",projections_noisy,overwrite=True)
-    out.close() 
 
     # Save angle files
     np.save(config.path_save_data+"angles.npy",angles)
