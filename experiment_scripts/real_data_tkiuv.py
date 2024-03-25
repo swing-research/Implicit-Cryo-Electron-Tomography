@@ -32,30 +32,7 @@ def main():
 
     # Train ICE-TIDE
     if args.no_train:
-        import train as train
-        # # Initial training
-        # config.multiresolution = True
-        # #config.delay_deformations = 25 # Delay before learning deformations
-        # config.epochs = 1000
-        # config.load_existing_net = False
-        # train.train_without_ground_truth(config)
-
-        # refined training
-        # config.multiresolution = False
-        # config.delay_deformations = 0 # Delay before learning deformations
-        # config.schedule_global = []
-        # config.schedule_local = []
-        # config.epochs = 10000
-        # config.load_existing_net = True
-        # config.delay_deformations = 0 # Delay before learning deformations
-
-        # config.encoding.otype = 'Grid'
-        # config.encoding.type = 'Hash'
-        # config.encoding.log2_hashmap_size = 22
-        # config.encoding.n_levels = 14
-        # config.encoding.base_resolution = 16
-        # config.pad  = 0
-        
+        import train as train        
         train.train_without_ground_truth(config)
 
 
@@ -69,9 +46,7 @@ def main():
                 except subprocess.CalledProcessError as e:
                     print(f"Error: {e}")
                 t = time.time()-t0
-
-    # Etomo
-    # TODO
+                print("Ellapsed time for AreTomo: ", t-t0)
 
     # Compare the results and save the figures
     if args.no_comparison:

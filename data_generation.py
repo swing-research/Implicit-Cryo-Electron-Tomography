@@ -216,8 +216,6 @@ def data_generation_real_data(config):
         os.makedirs(config.path_save_data+"projections/")
     if not os.path.exists(config.path_save_data+"projections/noisy/"):
         os.makedirs(config.path_save_data+"projections/noisy/")
-    if not os.path.exists(config.path_save_data+"projections/denoise/"):
-        os.makedirs(config.path_save_data+"projections/denoise/")
 
     #######################################################################################
     ## Load data
@@ -238,10 +236,6 @@ def data_generation_real_data(config):
         config.Nangles = projections_noisy.shape[0]
     projections_noisy = projections_noisy/np.abs(projections_noisy).max() # make sure that values to predict are between -1 and 1
 
-    projections_denoise = np.zeros_like(projections_noisy)
-    if config.denoise:
-        for k in range(projections_noisy.shape[0]):
-            projections_denoise[k] = bm3d.bm3d(projections_noisy[k],config.bm3d_param)
 
     # save projections
     for k in range(config.Nangles):
@@ -249,22 +243,17 @@ def data_generation_real_data(config):
         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(config.path_save_data+"projections/noisy/noisy_"+str(k)+".png",tmp)
-        tmp = projections_denoise[k]
-        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
-        tmp = np.floor(255*tmp).astype(np.uint8)
-        imageio.imwrite(config.path_save_data+"projections/denoise/denoise_"+str(k)+".png",tmp)
 
 
-    np.savez(config.path_save_data+"volume_and_projections.npz",projections_noisy=projections_noisy,projections_denoise=projections_denoise)
+    np.savez(config.path_save_data+"volume_and_projections.npz",projections_noisy=projections_noisy)
 
 
     angles = np.loadtxt(os.path.join(config.path_load,config.angle_name))
     angles_t = torch.tensor(angles).type(config.torch_type).to(device)
     operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
     # V_FBP = operator_ET.pinv(torch.tensor(projections_noisy).to(device).detach().requires_grad_(False))
-    V_FBP_denoise = operator_ET.pinv(torch.tensor(projections_denoise).to(device).detach().requires_grad_(False))
-    out = mrcfile.new(config.path_save_data+"V_FBP_denoise.mrc",np.moveaxis(V_FBP_denoise.detach().cpu().numpy().reshape(config.n1,config.n2,config.n3),2,0),overwrite=True)
-    out.close() 
+    # out = mrcfile.new(config.path_save_data+"V_FBP.mrc",np.moveaxis(V_FBP.detach().cpu().numpy().reshape(config.n1,config.n2,config.n3),2,0),overwrite=True)
+    # out.close() 
     out = mrcfile.new(config.path_save_data+"projections.mrc",projections_noisy,overwrite=True)
     out.close() 
 
