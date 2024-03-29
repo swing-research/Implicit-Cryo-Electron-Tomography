@@ -1,32 +1,20 @@
-from skimage.transform import resize
-
-import numpy as np
-import torch
-import matplotlib.pyplot as plt
-plt.ion()
-import mrcfile
-from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
 import os
-import imageio
-from utils import utils_deformation, utils_display, utils_FSC ,utils_sampling
+import torch
 import shutil
+import mrcfile
+import imageio
+import numpy as np
 import pandas as pd
-from configs.config_reconstruct_simulation import get_default_configs, get_areTomoValidation_configs,get_config_local_implicit
-from configs.config_reconstruct_simulation import get_volume_save_configs
-
-
 from matplotlib import gridspec
+import matplotlib.pyplot as plt
+from skimage.transform import resize
 from scipy.interpolate import griddata
+from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
 
-
-import pandas as pd
 from utils.utils_deformation import cropper
+from utils.utils_sampling import get_sampling_geometry
+from utils import utils_deformation, utils_display, utils_FSC
 
-
-
-# # TODO: Remove
-# import configs.config_shrec_dataset as config_file
-# config = config_file.get_config()
 
 
 """ 
@@ -122,6 +110,25 @@ def CC(V1,V2):
     V1_norm = np.sqrt(np.sum(((V1-V1.mean()))**2))
     V2_norm = np.sqrt(np.sum(((V2-V2.mean()))**2))
     return np.sum((V1-V1.mean())*(V2-V2.mean()))/(V1_norm*V2_norm)
+
+def sliding_window_view(arr, window_shape):
+    """
+    Create a sliding window view of the array.
+
+    Parameters:
+        arr: numpy array
+            Input array.
+        window_shape: tuple
+            Shape of the sliding window.
+
+    Returns:
+        view: numpy array
+            Sliding window view of the input array.
+    """
+    window_shape = (1,) * (arr.ndim - 1) + window_shape
+    arr_strides = arr.strides + arr.strides[-1:]
+    return np.lib.stride_tricks.as_strided(arr, shape=arr.shape + window_shape, strides=arr_strides)
+
 
 def compare_results(config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
@@ -338,7 +345,6 @@ def compare_results(config):
                 implicit_deformation_AreTomo.append(field)
 
 
-
     ETOMO_FILE = 'projections_etomo_ali.mrc'
     path_file = os.path.join(config.path_save,'projections_etomo',ETOMO_FILE)
     shift_etomo = np.zeros((config.Nangles,2))
@@ -442,24 +448,31 @@ def compare_results(config):
     rot_icetide = checkpoint['rot_est']
     implicit_deformation_icetide = checkpoint['local_deformation_network']
     ## Compute our model at same resolution than other volume
-    rays_scaling = torch.tensor(np.array(config.rays_scaling))[None,None,None].type(config.torch_type).to(device)
     n1_eval, n2_eval, n3_eval = V.shape
 
     # Compute estimated volume
+    size_max_vol = 2*np.max([config.sampling_domain_lx, config.sampling_domain_ly,config.size_z_vol])
     with torch.no_grad():
-        x_lin1 = np.linspace(-1,1,n1_eval)*rays_scaling[0,0,0,0].item()/2+0.5
-        x_lin2 = np.linspace(-1,1,n2_eval)*rays_scaling[0,0,0,1].item()/2+0.5
+        x_lin1 = np.linspace(-1,1,n1_eval)
+        x_lin2 = np.linspace(-1,1,n2_eval)
         XX, YY = np.meshgrid(x_lin1,x_lin2,indexing='ij')
         grid2d = np.concatenate([XX.reshape(-1,1),YY.reshape(-1,1)],1)
         grid2d_t = torch.tensor(grid2d).type(config.torch_type)
-        z_range = np.linspace(-1,1,n3_eval)*rays_scaling[0,0,0,2].item()*(n3_eval/n1_eval)/2+0.5
+        z_range = np.linspace(-1,1,n3_eval)*config.size_z_vol
         V_icetide = np.zeros_like(V)
         for zz, zval in enumerate(z_range):
             grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
             grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
-            estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(config.n1,config.n2)
+            estSlice = impl_volume(grid3d_slice/size_max_vol/2+0.5).detach().cpu().numpy().reshape(n1_eval,n2_eval)
             V_icetide[:,:,zz] = estSlice
+        V_icetide = V_icetide[:,:,::-1]
+        if config.avg_XYZ>1:
+            padded_array = np.pad(V_icetide, ((0, 0), (0, 0), (0, config.avg_XYZ - 1)), mode='constant')
+            filt = np.zeros_like(padded_array)
+            filt[:,:,filt.shape[2]//2-config.avg_XYZ//2:filt.shape[2]//2+config.avg_XYZ//2] = 1/config.avg_XYZ
+            V_icetide = np.fft.fftshift(np.fft.ifft((np.fft.fft(filt) * np.fft.fft(padded_array))).real,axes=-1)[:,:,:n3_eval]
         V_icetide_t = torch.tensor(V_icetide).type(config.torch_type).to(device)
+
 
     ######################################################################################################
     # Using only the deformation estimates
@@ -610,7 +623,7 @@ def compare_results(config):
     fsc_FBP_no_deformed = utils_FSC.FSC(V,V_FBP_no_deformed)
     if(eval_Etomo):
         fsc_Etomo = utils_FSC.FSC(V,V_etomo_centered)
-    x_fsc = np.arange(fsc_FBP.shape[0])
+    x_fsc = np.arange(fsc_FBP_no_deformed.shape[0])
 
     plt.figure(1)
     plt.clf()
@@ -837,7 +850,7 @@ def compare_results(config):
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","FBP_ICETIDE","snapshot_{}.png".format(k)),tmp)
 
     out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-                                "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide,2,0),overwrite=True)
+                                "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide.astype(np.float32),2,0),overwrite=True)
     out.close()
     if eval_AreTomo:
         out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
@@ -875,8 +888,8 @@ def compare_results(config):
     #######################################################################################
     ## Local deformation errror Estimation
     #######################################################################################
-    x_lin1 = np.linspace(-1,1,n1_eval)*rays_scaling[0,0,0,0].item()/2+0.5
-    x_lin2 = np.linspace(-1,1,n2_eval)*rays_scaling[0,0,0,1].item()/2+0.5
+    x_lin1 = np.linspace(-1,1,n1_eval)
+    x_lin2 = np.linspace(-1,1,n2_eval)
     XX, YY = np.meshgrid(x_lin1,x_lin2,indexing='ij')
     grid2d = np.concatenate([XX.reshape(-1,1),YY.reshape(-1,1)],1)
     grid2d_t = torch.tensor(grid2d).type(config.torch_type)
@@ -932,6 +945,19 @@ def compare_results(config):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 def compare_results_real(config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     if torch.cuda.device_count()>1:
@@ -957,8 +983,6 @@ def compare_results_real(config):
     # Our method
     if not os.path.exists(config.path_save+"/evaluation/projections/ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/projections/ICETIDE/")
-    # if not os.path.exists(config.path_save+"/evaluation/volumes/ICETIDE/"):
-    #     os.makedirs(config.path_save+"/evaluation/volumes/ICETIDE/")
     if not os.path.exists(config.path_save+"/evaluation/deformations/ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/deformations/ICETIDE/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/ICETIDE/"):
@@ -967,23 +991,14 @@ def compare_results_real(config):
     # FBP
     if not os.path.exists(config.path_save+"/evaluation/projections/Best/"):
         os.makedirs(config.path_save+"/evaluation/projections/Best/")
-    # if not os.path.exists(config.path_save+"/evaluation/volumes/Best/"):
-    #     os.makedirs(config.path_save+"/evaluation/volumes/Best/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/Best/"):
         os.makedirs(config.path_save+"/evaluation/volume_slices/Best/")
 
     #FBP ICETIDE deformation estimations
     if not os.path.exists(config.path_save+"/evaluation/projections/FBP_ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/projections/FBP_ICETIDE/")
-    # if not os.path.exists(config.path_save+"/evaluation/volumes/FBP_ICETIDE/"):
-    #     os.makedirs(config.path_save+"/evaluation/volumes/FBP_ICETIDE/")
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/FBP_ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/volume_slices/FBP_ICETIDE/")
-
-
-    config.n1 = config.n1_patch
-    config.n2 = config.n2_patch
-    config.n3 = config.n3_patch
 
     ######################################################################################################
     ## Load data
@@ -1004,7 +1019,6 @@ def compare_results_real(config):
     data = np.load(config.path_save_data+"volume_and_projections.npz")
     projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
     config.Nangles = projections_noisy.shape[0]
-
     projections_noisy_resize = torch.Tensor(resize(projections_noisy.detach().cpu().numpy(),(config.Nangles,config.n1,config.n2))).type(config.torch_type).to(device)
 
     ######################################################################################################
@@ -1050,34 +1064,37 @@ def compare_results_real(config):
                                                     network_config=config_network["network"]).to(device)
     num_param = sum(p.numel() for p in impl_volume.parameters() if p.requires_grad) 
     print('---> Number of trainable parameters in volume net: {}'.format(num_param))
-    checkpoint = torch.load(os.path.join(config.path_save,'training','model_trained_2.pt'),map_location=device)
+    checkpoint = torch.load(os.path.join(config.path_save,'training','model_trained.pt'),map_location=device)
     impl_volume.load_state_dict(checkpoint['implicit_volume'])
     shift_icetide = checkpoint['shift_est']
     rot_icetide = checkpoint['rot_est']
     implicit_deformation_icetide = checkpoint['local_deformation_network']
-    ## Compute our model at same resolution than other volume
-    rays_scaling = torch.tensor(np.array(config.rays_scaling))[None,None,None].type(config.torch_type).to(device)
-    n1_eval, n2_eval, n3_eval = config.n1, config.n2, config.n3
-
+    size_xy_vol, z_max_value = get_sampling_geometry(config.size_z_vol, config.view_angle_min, config.view_angle_max,
+                                                        config.sampling_domain_lx, config.sampling_domain_ly)
+    size_max_vol = 1.2*np.max([size_xy_vol,config.size_z_vol]) # increase by some small factor to account for deformations
     # Compute estimated volume
     with torch.no_grad():
-        x_lin1 = np.linspace(-1,1,n1_eval)*rays_scaling[0,0,0,0].item()/2+0.5
-        x_lin2 = np.linspace(-1,1,n2_eval)*rays_scaling[0,0,0,1].item()/2+0.5
+        x_lin1 = np.linspace(-1,1,config.n1_eval)
+        x_lin2 = np.linspace(-1,1,config.n2_eval)
         XX, YY = np.meshgrid(x_lin1,x_lin2,indexing='ij')
         grid2d = np.concatenate([XX.reshape(-1,1),YY.reshape(-1,1)],1)
         grid2d_t = torch.tensor(grid2d).type(config.torch_type)
-        z_range = np.linspace(-1,1,n3_eval)*rays_scaling[0,0,0,2].item()*(n3_eval/n1_eval)/2+0.5
-        V_icetide = np.zeros((n1_eval, n2_eval, n3_eval))
+        z_range = np.linspace(-1,1,config.n3_eval)*config.size_z_vol
+        V_icetide = np.zeros((config.n1_eval, config.n2_eval, config.n3_eval))
         for zz, zval in enumerate(z_range):
             grid3d = np.concatenate([grid2d_t, zval*torch.ones((grid2d_t.shape[0],1))],1)
             grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
-            estSlice = impl_volume(grid3d_slice).detach().cpu().numpy().reshape(n1_eval,n2_eval)
+            estSlice = impl_volume(grid3d_slice/size_max_vol/2+0.5).detach().cpu().numpy().reshape(config.n1_eval,config.n2_eval)
             V_icetide[:,:,zz] = estSlice
+        if config.avg_XYZ>1:
+            padded_array = np.pad(V_icetide, ((0, 0), (0, 0), (0, config.avg_XYZ - 1)), mode='constant')
+            filt = np.zeros_like(padded_array)
+            filt[:,:,filt.shape[2]//2-config.avg_XYZ//2:filt.shape[2]//2+config.avg_XYZ//2] = 1/config.avg_XYZ
+            V_icetide = np.fft.fftshift(np.fft.ifft((np.fft.fft(filt) * np.fft.fft(padded_array))).real,axes=-1)[:,:,:config.n3_eval]
         V_icetide_t = torch.tensor(V_icetide).type(config.torch_type).to(device)
 
     # Get the local deformation error plots 
     for index in range(config.Nangles):
-        # icetide
         savepath = os.path.join(config.path_save,'evaluation','deformations','ICETIDE','local_deformation_factor10_{}'.format(index))
         utils_display.display_local_est_and_true(implicit_deformation_icetide[index],None,Npts=(20,20),scale=0.1, img_path=savepath)
 
@@ -1093,7 +1110,6 @@ def compare_results_real(config):
     YY_t = torch.unsqueeze(YY_t, dim = 2)
     for i in range(config.Nangles):
         coordinates = torch.cat([XX_t,YY_t],2).reshape(-1,2)
-        #field = utils_deformation.deformation_field(-implicit_deformation_icetide[i].depl_ctr_pts[0].detach().clone())
         thetas = torch.tensor(-rot_icetide[i].thetas.item()).to(device)
     
         rot_deform = torch.stack(
@@ -1109,6 +1125,83 @@ def compare_results_real(config):
         projections_noisy_undeformed[i] = out
     V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
 
+    #######################################################################################
+    ## Save volumes
+    #######################################################################################
+    def display_XYZ(tmp,name="true"):
+        avg = 0
+        sl0 = tmp.shape[0]//2
+        sl1 = tmp.shape[1]//2
+        sl2 = tmp.shape[2]//2
+        f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
+        aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray',vmin=tmp.min(),vmax=tmp.max())
+        aa[0,0].axis('off')
+        aa[1,0].imshow(tmp[:,:,sl2-avg//2:sl2+avg//2+1].mean(2),cmap='gray',vmin=tmp.min(),vmax=tmp.max())
+        aa[1,0].axis('off')
+        aa[1,1].imshow(tmp[:,sl1-avg//2:sl1+avg//2+1,:].mean(1),cmap='gray',vmin=tmp.min(),vmax=tmp.max())
+        aa[1,1].axis('off')
+        aa[0,1].axis('off')
+        plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+        plt.savefig(os.path.join("tmp.png"))
+        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_slice.png"))
+
+        f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
+        aa[0,0].imshow(tmp.mean(0).T,cmap='gray',vmin=tmp.min(),vmax=tmp.max())
+        aa[0,0].axis('off')
+        aa[1,0].imshow(tmp.mean(2),cmap='gray',vmin=tmp.min(),vmax=tmp.max())
+        aa[1,0].axis('off')
+        aa[1,1].imshow(tmp.mean(1),cmap='gray',vmin=tmp.min(),vmax=tmp.max())
+        aa[1,1].axis('off')
+        aa[0,1].axis('off')
+        plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_proj.png"))
+
+    # ICETIDE
+    tmp = V_icetide
+    tmp = (tmp-tmp.min())/(tmp.max()-tmp.min())
+    tmp = np.clip(tmp,a_min=np.quantile(tmp,0.005),a_max=np.quantile(tmp,0.995))
+    display_XYZ(tmp,name="ICETIDE")
+
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
+                                "Best_volume.mrc"),np.moveaxis(V_best.astype(np.float32),2,0),overwrite=True)
+    out.close()
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
+                            "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide.astype(np.float32),2,0),overwrite=True)
+    out.close()
+    print("ICE-TIDE saved")
+
+    # Find best affine transformation between volumes
+    V_best_resize = resize(V_best,(V_icetide.shape[0],V_icetide.shape[1],V_icetide.shape[2]))
+    V_sk = sitk.GetImageFromArray(V_icetide.astype(np.float32)/np.linalg.norm(V_icetide))
+    V_best_sk = sitk.GetImageFromArray(V_best_resize/np.linalg.norm(V_best_resize))
+    final_transform = perform_3d_registration(V_sk, V_best_sk)
+    # Apply the final transform to the moving image
+    registered_image = sitk.Resample(V_best_sk, V_sk, final_transform, sitk.sitkLinear, 0.0, V_best_sk.GetPixelID())
+    V_best_centered = sitk.GetArrayFromImage(registered_image)
+
+    # Best volume
+    tmp = V_best_centered
+    tmp = (tmp-tmp.min())/(tmp.max()-tmp.min())
+    tmp = np.clip(tmp,a_min=np.quantile(tmp,0.005),a_max=np.quantile(tmp,0.995))
+    display_XYZ(tmp,name="Best")
+
+    # FBP_ICETIDE volume
+    tmp = V_FBP_icetide
+    tmp = (tmp-tmp.min())/(tmp.max()-tmp.min())
+    tmp = np.clip(tmp,a_min=np.quantile(tmp,0.005),a_max=np.quantile(tmp,0.995))
+    display_XYZ(tmp,name="FBP_ICETIDE")
+
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
+                                "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide.astype(np.float32),2,0),overwrite=True)
+    out.close()
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
+                                "Best_volume.mrc"),np.moveaxis(V_best_centered.astype(np.float32),2,0),overwrite=True)
+    out.close()
+    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
+                                "FBP_icetide_volume.mrc"),np.moveaxis(V_FBP_icetide.astype(np.float32),2,0),overwrite=True)
+    out.close()
+    plt.close('all')
+    print("volumes saved")
 
     #######################################################################################
     ## Save slices of volumes
@@ -1127,13 +1220,12 @@ def compare_results_real(config):
             tmp = np.floor(255*tmp).astype(np.uint8)
             imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE","slice_{}.png".format(index)),tmp)
 
-    for index in range(V_best.shape[2]):
+    for index in range(V_best_resize.shape[2]):
         # Best
-        tmp = V_best[:,:,index]
+        tmp = V_best_resize[:,:,index]
         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Best","slice_{}.png".format(index)),tmp)
-
 
     #######################################################################################
     ## Generate projections
@@ -1167,50 +1259,6 @@ def compare_results_real(config):
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"projections","FBP_ICETIDE","snapshot_{}.png".format(k)),tmp)
 
-
-
-    #######################################################################################
-    ## Save volumes
-    #######################################################################################
-    def display_XYZ(tmp,name="true"):
-        # tmp = (tmp - tmp.mean(2).max())/(tmp.mean(2).max()-tmp.mean(2).min())
-        # tmp = np.floor(255*tmp).astype(np.uint8)
-        f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
-        aa[0,0].imshow(tmp.mean(0).T,cmap='gray')
-        aa[0,0].axis('off')
-        aa[1,0].imshow(tmp.mean(2),cmap='gray')
-        aa[1,0].axis('off')
-        aa[1,1].imshow(tmp.mean(1),cmap='gray')
-        aa[1,1].axis('off')
-        aa[0,1].axis('off')
-        plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
-        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ.png"))
-
-    # ICETIDE
-    tmp = V_icetide
-    display_XYZ(tmp,name="ICETIDE")
-
-    # FBP volume
-    tmp = V_best
-    display_XYZ(tmp,name="Best")
-
-    # FBP_ICETIDE volume
-    tmp = V_FBP_icetide
-    display_XYZ(tmp,name="FBP_ICETIDE")
-
-    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',
-                                "volumes","ICETIDE_volume.mrc"),np.moveaxis(V_icetide.astype(np.float32),2,0),overwrite=True)
-    out.close()
-    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
-                                "Best_volume.mrc"),np.moveaxis(V_best.astype(np.float32),2,0),overwrite=True)
-    out.close()
-    out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"volumes",
-                                "FBP_icetide_volume.mrc"),np.moveaxis(V_FBP_icetide.astype(np.float32),2,0),overwrite=True)
-    out.close()
-
-    plt.close('all')
-
-
     #######################################################################################
     ## Save Fourier of volumes
     #######################################################################################
@@ -1223,9 +1271,9 @@ def compare_results_real(config):
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","ICETIDE_Fourier_XZ.png"),tmp)
 
-    # FBP volume
-    index = V_best.shape[0]//2
-    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_best)))[index,:,:]
+    # Best volume
+    index = V_best_resize.shape[0]//2
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_best_resize)))[index,:,:]
     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
     tmp = tmp.T**scal
     tmp = np.floor(255*tmp).astype(np.uint8)
@@ -1240,24 +1288,24 @@ def compare_results_real(config):
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE_Fourier_XZ.png"),tmp)
     
 
-    #######################################################################################
-    ## Compute FSC
-    #######################################################################################
-    fsc_icetide = utils_FSC.FSC(V_FBP_icetide,V_icetide)
-    x_fsc = np.arange(fsc_icetide.shape[0])
+    # #######################################################################################
+    # ## Compute FSC
+    # #######################################################################################
+    # fsc_icetide = utils_FSC.FSC(V_FBP_icetide,V_icetide)
+    # x_fsc = np.arange(fsc_icetide.shape[0])
 
-    plt.figure(1)
-    plt.clf()
-    plt.plot(x_fsc,fsc_icetide,'b',label="icetide vs best")
-    plt.legend()
-    plt.savefig(os.path.join(config.path_save,'evaluation','FSC.png'))
-    plt.savefig(os.path.join(config.path_save,'evaluation','FSC.pdf'))
+    # plt.figure(1)
+    # plt.clf()
+    # plt.plot(x_fsc,fsc_icetide,'b',label="icetide vs best")
+    # plt.legend()
+    # plt.savefig(os.path.join(config.path_save,'evaluation','FSC.png'))
+    # plt.savefig(os.path.join(config.path_save,'evaluation','FSC.pdf'))
 
-    fsc_arr = np.zeros((x_fsc.shape[0],2))
-    fsc_arr[:,0] = x_fsc
-    fsc_arr[:,1] = fsc_icetide[:,0]
-    header ='x,icetide'
-    np.savetxt(os.path.join(config.path_save,'evaluation','FSC.csv'),fsc_arr,header=header,delimiter=",",comments='')
+    # fsc_arr = np.zeros((x_fsc.shape[0],2))
+    # fsc_arr[:,0] = x_fsc
+    # fsc_arr[:,1] = fsc_icetide[:,0]
+    # header ='x,icetide'
+    # np.savetxt(os.path.join(config.path_save,'evaluation','FSC.csv'),fsc_arr,header=header,delimiter=",",comments='')
 
 
 

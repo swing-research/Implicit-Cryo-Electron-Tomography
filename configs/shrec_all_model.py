@@ -54,6 +54,7 @@ def get_config():
     config.sigma_local_def = 4*deformation_scale # max amplitude of local deformations in pixel
     config.N_ctrl_pts_local_def = (5,5) # number of different interpolation to interpolate
     
+    config.avg_XYZ = 10 # average on the z direction for better visualization, number of frame to average over
 
     #############################
     ## Parameters for training ##
@@ -76,9 +77,10 @@ def get_config():
     # Sampling strategy
     config.batch_size = 4 # number of viewing direction per iteration
     config.nRays =  1500 # number of sampling rays per viewing direction
-    config.z_max = 2*config.n3/max(config.n1,config.n2)/np.cos((90-np.max([config.view_angle_min,config.view_angle_max]))*np.pi/180)
     config.ray_length = 500 #int(np.floor(n1*z_max))
-    config.rays_scaling = [1.,1.,1.] # scaling of the coordinatesalong each axis. To make sure that the input of implicit net stay in their range
+    config.sampling_domain_lx = config.sampling_domain_ly = 1 # dimension of the sampling domain
+    config.size_z_vol = 0.35 # size of the volume in the z direction, knowing that [-sampling_domain_lx,sampling_domain_lx] is the sampling domain
+    config.std_noise_z = 1 # std of the noise perturbation to apply on the z direction of the rays. std_noise=1 means there is a perturbation of at most one pixel.
 
     # When to start or stop optimizing over a variable
     config.schedule_volume = []
@@ -103,7 +105,6 @@ def get_config():
 
     # Params for implicit deformation
     config.deformationScale = 1
-    config.grid_positive = True
 
     # params of implicit volume
     config.input_size_volume = 3 # always 3 for 3d tomography
