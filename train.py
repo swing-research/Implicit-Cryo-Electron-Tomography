@@ -8,17 +8,10 @@ import torch
 import mrcfile
 import numpy as np
 import matplotlib.pyplot as plt
-from skimage.transform import resize
-from torch.utils.data import DataLoader, TensorDataset
-from skimage.transform import pyramid_gaussian
-from utils import utils_deformation, utils_display
 from torch.autograd import Variable
-import json
-from utils.utils_sampling import sample_implicit_batch_lowComp, generate_rays_batch_bilinear
-from utils.utils_deformation import cropper
-# from compare_results import reconstruct_FBP_volume
-
-from utils import utils_sampling
+from torch.utils.data import DataLoader, TensorDataset
+from utils import utils_deformation, utils_display
+from utils.utils_sampling import get_sampling_geometry, apply_deformations_to_locations, generate_rays_batch, sample_projections
 
 
 
@@ -212,12 +205,6 @@ def train(config):
     trainLoader = DataLoader(dataset, batch_size=config.batch_size, shuffle=True, drop_last=True)
 
     ######################################################################################################
-    ## Track sampling
-    choosenLocations_all = {}
-    for ii, _ in enumerate(angles):
-        choosenLocations_all[ii] = []
-    current_sampling = np.ones_like(projections_noisy.detach().cpu().numpy())
-
     def globalDeformationValues(shift,rot):
         shiftValueList = []
         rotValueList = []
@@ -238,8 +225,12 @@ def train(config):
     grid2d_t = torch.tensor(grid2d).type(config.torch_type)
 
     # Define geometry of sampling
-    size_xy_vol, z_max_value = get_sampling_geometry(config.size_z_vol, config.view_angle_min, config.view_angle_max, config.sampling_domain_lx, config.sampling_domain_ly)
-    size_max_vol = 1.2*np.max([size_xy_vol,config.size_z_vol]) # increase by some small factor to account for deformations
+    size_xy_vol = np.max([config.sampling_domain_lx, config.sampling_domain_ly,config.size_z_vol])
+    th = np.linspace(config.view_angle_min,config.view_angle_max,100)
+    z_max_value1 = np.abs(size_xy_vol*np.sin(th*np.pi/180) + config.size_z_vol*np.cos(th*np.pi/180)).max()
+    z_max_value2 = np.abs(size_xy_vol*np.sin(th*np.pi/180) - config.size_z_vol*np.cos(th*np.pi/180)).max()
+    z_max_value = np.maximum(z_max_value1,z_max_value2)
+    size_max_vol = 2*np.max([config.sampling_domain_lx, config.sampling_domain_ly,config.size_z_vol])
 
 
     ######################################################################################################
@@ -296,7 +287,7 @@ def train(config):
             use_global_def = False
             train_local_def = False
             train_global_def = False
-        for   angle,proj, idx_loader  in trainLoader:
+        for angle, proj, idx_loader  in trainLoader:
             optimizer_volume.zero_grad()
             if learn_deformations:
                 optimizer_deformations_glob.zero_grad()
@@ -339,11 +330,11 @@ def train(config):
             detectorLocations = torch.rand(proj.shape[0],config.nRays,2).to(device)*2-1
 
             # Apply deformations in the 2D space
-            detectorLocationsDeformed = utils_sampling.apply_deformations_to_locations(detectorLocations,rot_deformSet,
+            detectorLocationsDeformed = apply_deformations_to_locations(detectorLocations,rot_deformSet,
                                                                     shift_deformSet,local_deformSet,fixedRotSet,scale=config.deformationScale)
 
             # generate the rays in 3D
-            rays_rotated = utils_sampling.generate_rays_batch(detectorLocationsDeformed, angle, z_max_value, config.ray_length, std_noise=config.std_noise_z)
+            rays_rotated = generate_rays_batch(detectorLocationsDeformed, angle, z_max_value, config.ray_length, std_noise=config.std_noise_z)
 
             # Scale the rays so that they are trully in [-1,1] 
             rays_rotated_scaled = rays_rotated/size_max_vol
@@ -351,27 +342,20 @@ def train(config):
             # Sample the implicit volume by making the input in [0,1]
             outputValues = impl_volume((rays_rotated_scaled/2+0.5).reshape(-1,3)).reshape(proj.shape[0],config.nRays,config.ray_length)
 
-            support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)*1
+            support = (rays_rotated[:,:,:,2].abs()<config.size_z_vol)*(rays_rotated[:,:,:,0].abs()<config.sampling_domain_lx)*(rays_rotated[:,:,:,1].abs()<config.sampling_domain_ly)
             projEstimate = torch.sum(support*outputValues,2)/config.ray_length
             pixelValues = sample_projections(proj, detectorLocations, interp='bilinear')
 
             # Take the datafidelity loss
-            loss = loss_data(projEstimate*gains[idx_loader,None],pixelValues.to(projEstimate.dtype))
+            loss = loss_data(projEstimate,pixelValues.to(projEstimate.dtype))
             loss_data_fidelity.append(loss.item())
-
-            # update sampling
-            with torch.no_grad():
-                for ii_ in idx_loader:
-                    ii = ii_.item()
-                    idx = np.floor((choosenLocations_all[ii][-1]+1)/2*max(config.n1,config.n2)).astype(np.int)
-                    current_sampling[ii,idx[:,0],idx[:,1]] += 1
 
             ## Add regularizations
             if train_local_def and config.lamb_local_ampl!=0:
                 # Using only the x and y coordinates
                 for ii_ in idx_loader:
-                    depl = torch.abs(implicit_deformation_list[ii_](raysSet[:,:,0,:2].reshape(-1,2))*config.n1)
-                    depl_mean = torch.abs(torch.mean(implicit_deformation_list[ii_](raysSet[:,:,0,:2].reshape(-1,2))*config.n1))
+                    depl = torch.abs(implicit_deformation_list[ii_](detectorLocations.reshape(-1,2))*config.n1)
+                    depl_mean = torch.abs(torch.mean(implicit_deformation_list[ii_](detectorLocations.reshape(-1,2))*config.n1))
                     loss += (config.lamb_local_ampl*depl.mean()+config.lamb_local_mean*depl_mean)
                     loss_regul_local_ampl.append((config.lamb_local_ampl*depl.mean()+config.lamb_local_mean*depl_mean).item())
             if train_global_def and (config.lamb_rot!=0 or config.lamb_shifts!=0):
@@ -514,6 +498,13 @@ def train(config):
                     grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
                     estSlice = impl_volume(grid3d_slice/size_max_vol/2+0.5).detach().cpu().numpy().reshape(n1_eval,n2_eval)
                     V_icetide[:,:,zz] = estSlice
+                V_icetide = V_icetide[:,:,::-1]
+                if config.avg_XYZ>1:
+                    padded_array = np.pad(V_icetide, ((0, 0), (0, 0), (0, config.avg_XYZ - 1)), mode='constant')
+                    filt = np.zeros_like(padded_array)
+                    filt[:,:,filt.shape[2]//2-config.avg_XYZ//2:filt.shape[2]//2+config.avg_XYZ//2] = 1/config.avg_XYZ
+                    V_icetide = np.fft.fftshift(np.fft.ifft((np.fft.fft(filt) * np.fft.fft(padded_array))).real,axes=-1)[:,:,:n3_eval]
+                V_icetide_t = torch.tensor(V_icetide).type(config.torch_type).to(device)
                 fsc_icetide = utils_FSC.FSC(V,V_icetide)
                 CC_icetide = compare_results.CC(V,V_icetide)
                 indeces = np.where(fsc_icetide<0.5)[0]
@@ -528,6 +519,41 @@ def train(config):
                 np.save(os.path.join(config.path_save,'training','CC_iter.npy'),np.array(CC_icetide_tot))
                 header ='ep,icetide,FBP,FBP_no_deformed'
                 np.savetxt(os.path.join(config.path_save,'training','CC_iter.csv'),np.array([ep_tot,CC_icetide_tot,CC_FBP_tot,CC_FBP_no_deformed_tot]).T,header=header,delimiter=",",comments='')
+
+
+                def display_XYZ(tmp,name="true"):
+                    avg = 0
+                    sl0 = tmp.shape[0]//2
+                    sl1 = tmp.shape[1]//2
+                    sl2 = tmp.shape[2]//2
+                    f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
+                    aa[0,0].imshow(tmp[sl0-avg//2:sl0+avg//2+1,:,:].mean(0).T,cmap='gray',vmin=tmp.min(),vmax=tmp.max())
+                    aa[0,0].axis('off')
+                    aa[1,0].imshow(tmp[:,:,sl2-avg//2:sl2+avg//2+1].mean(2),cmap='gray',vmin=tmp.min(),vmax=tmp.max())
+                    aa[1,0].axis('off')
+                    aa[1,1].imshow(tmp[:,sl1-avg//2:sl1+avg//2+1,:].mean(1),cmap='gray',vmin=tmp.min(),vmax=tmp.max())
+                    aa[1,1].axis('off')
+                    aa[0,1].axis('off')
+                    plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+                    plt.savefig(os.path.join("tmp.png"))
+                    plt.savefig(os.path.join(config.path_save_data,'training',"volume",name+"_XYZ_slice.png"))
+
+                    f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
+                    aa[0,0].imshow(tmp.mean(0).T,cmap='gray',vmin=tmp.min(),vmax=tmp.max())
+                    aa[0,0].axis('off')
+                    aa[1,0].imshow(tmp.mean(2),cmap='gray',vmin=tmp.min(),vmax=tmp.max())
+                    aa[1,0].axis('off')
+                    aa[1,1].imshow(tmp.mean(1),cmap='gray',vmin=tmp.min(),vmax=tmp.max())
+                    aa[1,1].axis('off')
+                    aa[0,1].axis('off')
+                    plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+                    plt.savefig(os.path.join(config.path_save_data,'training',"volume",name+"_XYZ_proj.png"))
+
+                # ICETIDE
+                tmp = V_icetide
+                tmp = (tmp-tmp.min())/(tmp.max()-tmp.min())
+                tmp = np.clip(tmp,a_min=np.quantile(tmp,0.005),a_max=np.quantile(tmp,0.995))
+                display_XYZ(tmp,name="ICETIDE")
         plt.close('all')
 
     print("Saving final state after training...")
@@ -565,6 +591,13 @@ def train(config):
             estSlice = impl_volume(grid3d_slice/size_max_vol/2+0.5).detach().cpu().numpy().reshape(config.n1_patch,config.n2_patch)
             pp = (estSlice)*1.
             V_icetide[:,:,zz] = estSlice
+        V_icetide = V_icetide[:,:,::-1]
+        if config.avg_XYZ>1:
+            padded_array = np.pad(V_icetide, ((0, 0), (0, 0), (0, config.avg_XYZ - 1)), mode='constant')
+            filt = np.zeros_like(padded_array)
+            filt[:,:,filt.shape[2]//2-config.avg_XYZ//2:filt.shape[2]//2+config.avg_XYZ//2] = 1/config.avg_XYZ
+            V_icetide = np.fft.fftshift(np.fft.ifft((np.fft.fft(filt) * np.fft.fft(padded_array))).real,axes=-1)[:,:,:n3_eval]
+        V_icetide_t = torch.tensor(V_icetide).type(config.torch_type).to(device)
         out = mrcfile.new(config.path_save+"/training/V_est_final.mrc",np.moveaxis(V_icetide.astype(np.float32),2,0),overwrite=True)
         out.close() 
 
@@ -880,7 +913,7 @@ def train_without_ground_truth(config):
                 local_deformSet= list(map(implicit_deformation_list.__getitem__, idx_loader))
             else:
                 local_deformSet = None
-            if use_global_def or config.load_existing_net:
+            if use_global_def:
                 rot_deformSet= list(map(rot_est.__getitem__, idx_loader))
                 shift_deformSet= list(map(shift_est.__getitem__, idx_loader))
             else:
@@ -892,11 +925,11 @@ def train_without_ground_truth(config):
             detectorLocations = torch.rand(proj.shape[0],config.nRays,2).to(device)*2-1
 
             # Apply deformations in the 2D space
-            detectorLocationsDeformed = utils_sampling.apply_deformations_to_locations(detectorLocations,rot_deformSet,
+            detectorLocationsDeformed = apply_deformations_to_locations(detectorLocations,rot_deformSet,
                                                                     shift_deformSet,local_deformSet,fixedRotSet,scale=config.deformationScale)
 
             # generate the rays in 3D
-            rays_rotated = utils_sampling.generate_rays_batch(detectorLocationsDeformed, angle, z_max_value, config.ray_length, std_noise=config.std_noise_z)
+            rays_rotated = generate_rays_batch(detectorLocationsDeformed, angle, z_max_value, config.ray_length, std_noise=config.std_noise_z)
 
             # Scale the rays so that they are trully in [-1,1] 
             rays_rotated_scaled = rays_rotated/size_max_vol
@@ -916,8 +949,8 @@ def train_without_ground_truth(config):
             if train_local_def and config.lamb_local_ampl!=0:
                 # Using only the x and y coordinates
                 for ii_ in idx_loader:
-                    depl = torch.abs(implicit_deformation_list[ii_](raysSet[:,:,0,:2].reshape(-1,2))*config.n1)
-                    depl_mean = torch.abs(torch.mean(implicit_deformation_list[ii_](raysSet[:,:,0,:2].reshape(-1,2))*config.n1))
+                    depl = torch.abs(implicit_deformation_list[ii_](detectorLocations.reshape(-1,2))*config.n1)
+                    depl_mean = torch.abs(torch.mean(implicit_deformation_list[ii_](detectorLocations.reshape(-1,2))*config.n1))
                     loss += (config.lamb_local_ampl*depl.mean()+config.lamb_local_mean*depl_mean)
                     loss_regul_local_ampl.append((config.lamb_local_ampl*depl.mean()+config.lamb_local_mean*depl_mean).item())
             if train_global_def and (config.lamb_rot!=0 or config.lamb_shifts!=0):
@@ -1001,6 +1034,11 @@ def train_without_ground_truth(config):
                 plt.legend(['est.'])
                 plt.title('Angles in degrees')
                 plt.savefig(os.path.join(config.path_save+"/training/deformations/rotations.png"))
+
+                plt.figure(1)
+                plt.clf()
+                plt.plot(gains.detach().cpu().numpy())
+                plt.savefig(os.path.join(config.path_save+"/training/deformations/gains.png"))
                                     
                 if config.save_volume:
                     ## Save slice of the volume
@@ -1016,9 +1054,14 @@ def train_without_ground_truth(config):
                         plt.clf()
                         plt.imshow(pp,cmap='gray')
                         plt.savefig(os.path.join(config.path_save+"/training/volume/volume_est_slice_{}.png".format(zz)))
+                    if config.avg_XYZ>1:
+                        padded_array = np.pad(V_icetide, ((0, 0), (0, 0), (0, config.avg_XYZ - 1)), mode='constant')
+                        filt = np.zeros_like(padded_array)
+                        filt[:,:,filt.shape[2]//2-config.avg_XYZ//2:filt.shape[2]//2+config.avg_XYZ//2] = 1/config.avg_XYZ
+                        V_icetide = np.fft.fftshift(np.fft.ifft((np.fft.fft(filt) * np.fft.fft(padded_array))).real,axes=-1)[:,:,:config.n3_patch]
  
                     def display_XYZ(tmp,name="true"):
-                        avg = 15
+                        avg = 0
                         sl0 = tmp.shape[0]//2
                         sl1 = tmp.shape[1]//2
                         sl2 = tmp.shape[2]//2
@@ -1032,7 +1075,7 @@ def train_without_ground_truth(config):
                         aa[0,1].axis('off')
                         plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
                         plt.savefig(os.path.join("tmp.png"))
-                        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_slice.png"))
+                        plt.savefig(os.path.join(config.path_save_data,'training',"volume",name+"_XYZ_slice.png"))
 
                         f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
                         aa[0,0].imshow(tmp.mean(0).T,cmap='gray',vmin=tmp.min(),vmax=tmp.max())
@@ -1043,38 +1086,28 @@ def train_without_ground_truth(config):
                         aa[1,1].axis('off')
                         aa[0,1].axis('off')
                         plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
-                        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ_proj.png"))
+                        plt.savefig(os.path.join(config.path_save_data,'training',"volume",name+"_XYZ_proj.png"))
 
                     # ICETIDE
                     tmp = V_icetide
                     tmp = (tmp-tmp.min())/(tmp.max()-tmp.min())
-                    tmp = np.clip(tmp,a_min=np.quantile(tmp,0.05),a_max=np.quantile(tmp,0.95))
+                    tmp = np.clip(tmp,a_min=np.quantile(tmp,0.005),a_max=np.quantile(tmp,0.995))
                     display_XYZ(tmp,name="ICETIDE")
                         
-                if config.load_existing_net:
-                    torch.save({
-                        'shift_est': shift_est,
-                        'rot_est': rot_est,
-                        'local_deformation_network': implicit_deformation_list,
-                        'implicit_volume': impl_volume.state_dict(),
-                        'optimizer_volume' : optimizer_volume.state_dict(),
-                        'scheduler_volume': scheduler_volume.state_dict(), 
-                        'ep': ep,
-                    }, os.path.join(config.path_save,'training','model_trained_2.pt'))
-                else:
-                    torch.save({
-                        'shift_est': shift_est,
-                        'rot_est': rot_est,
-                        'local_deformation_network': implicit_deformation_list,
-                        'implicit_volume': impl_volume.state_dict(),
-                        'optimizer_volume' : optimizer_volume.state_dict(),
-                        'optimizer_deformations_glob' : optimizer_deformations_glob.state_dict(),
-                        #'optimizer_deformations_loc' : optimizer_deformations_loc.state_dict(),
-                        'scheduler_volume': scheduler_volume.state_dict(), 
-                        'scheduler_deformation_glob': scheduler_deformation_glob.state_dict(), 
-                        #'scheduler_deformation_loc': scheduler_deformation_loc.state_dict(),
-                        'ep': ep,
-                    }, os.path.join(config.path_save,'training','model_trained.pt'))
+
+                torch.save({
+                    'shift_est': shift_est,
+                    'rot_est': rot_est,
+                    'local_deformation_network': implicit_deformation_list,
+                    'implicit_volume': impl_volume.state_dict(),
+                    'optimizer_volume' : optimizer_volume.state_dict(),
+                    'optimizer_deformations_glob' : optimizer_deformations_glob.state_dict(),
+                    #'optimizer_deformations_loc' : optimizer_deformations_loc.state_dict(),
+                    'scheduler_volume': scheduler_volume.state_dict(), 
+                    'scheduler_deformation_glob': scheduler_deformation_glob.state_dict(), 
+                    #'scheduler_deformation_loc': scheduler_deformation_loc.state_dict(),
+                    'ep': ep,
+                }, os.path.join(config.path_save,'training','model_trained.pt'))
 
                 loss_tot_avg = np.array(loss_tot)
                 step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
@@ -1087,30 +1120,19 @@ def train_without_ground_truth(config):
         plt.close('all')
 
     print("Saving final state after training...")
-    if config.load_existing_net:
-        torch.save({
-            'shift_est': shift_est,
-            'rot_est': rot_est,
-            'local_deformation_network': implicit_deformation_list,
-            'implicit_volume': impl_volume.state_dict(),
-            'optimizer_volume' : optimizer_volume.state_dict(),
-            'scheduler_volume': scheduler_volume.state_dict(), 
-            'ep': ep,
-        }, os.path.join(config.path_save,'training','model_trained_2.pt'))
-    else:
-        torch.save({
-            'shift_est': shift_est,
-            'rot_est': rot_est,
-            'local_deformation_network': implicit_deformation_list,
-            'implicit_volume': impl_volume.state_dict(),
-            'optimizer_volume' : optimizer_volume.state_dict(),
-            'optimizer_deformations_glob' : optimizer_deformations_glob.state_dict(),
-            #'optimizer_deformations_loc' : optimizer_deformations_loc.state_dict(),
-            'scheduler_volume': scheduler_volume.state_dict(), 
-            'scheduler_deformation_glob': scheduler_deformation_glob.state_dict(), 
-            #'scheduler_deformation_loc': scheduler_deformation_loc.state_dict(),
-            'ep': ep,
-        }, os.path.join(config.path_save,'training','model_trained.pt'))
+    torch.save({
+        'shift_est': shift_est,
+        'rot_est': rot_est,
+        'local_deformation_network': implicit_deformation_list,
+        'implicit_volume': impl_volume.state_dict(),
+        'optimizer_volume' : optimizer_volume.state_dict(),
+        'optimizer_deformations_glob' : optimizer_deformations_glob.state_dict(),
+        #'optimizer_deformations_loc' : optimizer_deformations_loc.state_dict(),
+        'scheduler_volume': scheduler_volume.state_dict(), 
+        'scheduler_deformation_glob': scheduler_deformation_glob.state_dict(), 
+        #'scheduler_deformation_loc': scheduler_deformation_loc.state_dict(),
+        'ep': ep,
+    }, os.path.join(config.path_save,'training','model_trained.pt'))
 
     training_time = time.time()-t0
     # Saving the training time and the memory used
@@ -1133,6 +1155,11 @@ def train_without_ground_truth(config):
             estSlice = impl_volume(grid3d_slice/size_max_vol/2+0.5).detach().cpu().numpy().reshape(config.n1_patch,config.n2_patch)
             pp = (estSlice)*1.
             V_icetide[:,:,zz] = estSlice
+        if config.avg_XYZ>1:
+            padded_array = np.pad(V_icetide, ((0, 0), (0, 0), (0, config.avg_XYZ - 1)), mode='constant')
+            filt = np.zeros_like(padded_array)
+            filt[:,:,filt.shape[2]//2-config.avg_XYZ//2:filt.shape[2]//2+config.avg_XYZ//2] = 1/config.avg_XYZ
+            V_icetide = np.fft.fftshift(np.fft.ifft((np.fft.fft(filt) * np.fft.fft(padded_array))).real,axes=-1)[:,:,:config.n3_patch]
         out = mrcfile.new(config.path_save+"/training/V_est_final.mrc",np.moveaxis(V_icetide.astype(np.float32),2,0),overwrite=True)
         out.close() 
 

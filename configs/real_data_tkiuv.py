@@ -13,7 +13,7 @@ def get_config():
     #######################
     config = ml_collections.ConfigDict()
     config.seed = 42
-    config.device_num = 0
+    config.device_num = 2
     config.torch_type = torch.float
     config.track_memory = False
 
@@ -62,19 +62,20 @@ def get_config():
     config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
-    config.epochs = 100
+    config.epochs = 5000
     config.Ntest = 500 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
-    config.scheduler_step_size = 500 #300
+    config.scheduler_step_size = 300
     config.scheduler_gamma = 0.75 #0.75
 
     # Sampling strategy
-    config.batch_size = 1 # number of viewing direction per iteration
+    config.batch_size = 5 # number of viewing direction per iteration
     config.nRays = 800
     config.ray_length = 1500 #int(np.floor(n1*z_max))
     config.sampling_domain_lx = config.sampling_domain_ly = 1 # dimension of the sampling domain
     config.size_z_vol = 0.5 # size of the volume in the z direction, knowing that [-sampling_domain_lx,sampling_domain_lx] is the sampling domain
     config.std_noise_z = 1 # std of the noise perturbation to apply on the z direction of the rays. std_noise=1 means there is a perturbation of at most one pixel.
+    
     # When to start or stop optimizing over a variable
     config.schedule_volume = []
     config.schedule_global = []
@@ -83,22 +84,21 @@ def get_config():
 
     # Training learning rates for Adam optimizer
     config.loss_data = torch.nn.L1Loss()
-    config.lr_volume = 1e-4#1e-3
-    config.lr_shift = 1e-4 #1e-3
-    config.lr_rot = 0 # 1e-3
+    config.lr_volume = 1e-3
+    config.lr_shift = 1e-3
+    config.lr_rot = 0 
     config.lr_local_def = 1e-4
 
     # Training regularization
     config.lamb_volume = 0 # regul parameters on volume regularization
-    config.lamb_rot = 0#1e-2 # regul parameters on inplane rotations
+    config.lamb_rot = 0 # regul parameters on inplane rotations
     config.lamb_shifts = 1e-6 # regul parameters on shifts
-    config.lamb_local_ampl = 1e-5 # regul on amplitude of local def.
-    config.lamb_local_mean = 1e-5 # regul on mean of local def.
+    config.lamb_local_ampl = 5*1e-5 # regul on amplitude of local def.
+    config.lamb_local_mean = 1e-6 # regul on mean of local def.
     config.wd = 1e-6 # weights decay
 
     # Params for implicit deformation
     config.deformationScale = 1
-    config.grid_positive = True
 
     # params of implicit volume
     config.input_size_volume = 3 # always 3 for 3d tomography
