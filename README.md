@@ -60,9 +60,11 @@ python -m experiment_scripts.simulation_model0 --no_gen_data --no_train --no_com
 python -m experiment_scripts.simulation_model0 --no_gen_data --no_train --no_aretomo
 ```
 
-### Use your own dataset
-You can run ICE-TIDE on your own dataset, for that you can mimic the procedure that we used to process 
-Assuming that your mrc file containing the projection is saved in 'datasets/tkiuv/tomo2_L1G1_ODD.mrc', you can run the following command to proccess this tilt-series
+### Reproduce experiements on real data
+You can run ICE-TIDE on the dataset [EMPIAR-11058](https://www.ebi.ac.uk/empiar/EMPIAR-11058/).
+The raw projections are first drift corrected and dose filtered using standard procedure with IMOD.
+The processed file can be downladed on [SWITCHdrive](https://drive.switch.ch/index.php/s/ZyeNG9DcfdrNlbV). Files 'tomo2_L1G1-dose_filt.mrc' and 'tomo2_L1G1-dose_filt.tlt' should be placed in 'datasets/tkiuv/'
+Then, the following command proccess this tilt-series and will produce the results of the paper.
 ```
 python -m experiment_scripts.real_data_tkiuv
 ```
