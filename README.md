@@ -60,10 +60,10 @@ python -m experiment_scripts.simulation_model0 --no_gen_data --no_train --no_com
 python -m experiment_scripts.simulation_model0 --no_gen_data --no_train --no_aretomo
 ```
 
-### Reproduce experiements on real data
-You can run ICE-TIDE on the dataset [EMPIAR-11058](https://www.ebi.ac.uk/empiar/EMPIAR-11058/).
-The raw projections are first drift corrected and dose filtered using standard procedure with IMOD.
-The processed file can be downladed on [SWITCHdrive](https://drive.switch.ch/index.php/s/ZyeNG9DcfdrNlbV). Files 'tomo2_L1G1-dose_filt.mrc' and 'tomo2_L1G1-dose_filt.tlt' should be placed in 'datasets/tkiuv/'
+### Reproduce experiments on real data
+You can run ICE-TIDE on a T. kivui tomogram from the dataset [EMPIAR-11058](https://www.ebi.ac.uk/empiar/EMPIAR-11058/).
+The raw projections were first drift corrected and dose-filtered using standard procedures with [IMOD](https://bio3d.colorado.edu/imod/).
+The processed tilt series file can be downladed from [Zenodo](https://doi.org/10.5281/zenodo.10979053). Files `tomo2_L1G1-dose_filt.st` and `tomo2_L1G1-dose_filt.tlt` should be placed in 'datasets/tkiuv/'
 Then, the following command proccess this tilt-series and will produce the results of the paper.
 ```
 python -m experiment_scripts.real_data_tkiuv
