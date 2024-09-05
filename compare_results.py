@@ -245,7 +245,7 @@ def compare_results(config):
     if not os.path.exists(config.path_save+"/evaluation/volume_slices/FBP_ICETIDE/"):
         os.makedirs(config.path_save+"/evaluation/volume_slices/FBP_ICETIDE/")
 
-
+    angles = np.linspace(config.view_angle_min, config.view_angle_max, config.Nangles)
 
     ######################################################################################################
     ## Load data
@@ -263,7 +263,7 @@ def compare_results(config):
     V_FBP_no_deformed = V_FBP_no_deformed_t.detach().cpu().numpy()
     proj_no_deformed = np.double(mrcfile.open(config.path_save_data+"projections_noisy_no_deformed.mrc").data)
     import ipdb; ipdb.set_trace()
-    V_no_deformed_sart_tv, _ = sart_update(V_FBP, proj_no_deformed, lamb=config.lamb_sart,
+    V_no_deformed_sart_tv, _ = sart_update(V_FBP, proj_no_deformed, angles, lamb=config.lamb_sart,
                                      tau=config.tau_sart, nit=config.nit_sart, nit_tv=config.nit_tv_sart)
     tmp = V_no_deformed_sart_tv
     def display_XYZ(tmp,name="true"):
@@ -281,7 +281,7 @@ def compare_results(config):
 
 
 
-    V_sart_tv, _ = sart_update(V_FBP, projections_noisy.detach().cpu().numpy(), lamb=config.lamb_sart,
+    V_sart_tv, _ = sart_update(V_FBP, projections_noisy.detach().cpu().numpy(), angles, lamb=config.lamb_sart,
                                      tau=config.tau_sart, nit=config.nit_sart, nit_tv=config.nit_tv_sart)
 
     ## Aretomo
@@ -310,7 +310,7 @@ def compare_results(config):
             # Reconstruct with accurate FBP operator
             V_FBP_aretomo = reconstruct_FBP_volume(config, torch.tensor(proj_aligned_aretomo).to(device)).detach().cpu().numpy()
             V_FBP_aretomo /= np.linalg.norm(V_FBP_aretomo)
-            V_sart_tv_aretomo, _ = sart_update(V_FBP_aretomo, proj_aligned_aretomo, lamb=config.lamb_sart, tau=config.tau_sart, nit=config.nit_sart, nit_tv=config.nit_tv_sart)
+            V_sart_tv_aretomo, _ = sart_update(V_FBP_aretomo, proj_aligned_aretomo, angles, lamb=config.lamb_sart, tau=config.tau_sart, nit=config.nit_sart, nit_tv=config.nit_tv_sart)
 
             # Find best affine transformation between volumes
             V_sk = sitk.GetImageFromArray(V/np.linalg.norm(V))
@@ -437,7 +437,7 @@ def compare_results(config):
         V_FBP_etomo = reconstruct_FBP_volume(config, etomo_projections_t).detach().cpu().numpy()
         out = mrcfile.new(config.path_save_data+"V_etomo.mrc",np.moveaxis(V_FBP_etomo.astype(np.float32),2,0),overwrite=True)
         out.close()
-        V_sart_tv_etomo, _ = sart_update(V_FBP_etomo, etomo_projections, lamb=config.lamb_sart,
+        V_sart_tv_etomo, _ = sart_update(V_FBP_etomo, etomo_projections, angles, lamb=config.lamb_sart,
                                            tau=config.tau_sart, nit=config.nit_sart, nit_tv=config.nit_tv_sart)
         out = mrcfile.new(config.path_save_data+"V_etomo_sart_tv.mrc",np.moveaxis(V_sart_tv_etomo.astype(np.float32),2,0),overwrite=True)
         out.close()
@@ -587,7 +587,7 @@ def compare_results(config):
         out = cropper(x,coordinates,output_size = 1).reshape(config.n1,config.n2)
         projections_noisy_undeformed[i] = out
     V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
-    V_sart_tv_icetide, _ = sart_update(V_FBP_icetide, projections_noisy_undeformed, lamb=config.lamb_sart,
+    V_sart_tv_icetide, _ = sart_update(V_FBP_icetide, projections_noisy_undeformed, angles, lamb=config.lamb_sart,
                                      tau=config.tau_sart, nit=config.nit_sart, nit_tv=config.nit_tv_sart)
 
 
