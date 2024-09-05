@@ -261,8 +261,6 @@ def compare_results(config):
     V = V_t.detach().cpu().numpy()
     V_FBP = V_FBP_t.detach().cpu().numpy()
     V_FBP_no_deformed = V_FBP_no_deformed_t.detach().cpu().numpy()
-    V_sart_tv, _ = sart_update(V_FBP, projections_noisy.detach().cpu().numpy(), lamb=config.lamb_sart,
-                                     tau=config.tau_sart, nit=config.nit_sart, nit_tv=config.nit_tv_sart)
     proj_no_deformed = np.double(mrcfile.open(config.path_save_data+"projections_noisy_no_deformed.mrc").data)
     import ipdb; ipdb.set_trace()
     V_no_deformed_sart_tv, _ = sart_update(V_FBP, proj_no_deformed, lamb=config.lamb_sart,
@@ -280,6 +278,11 @@ def compare_results(config):
         plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
         plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ.png"))
     display_XYZ(tmp,name="SART_TV_no_deformed")
+
+
+
+    V_sart_tv, _ = sart_update(V_FBP, projections_noisy.detach().cpu().numpy(), lamb=config.lamb_sart,
+                                     tau=config.tau_sart, nit=config.nit_sart, nit_tv=config.nit_tv_sart)
 
     ## Aretomo
     # get the files
