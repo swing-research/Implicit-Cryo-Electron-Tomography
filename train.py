@@ -14,7 +14,6 @@ from utils import utils_deformation, utils_display
 from utils.utils_sampling import get_sampling_geometry, apply_deformations_to_locations, generate_rays_batch, sample_projections
 
 
-
 def train(config):
     print("Runing training procedure.")
     # Choosing the seed and the device

@@ -129,6 +129,51 @@ def sliding_window_view(arr, window_shape):
     arr_strides = arr.strides + arr.strides[-1:]
     return np.lib.stride_tricks.as_strided(arr, shape=arr.shape + window_shape, strides=arr_strides)
 
+import astra
+from skimage.restoration import denoise_tv_chambolle
+
+def BP(P, proj_geom, vol_geom, n1, n2, n3, nit=10, device_num=0):
+    proj_id = astra.data3d.create('-sino', proj_geom, P.swapaxes(0, 1))
+    rec_id = astra.data3d.create('-vol', vol_geom, np.zeros((n1, n3, n2)))
+    cfg = astra.astra_dict('BP3D_CUDA')
+    cfg['ProjectionDataId'] = proj_id
+    cfg['ReconstructionDataId'] = rec_id
+    cfg['GPUindex'] = device_num
+    alg_id = astra.algorithm.create(cfg)
+    astra.algorithm.run(alg_id, nit)
+    vol_bp = astra.data3d.get(rec_id).swapaxes(1, 2)
+    return vol_bp
+
+def sart_update(vol, P, angles, nit, nit_tv, lamb, tau):
+    # lamb: denoising param
+    # tau GD step
+    n1, n2, n3 = vol.shape
+    v = vol
+    proj_geom = astra.create_proj_geom('parallel3d', 1, 1, n1, n2, angles)
+    vol_geom = astra.create_vol_geom(n3, n1, n2)
+    def A(vv):
+        vv = vv/np.sqrt((vv**2).sum())
+        out = astra.create_sino3d_gpu(vv.swapaxes(1, 2), proj_geom, vol_geom, returnData=True)[
+        1].swapaxes(0, 1)
+        return out
+    # At = lambda P: BP(P, proj_geom, vol_geom, n1, n2, n3, device_num=config.device.index)
+    def At(P):
+        out = BP(P, proj_geom, vol_geom, n1, n2, n3)
+        out = out / np.sqrt((out ** 2).sum())
+        return out
+
+    P = P / np.sqrt((P ** 2).sum())
+
+    cf = []
+    # mask = np.zeros_like(v)
+    # mask[20:-20,20:-20,20:-20] = 1
+    for i in range(nit):
+        v = v - tau*(At(A(v) - P))
+        cf.append(((A(v) - P) ** 2).sum())
+        # Total Variation regularization
+        v = denoise_tv_chambolle(v, weight=lamb, max_num_iter=nit_tv)
+    return v, cf
+
 
 def compare_results(config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
@@ -215,14 +260,21 @@ def compare_results(config):
     # numpy
     V = V_t.detach().cpu().numpy()
     V_FBP = V_FBP_t.detach().cpu().numpy()
-    V_FBP_no_deformed = V_FBP_no_deformed_t.detach().cpu().numpy()    
+    V_FBP_no_deformed = V_FBP_no_deformed_t.detach().cpu().numpy()
+    V_sart_tv, _ = sart_update(V_FBP, projections_noisy.detach().cpu().numpy(), lamb=config.lamb_sart,
+                                     tau=config.tau_sart, nit=config.nit_sart, nit_tv=config.nit_tv_sart)
+    proj_no_deformed = np.double(mrcfile.open(config.path_save_data+"projections_noisy_no_deformed.mrc").data)
+    V_no_deformed_sart_tv, _ = sart_update(V_FBP, proj_no_deformed, lamb=config.lamb_sart,
+                                     tau=config.tau_sart, nit=config.nit_sart, nit_tv=config.nit_tv_sart)
 
     ## Aretomo
     # get the files
     eval_AreTomo = False
     fsc_AreTomo_list = []
+    fsc_AreTomo_sart_tv_list = []
     fsc_AreTomo_centered_list = []
     CC_AreTomo_list = []
+    CC_AreTomo_sart_tv_list = []
     CC_AreTomo_centered_list = []
     for npatch in config.nPatch:
         ARE_TOMO_FILE = f'projections_aligned_aretomo_{npatch}by{npatch}.mrc'
@@ -241,6 +293,7 @@ def compare_results(config):
             # Reconstruct with accurate FBP operator
             V_FBP_aretomo = reconstruct_FBP_volume(config, torch.tensor(proj_aligned_aretomo).to(device)).detach().cpu().numpy()
             V_FBP_aretomo /= np.linalg.norm(V_FBP_aretomo)
+            V_sart_tv_aretomo, _ = sart_update(V_FBP_aretomo, proj_aligned_aretomo, lamb=config.lamb_sart, tau=config.tau_sart, nit=config.nit_sart, nit_tv=config.nit_tv_sart)
 
             # Find best affine transformation between volumes
             V_sk = sitk.GetImageFromArray(V/np.linalg.norm(V))
@@ -249,6 +302,10 @@ def compare_results(config):
             # Apply the final transform to the moving image
             registered_image = sitk.Resample(V_aretomo_sk, V_sk, final_transform, sitk.sitkLinear, 0.0, V_aretomo_sk.GetPixelID())
             V_aretomo_centered = sitk.GetArrayFromImage(registered_image)
+            V_aretomo_sk = sitk.GetImageFromArray(V_sart_tv_aretomo)
+            registered_image = sitk.Resample(V_aretomo_sk, V_sk, final_transform, sitk.sitkLinear, 0.0, V_aretomo_sk.GetPixelID())
+            V_sart_tv_centered = sitk.GetArrayFromImage(registered_image)
+
 
             # Get deformation matrix
             num_transforms = final_transform.GetNumberOfTransforms()
@@ -266,17 +323,23 @@ def compare_results(config):
             out = mrcfile.new(config.path_save_data+f"V_aretomo_centered{npatch}by{npatch}.mrc",np.moveaxis(V_aretomo_centered.astype(np.float32),2,0),overwrite=True)
             out.close() 
             out = mrcfile.new(config.path_save_data+f"V_aretomo_{npatch}by{npatch}_corrected.mrc",np.moveaxis(V_FBP_aretomo.astype(np.float32),2,0),overwrite=True)
-            out.close() 
+            out.close()
+            out = mrcfile.new(config.path_save_data+f"V_sart_tv_{npatch}by{npatch}_corrected.mrc",np.moveaxis(V_sart_tv_aretomo.astype(np.float32),2,0),overwrite=True)
+            out.close()
 
             # Compute fsc and CC
             fsc_AreTomo = utils_FSC.FSC(V,V_FBP_aretomo)
+            fsc_AreTomo_sart_tv = utils_FSC.FSC(V,V_sart_tv_aretomo)
             fsc_AreTomo_centered = utils_FSC.FSC(V,V_aretomo_centered)
             fsc_AreTomo_list.append(fsc_AreTomo)
+            fsc_AreTomo_sart_tv_list.append(fsc_AreTomo_sart_tv)
             fsc_AreTomo_centered_list.append(fsc_AreTomo_centered)
 
             CC_AreTomo = CC(V,V_FBP_aretomo)
+            CC_AreTomo_sart_tv = CC(V,V_sart_tv_centered)
             CC_AreTomo_centered = CC(V,V_aretomo_centered)
             CC_AreTomo_list.append(CC_AreTomo)
+            CC_AreTomo_sart_tv_list.append(CC_AreTomo_sart_tv)
             CC_AreTomo_centered_list.append(CC_AreTomo_centered)
 
             # load estimated deformations
@@ -356,7 +419,11 @@ def compare_results(config):
         etomo_projections_t = torch.tensor(etomo_projections).type(config.torch_type).to(device)
         V_FBP_etomo = reconstruct_FBP_volume(config, etomo_projections_t).detach().cpu().numpy()
         out = mrcfile.new(config.path_save_data+"V_etomo.mrc",np.moveaxis(V_FBP_etomo.astype(np.float32),2,0),overwrite=True)
-        out.close() 
+        out.close()
+        V_sart_tv_etomo, _ = sart_update(V_FBP_etomo, etomo_projections, lamb=config.lamb_sart,
+                                           tau=config.tau_sart, nit=config.nit_sart, nit_tv=config.nit_tv_sart)
+        out = mrcfile.new(config.path_save_data+"V_etomo_sart_tv.mrc",np.moveaxis(V_sart_tv_etomo.astype(np.float32),2,0),overwrite=True)
+        out.close()
 
         # Find best affine transformation between volumes
         V_sk = sitk.GetImageFromArray(V/np.linalg.norm(V))
@@ -365,6 +432,9 @@ def compare_results(config):
         # Apply the final transform to the moving image
         registered_image = sitk.Resample(V_etomo_sk, V_sk, final_transform, sitk.sitkLinear, 0.0, V_etomo_sk.GetPixelID())
         V_etomo_centered = sitk.GetArrayFromImage(registered_image)
+        V_etomo_sk = sitk.GetImageFromArray(V_sart_tv_etomo)
+        registered_image = sitk.Resample(V_etomo_sk, V_sk, final_transform, sitk.sitkLinear, 0.0, V_etomo_sk.GetPixelID())
+        V_sart_tv_etomo_centered = sitk.GetArrayFromImage(registered_image)
 
         # Get deformation matrix
         num_transforms = final_transform.GetNumberOfTransforms()
@@ -500,6 +570,8 @@ def compare_results(config):
         out = cropper(x,coordinates,output_size = 1).reshape(config.n1,config.n2)
         projections_noisy_undeformed[i] = out
     V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
+    V_sart_tv_icetide, _ = sart_update(V_FBP_icetide, projections_noisy_undeformed, lamb=config.lamb_sart,
+                                     tau=config.tau_sart, nit=config.nit_sart, nit_tv=config.nit_tv_sart)
 
 
 
@@ -536,12 +608,31 @@ def compare_results(config):
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_no_deformed_Fourier_XZ.png"),tmp)
 
+    # SART+TV
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_sart_tv)))[index,:,:]
+    tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    tmp = tmp.T**scal
+    tmp = np.floor(255*tmp).astype(np.uint8)
+    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","SART_Fourier_XZ.png"),tmp)
+
+    # SART+TV no deformed
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_no_deformed_sart_tv)))[index,:,:]
+    tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    tmp = tmp.T**scal
+    tmp = np.floor(255*tmp).astype(np.uint8)
+    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","SART_no_deformed_Fourier_XZ.png"),tmp)
+
     if(eval_AreTomo):
         tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_aretomo_centered)))[index,:,:]
         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = tmp.T**scal
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo_Fourier_XZ.png"),tmp)
+        tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_sart_tv_centered)))[index,:,:]
+        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+        tmp = tmp.T**scal
+        tmp = np.floor(255*tmp).astype(np.uint8)
+        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo_sart_tv_Fourier_XZ.png"),tmp)
 
     if(eval_Etomo):
         tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_etomo_centered)))[index,:,:]
@@ -549,6 +640,11 @@ def compare_results(config):
         tmp = tmp.T**scal
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo_Fourier_XZ.png"),tmp)
+        tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_sart_tv_centered)))[index,:,:]
+        tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+        tmp = tmp.T**scal
+        tmp = np.floor(255*tmp).astype(np.uint8)
+        imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo_sart_tv_Fourier_XZ.png"),tmp)
 
     # FBP icetide
     tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_FBP_icetide)))[index,:,:]
@@ -556,6 +652,11 @@ def compare_results(config):
     tmp = tmp.T**scal
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE_Fourier_XZ.png"),tmp) 
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_sart_tv_icetide)))[index,:,:]
+    tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+    tmp = tmp.T**scal
+    tmp = np.floor(255*tmp).astype(np.uint8)
+    imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","sart_tv_ICETIDE_Fourier_XZ.png"),tmp)
 
 
     #######################################################################################
@@ -621,8 +722,12 @@ def compare_results(config):
     fsc_FBP_icetide = utils_FSC.FSC(V,V_FBP_icetide)
     fsc_FBP = utils_FSC.FSC(V,V_FBP)
     fsc_FBP_no_deformed = utils_FSC.FSC(V,V_FBP_no_deformed)
+    fsc_sart_tv_icetide = utils_FSC.FSC(V,V_sart_tv_icetide)
+    fsc_sart_tv = utils_FSC.FSC(V,V_sart_tv)
+    fsc_sart_tv_no_deformed = utils_FSC.FSC(V,V_no_deformed_sart_tv)
     if(eval_Etomo):
         fsc_Etomo = utils_FSC.FSC(V,V_etomo_centered)
+        fsc_Etomo_sart_tv = utils_FSC.FSC(V,V_sart_tv_etomo_centered)
     x_fsc = np.arange(fsc_FBP_no_deformed.shape[0])
 
     plt.figure(1)
@@ -641,6 +746,23 @@ def compare_results(config):
     plt.legend()
     plt.savefig(os.path.join(config.path_save,'evaluation','FSC.png'))
     plt.savefig(os.path.join(config.path_save,'evaluation','FSC.pdf'))
+
+    plt.figure(1)
+    plt.clf()
+    plt.plot(x_fsc,fsc_icetide,'b',label="icetide")
+    plt.plot(x_fsc,fsc_sart_tv_icetide,'--b',label="SART+TV with our deform. est. ")
+    if(eval_AreTomo):
+        for i, npatch in enumerate(config.nPatch):
+            col = ['r','m']
+            plt.plot(x_fsc,fsc_AreTomo_sart_tv_list[i],col[i],label=f"AreTomo patch {npatch}")
+            # plt.plot(x_fsc,fsc_a[i],col[i],linestyle='--',label=f"AreTomo centered patch {npatch}")
+    if(eval_Etomo):
+        plt.plot(x_fsc,fsc_Etomo_sart_tv,'c',label="Etomo")
+    plt.plot(x_fsc,fsc_sart_tv,'k',label="FBP")
+    plt.plot(x_fsc,fsc_sart_tv_no_deformed,'g',label="FBP no def.")
+    plt.legend()
+    plt.savefig(os.path.join(config.path_save,'evaluation','FSC_SART_TV.png'))
+    plt.savefig(os.path.join(config.path_save,'evaluation','FSC_SART_TV.pdf'))
 
 
     fsc_arr = np.zeros((x_fsc.shape[0],8))

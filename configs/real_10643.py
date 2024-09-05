@@ -13,53 +13,43 @@ def get_config():
     #######################
     config = ml_collections.ConfigDict()
     config.seed = 42
-    config.device_num = 3
+    config.device_num = 2
     config.torch_type = torch.float
     config.track_memory = False
 
     ########################################
     ## Parameters for the data generation ##
     ########################################
-    config.volume_name = 'model_0'
-    # Size of the volume to use to generate the tilt-series
-    config.n1 = 512
-    config.n2 = 512
-    config.n3 = 180
+    # Size of volume, if not none will be resize to that
+    config.n1 = 2048
+    config.n2 = 2048
+    config.n3 = 1024
+    config.n3 = 1024
     # Size of the patch to crop in the raw volume
-    config.n1_patch = 512
-    config.n2_patch = 512
-    config.n3_patch = 180 
+    config.n1_patch = 1024
+    config.n2_patch = 1024
+    config.n3_patch = 512
+    # Size of the patch to eval in the raw volume
+    config.n1_eval = 1024
+    config.n2_eval = 1024
+    config.n3_eval = 512
     # Fixed angle that is approximately known
-    config.fixed_angle = 0
+    config.fixed_angle = 5
     # Sampling operator
-    config.Nangles = 61
     config.view_angle_min = -60
     config.view_angle_max = 60
     config.number_sub_projections = 1
-    # Noise
-    config.SNR_value = 10
-    # Deformations operators
-    deformation_scale = 0.5
-    config.scale_min = 1.0
-    config.scale_max = 1.0
-    config.shift_min = -0.05*deformation_scale # percentage of the field of view
-    config.shift_max = 0.05*deformation_scale  # percentage of the field of view
-    config.shear_min = -0.0
-    config.shear_max = 0.0
-    config.angle_min = -0.01/180*np.pi*deformation_scale # in degrees
-    config.angle_max = 0.01/180*np.pi*deformation_scale # in degrees
-    # slowAngle determines if the inplane rotations are smoothly varying from one view to the other. 
-    # False means that is is chosen uniformly at random   
-    config.slowAngle = False 
-    # Local deformation
-    config.sigma_local_def = 4*deformation_scale # max amplitude of local deformations in pixel
-    config.N_ctrl_pts_local_def = (5,5) # number of different interpolation to interpolate
     
     # # Parameters for the data generation
-    config.path_save_data = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
-    config.path_save = "./results/"+str(config.volume_name)+"_SNR_"+str(config.SNR_value)+"_size_"+str(config.n1)+"_Nangles_"+str(config.Nangles)+"/"
+    config.volume_name = 'b2tilt20'
+    config.angle_name = 'b2tilt20.tlt'
+    config.path_load = "/local/Tomograms_cryoET/real_data_aligned/10643-hiv"
+    config.path_save_data = "./results/10643/"
+    config.path_save = "./results/10643/"
+    config.name_best_volume = None #""
+    config.projections_raw = True # True to not resize the projections
 
-    config.avg_XYZ = 10 # average on the z direction for better visualization, number of frame to average over
+    config.avg_XYZ = 40 # average on the z direction for better visualization, number of frame to average over
 
     #############################
     ## Parameters for training ##
@@ -72,41 +62,40 @@ def get_config():
     config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
-    config.epochs = 1001
-    config.Ntest = 100 # number of epoch before display
+    config.epochs = 5000
+    config.Ntest = 500 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
-    config.compute_fsc = True # save fsc, takes more time
-    config.scheduler_step_size = 100
-    config.scheduler_gamma = 0.5
+    config.scheduler_step_size = 300
+    config.scheduler_gamma = 0.75 #0.75
 
     # Sampling strategy
-    config.batch_size = 4 # number of viewing direction per iteration
-    config.nRays =  1500 # number of sampling rays per viewing direction
-    config.ray_length = 500 #int(np.floor(n1*z_max))
+    config.batch_size = 5 # number of viewing direction per iteration
+    config.nRays = 800
+    config.ray_length = 1500 #int(np.floor(n1*z_max))
     config.sampling_domain_lx = config.sampling_domain_ly = 1 # dimension of the sampling domain
-    config.size_z_vol = 0.35 # size of the volume in the z direction, knowing that [-sampling_domain_lx,sampling_domain_lx] is the sampling domain
+    config.size_z_vol = 0.5 # size of the volume in the z direction, knowing that [-sampling_domain_lx,sampling_domain_lx] is the sampling domain
     config.std_noise_z = 1 # std of the noise perturbation to apply on the z direction of the rays. std_noise=1 means there is a perturbation of at most one pixel.
-
+    
     # When to start or stop optimizing over a variable
     config.schedule_volume = []
     config.schedule_global = []
     config.schedule_local = []
-    config.delay_deformations = 25 # Delay before learning deformations
+    config.delay_deformations = 0 # Delay before learning deformations
 
     # Training learning rates for Adam optimizer
     config.loss_data = torch.nn.L1Loss()
-    config.lr_volume = 1e-2
+    config.lr_volume = 1e-3
     config.lr_shift = 1e-3
-    config.lr_rot = 1e-3
+    config.lr_rot = 0 
     config.lr_local_def = 1e-4
 
     # Training regularization
     config.lamb_volume = 0 # regul parameters on volume regularization
-    config.lamb_rot = 1e-5 # regul parameters on inplane rotations
-    config.lamb_shifts = 1e-5 # regul parameters on shifts
-    config.lamb_local_ampl = 1e-4 # regul on amplitude of local def.
-    config.lamb_local_mean = 1e-4 # regul on mean of local def.
-    config.wd = 5e-6 # weights decay
+    config.lamb_rot = 0 # regul parameters on inplane rotations
+    config.lamb_shifts = 1e-6 # regul parameters on shifts
+    config.lamb_local_ampl = 5*1e-5 # regul on amplitude of local def.
+    config.lamb_local_mean = 1e-6 # regul on mean of local def.
+    config.wd = 1e-6 # weights decay
 
     # Params for implicit deformation
     config.deformationScale = 1
@@ -114,19 +103,19 @@ def get_config():
     # params of implicit volume
     config.input_size_volume = 3 # always 3 for 3d tomography
     config.output_size_volume = 1 # always 1 for 3d tomography
-    config.num_layers_volume = 3
+    config.num_layers_volume = 4
     config.hidden_size_volume = 64
     config.L_volume = 3
     # params for the multi-resolution grids encoding
     config.encoding = ml_collections.ConfigDict()
     config.encoding.otype = 'Grid'
     config.encoding.type = 'Hash'
-    config.encoding.n_levels = 8#
-    config.encoding.n_features_per_level = 4
+    config.encoding.n_levels = 14
+    config.encoding.n_features_per_level = 8
     config.encoding.log2_hashmap_size = 22
-    config.encoding.base_resolution = 8
-    config.encoding.per_level_scale = 2#1.3
-    config.encoding.interpolation = 'Smoothstep'
+    config.encoding.base_resolution = 16
+    config.encoding.per_level_scale = 2
+    config.encoding.interpolation = 'Linear'
     # params specific to Tiny cuda network
     config.network = ml_collections.ConfigDict()
     config.network.otype = 'FullyFusedMLP'
@@ -148,7 +137,13 @@ def get_config():
     #######################
     ## AreTomo ##
     #######################
-    config.path_aretomo = None #"/scicore/home/dokman0000/debarn0000/Softwares/AreTomo_1.3.4_Cuda101_Feb22_2023" #None 
+    config.path_aretomo = "/scicore/home/dokman0000/debarn0000/Softwares/AreTomo_1.3.4_Cuda101_Feb22_2023" #None 
     config.nPatch = [0,4]
+
+    config.lamb_sart = 1e-1
+    config.tau_sart = 1e2
+    config.nit_sart = 20
+    config.nit_tv_sart = 10
+
 
     return config

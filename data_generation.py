@@ -241,8 +241,11 @@ def data_generation_real_data(config):
     np.savez(config.path_save_data+"volume_and_projections.npz",projections_noisy=projections_noisy)
 
     out = mrcfile.new(config.path_save_data+"projections.mrc",projections_noisy,overwrite=True)
-    out.close() 
-    angles = np.loadtxt(os.path.join(config.path_load,config.angle_name))
+    out.close()
+    if os.path.join(config.path_load,config.angle_name):
+        angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
+    else:
+        angles = np.loadtxt(os.path.join(config.path_load,config.angle_name))
     # angles_t = torch.tensor(angles).type(config.torch_type).to(device)
     # operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
     # V_FBP = operator_ET.pinv(torch.tensor(projections_noisy).to(device).detach().requires_grad_(False))
