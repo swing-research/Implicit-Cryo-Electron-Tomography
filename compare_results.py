@@ -264,8 +264,22 @@ def compare_results(config):
     V_sart_tv, _ = sart_update(V_FBP, projections_noisy.detach().cpu().numpy(), lamb=config.lamb_sart,
                                      tau=config.tau_sart, nit=config.nit_sart, nit_tv=config.nit_tv_sart)
     proj_no_deformed = np.double(mrcfile.open(config.path_save_data+"projections_noisy_no_deformed.mrc").data)
+    import ipdb; ipdb.set_trace()
     V_no_deformed_sart_tv, _ = sart_update(V_FBP, proj_no_deformed, lamb=config.lamb_sart,
                                      tau=config.tau_sart, nit=config.nit_sart, nit_tv=config.nit_tv_sart)
+    tmp = V_no_deformed_sart_tv
+    def display_XYZ(tmp,name="true"):
+        f , aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2]/tmp.shape[0], 1], 'width_ratios': [1,tmp.shape[2]/tmp.shape[0]]})
+        aa[0,0].imshow(tmp.mean(0).T,cmap='gray')
+        aa[0,0].axis('off')
+        aa[1,0].imshow(tmp.mean(2),cmap='gray')
+        aa[1,0].axis('off')
+        aa[1,1].imshow(tmp.mean(1),cmap='gray')
+        aa[1,1].axis('off')
+        aa[0,1].axis('off')
+        plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+        plt.savefig(os.path.join(config.path_save_data,'evaluation',"volumes",name+"_XYZ.png"))
+    display_XYZ(tmp,name="SART_TV_no_deformed")
 
     ## Aretomo
     # get the files
