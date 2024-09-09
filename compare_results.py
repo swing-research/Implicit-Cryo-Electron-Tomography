@@ -132,6 +132,17 @@ def sliding_window_view(arr, window_shape):
 import astra
 from skimage.restoration import denoise_tv_chambolle
 
+def FP(vol, proj_geom, vol_geom, Nangles, n1, n2, n3, nit=10, device_num=0):
+    proj_id = astra.data3d.create('-sino', proj_geom, np.zeros((n1, Nangles, n2)))
+    rec_id = astra.data3d.create('-vol', vol_geom, vol.swapaxes(1,2))
+    # rec_id = astra.data3d.create('-vol', vol_geom, np.zeros((config.n1, config.n3, config.n2)))
+    cfg = astra.astra_dict('FP3D_CUDA')
+    cfg['ProjectionDataId'] = proj_id
+    cfg['VolumeDataId'] = rec_id
+    alg_id = astra.algorithm.create(cfg)
+    astra.algorithm.run(alg_id, nit)
+    proj_fp = astra.data3d.get(proj_id).swapaxes(0, 1)
+    return proj_fp
 def BP(P, proj_geom, vol_geom, n1, n2, n3, nit=10, device_num=0):
     proj_id = astra.data3d.create('-sino', proj_geom, P.swapaxes(0, 1))
     rec_id = astra.data3d.create('-vol', vol_geom, np.zeros((n1, n3, n2)))
@@ -153,8 +164,9 @@ def sart_update(vol, P, angles, nit, nit_tv, lamb, tau):
     vol_geom = astra.create_vol_geom(n3, n1, n2)
     def A(vv):
         vv = vv/np.sqrt((vv**2).sum())
-        out = astra.create_sino3d_gpu(vv.swapaxes(1, 2), proj_geom, vol_geom, returnData=True)[
-        1].swapaxes(0, 1)
+        out = FP(vv, proj_geom, vol_geom, P.shape[0], n1, n2, n3, nit=10, device_num=0)
+        # out = astra.create_sino3d_gpu(vv.swapaxes(1, 2), proj_geom, vol_geom, returnData=True, gpuIndex=config.device.index)[
+        # 1].swapaxes(0, 1)
         return out
     # At = lambda P: BP(P, proj_geom, vol_geom, n1, n2, n3, device_num=config.device.index)
     def At(P):
@@ -166,7 +178,7 @@ def sart_update(vol, P, angles, nit, nit_tv, lamb, tau):
 
     cf = []
     # mask = np.zeros_like(v)
-    # mask[20:-20,20:-20,20:-20] = 1
+    # mask[mask_z:-mask_z,mask_z:-mask_z,mask_z:-mask_z] = 1
     for i in range(nit):
         v = v - tau*(At(A(v) - P))
         cf.append(((A(v) - P) ** 2).sum())
@@ -246,6 +258,8 @@ def compare_results(config):
         os.makedirs(config.path_save+"/evaluation/volume_slices/FBP_ICETIDE/")
 
     angles = np.linspace(config.view_angle_min, config.view_angle_max, config.Nangles)
+    mask_z = 30
+    mask_xy = 40
 
     ######################################################################################################
     ## Load data
@@ -346,14 +360,14 @@ def compare_results(config):
 
             # Compute fsc and CC
             fsc_AreTomo = utils_FSC.FSC(V,V_FBP_aretomo)
-            fsc_AreTomo_sart_tv = utils_FSC.FSC(V,V_sart_tv_aretomo)
+            fsc_AreTomo_sart_tv = utils_FSC.FSC(V[mask_xy:-mask_xy,mask_xy:-mask_xy,mask_z:-mask_z],V_sart_tv_aretomo[mask_xy:-mask_xy,mask_xy:-mask_xy,mask_z:-mask_z])
             fsc_AreTomo_centered = utils_FSC.FSC(V,V_aretomo_centered)
             fsc_AreTomo_list.append(fsc_AreTomo)
             fsc_AreTomo_sart_tv_list.append(fsc_AreTomo_sart_tv)
             fsc_AreTomo_centered_list.append(fsc_AreTomo_centered)
 
             CC_AreTomo = CC(V,V_FBP_aretomo)
-            CC_AreTomo_sart_tv = CC(V,V_sart_tv_centered)
+            CC_AreTomo_sart_tv = CC(V[mask_xy:-mask_xy,mask_xy:-mask_xy,mask_z:-mask_z],V_sart_tv_centered[mask_xy:-mask_xy,mask_xy:-mask_xy,mask_z:-mask_z])
             CC_AreTomo_centered = CC(V,V_aretomo_centered)
             CC_AreTomo_list.append(CC_AreTomo)
             CC_AreTomo_sart_tv_list.append(CC_AreTomo_sart_tv)
@@ -626,14 +640,14 @@ def compare_results(config):
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_no_deformed_Fourier_XZ.png"),tmp)
 
     # SART+TV
-    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_sart_tv)))[index,:,:]
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_sart_tv)))[index,:,:][mask_xy:-mask_xy,mask_z:-mask_z]
     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
     tmp = tmp.T**scal
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","SART_Fourier_XZ.png"),tmp)
 
     # SART+TV no deformed
-    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_no_deformed_sart_tv)))[index,:,:]
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_no_deformed_sart_tv)))[index,:,:][mask_xy:-mask_xy,mask_z:-mask_z]
     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
     tmp = tmp.T**scal
     tmp = np.floor(255*tmp).astype(np.uint8)
@@ -645,7 +659,7 @@ def compare_results(config):
         tmp = tmp.T**scal
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","AreTomo_Fourier_XZ.png"),tmp)
-        tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_sart_tv_centered)))[index,:,:]
+        tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_sart_tv_centered)))[index,:,:][mask_xy:-mask_xy,mask_z:-mask_z]
         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = tmp.T**scal
         tmp = np.floor(255*tmp).astype(np.uint8)
@@ -657,7 +671,7 @@ def compare_results(config):
         tmp = tmp.T**scal
         tmp = np.floor(255*tmp).astype(np.uint8)
         imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","Etomo_Fourier_XZ.png"),tmp)
-        tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_sart_tv_centered)))[index,:,:]
+        tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_sart_tv_centered)))[index,:,:][mask_xy:-mask_xy,mask_z:-mask_z]
         tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
         tmp = tmp.T**scal
         tmp = np.floor(255*tmp).astype(np.uint8)
@@ -669,7 +683,7 @@ def compare_results(config):
     tmp = tmp.T**scal
     tmp = np.floor(255*tmp).astype(np.uint8)
     imageio.imwrite(os.path.join(config.path_save_data,'evaluation',"volume_slices","FBP_ICETIDE_Fourier_XZ.png"),tmp) 
-    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_sart_tv_icetide)))[index,:,:]
+    tmp = np.fft.fftshift(np.abs(np.fft.fftn(V_sart_tv_icetide)))[index,:,:][mask_xy:-mask_xy,mask_z:-mask_z]
     tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
     tmp = tmp.T**scal
     tmp = np.floor(255*tmp).astype(np.uint8)
@@ -739,12 +753,12 @@ def compare_results(config):
     fsc_FBP_icetide = utils_FSC.FSC(V,V_FBP_icetide)
     fsc_FBP = utils_FSC.FSC(V,V_FBP)
     fsc_FBP_no_deformed = utils_FSC.FSC(V,V_FBP_no_deformed)
-    fsc_sart_tv_icetide = utils_FSC.FSC(V,V_sart_tv_icetide)
-    fsc_sart_tv = utils_FSC.FSC(V,V_sart_tv)
-    fsc_sart_tv_no_deformed = utils_FSC.FSC(V,V_no_deformed_sart_tv)
+    fsc_sart_tv_icetide = utils_FSC.FSC(V[mask_xy:-mask_xy,mask_xy:-mask_xy,mask_z:-mask_z],V_sart_tv_icetide[mask_xy:-mask_xy,mask_xy:-mask_xy,mask_z:-mask_z])
+    fsc_sart_tv = utils_FSC.FSC(V[mask_xy:-mask_xy,mask_xy:-mask_xy,mask_z:-mask_z],V_sart_tv[mask_xy:-mask_xy,mask_xy:-mask_xy,mask_z:-mask_z])
+    fsc_sart_tv_no_deformed = utils_FSC.FSC(V[mask_xy:-mask_xy,mask_xy:-mask_xy,mask_z:-mask_z],V_no_deformed_sart_tv[mask_xy:-mask_xy,mask_xy:-mask_xy,mask_z:-mask_z])
     if(eval_Etomo):
         fsc_Etomo = utils_FSC.FSC(V,V_etomo_centered)
-        fsc_Etomo_sart_tv = utils_FSC.FSC(V,V_sart_tv_etomo_centered)
+        fsc_Etomo_sart_tv = utils_FSC.FSC(V[mask_xy:-mask_xy,mask_xy:-mask_xy,mask_z:-mask_z],V_sart_tv_etomo_centered[mask_xy:-mask_xy,mask_xy:-mask_xy,mask_z:-mask_z])
     x_fsc = np.arange(fsc_FBP_no_deformed.shape[0])
 
     plt.figure(1)
