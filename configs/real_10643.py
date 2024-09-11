@@ -21,10 +21,9 @@ def get_config():
     ## Parameters for the data generation ##
     ########################################
     # Size of volume, if not none will be resize to that
-    config.n1 = 2048
-    config.n2 = 2048
-    config.n3 = 1024
-    config.n3 = 1024
+    config.n1 = 1024
+    config.n2 = 1024
+    config.n3 = 512
     # Size of the patch to crop in the raw volume
     config.n1_patch = 1024
     config.n2_patch = 1024
@@ -34,47 +33,49 @@ def get_config():
     config.n2_eval = 1024
     config.n3_eval = 512
     # Fixed angle that is approximately known
-    config.fixed_angle = 5
+    config.fixed_angle = 0
     # Sampling operator
     config.view_angle_min = -60
     config.view_angle_max = 60
     config.number_sub_projections = 1
     
     # # Parameters for the data generation
-    config.volume_name = 'b2tilt20'
-    config.angle_name = 'b2tilt20.tlt'
-    config.path_load = "/local/Tomograms_cryoET/real_data_aligned/10643-hiv"
+    config.volume_name = 'b2tilt40'
+    config.angle_name = 'b2tilt40.tlt'
+    config.path_load = "/local/Tomograms_cryoET/real_data_aligned/10643-hiv/tilt40"
+    config.name_best_proj = 'b2tilt40_ali.mrc'
     config.path_save_data = "./results/10643/"
     config.path_save = "./results/10643/"
     config.name_best_volume = None #""
     config.projections_raw = True # True to not resize the projections
+    config.projections_rotate = True
 
-    config.avg_XYZ = 40 # average on the z direction for better visualization, number of frame to average over
+    config.avg_XYZ = 1 # average on the z direction for better visualization, number of frame to average over
 
     #############################
     ## Parameters for training ##
     #############################
     # Estimate Volume from the deformed projections
     config.train_volume = True
-    config.train_local_def = True
+    config.train_local_def = False
     config.train_global_def = True
     config.volume_model = "multi-resolution" # multi-resolution, Fourier-features, grid, MLP
     config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
     config.epochs = 5000
-    config.Ntest = 500 # number of epoch before display
+    config.Ntest = 100 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
     config.scheduler_step_size = 300
-    config.scheduler_gamma = 0.75 #0.75
+    config.scheduler_gamma = 0.25 #0.75
 
     # Sampling strategy
     config.batch_size = 5 # number of viewing direction per iteration
     config.nRays = 800
-    config.ray_length = 1500 #int(np.floor(n1*z_max))
+    config.ray_length = 500 #int(np.floor(n1*z_max))
     config.sampling_domain_lx = config.sampling_domain_ly = 1 # dimension of the sampling domain
     config.size_z_vol = 0.5 # size of the volume in the z direction, knowing that [-sampling_domain_lx,sampling_domain_lx] is the sampling domain
-    config.std_noise_z = 1 # std of the noise perturbation to apply on the z direction of the rays. std_noise=1 means there is a perturbation of at most one pixel.
+    config.std_noise_z = 0.1 # std of the noise perturbation to apply on the z direction of the rays. std_noise=1 means there is a perturbation of at most one pixel.
     
     # When to start or stop optimizing over a variable
     config.schedule_volume = []

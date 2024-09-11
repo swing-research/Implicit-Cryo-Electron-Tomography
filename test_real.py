@@ -116,12 +116,178 @@ if not os.path.exists(config.path_save+"/evaluation/volume_slices/SART_TV/"):
 
 print('data generation')
 import data_generation
-
 data_generation.data_generation_real_data(config)
 
 print('Training...')
 import train as train
 train.train_without_ground_truth(config)
+
+
+
+
+
+
+
+
+
+# load best alligned projections
+if config.name_best_proj != "":
+    P_best_t = torch.tensor(
+        np.double(mrcfile.open(os.path.join(config.path_load, config.name_best_proj)).data)).type(
+        config.torch_type).to(device)
+    P_best_t = torch.rot90(P_best_t, k=3, dims=[1, 2])
+projections_noisy = torch.Tensor(
+    np.float32(mrcfile.open(os.path.join(config.path_load, config.volume_name + ".mrc"), permissive=True).data)).type(
+    config.torch_type).to(device)
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if torch.cuda.device_count() > 1:
+    torch.cuda.set_device(config.device_num)
+np.random.seed(config.seed)
+torch.manual_seed(config.seed)
+config.device = device
+
+# Parent Dircetorys
+if not os.path.exists(config.path_save):
+    os.makedirs(config.path_save)
+if not os.path.exists(config.path_save + "/evaluation/"):
+    os.makedirs(config.path_save + "/evaluation/")
+if not os.path.exists(config.path_save + "/evaluation/projections/"):
+    os.makedirs(config.path_save + "/evaluation/projections/")
+if not os.path.exists(config.path_save + "/evaluation/volumes/"):
+    os.makedirs(config.path_save + "/evaluation/volumes/")
+if not os.path.exists(config.path_save + "/evaluation/deformations/"):
+    os.makedirs(config.path_save + "/evaluation/deformations/")
+if not os.path.exists(config.path_save + "/evaluation/volume_slices/"):
+    os.makedirs(config.path_save + "/evaluation/volume_slices/")
+
+# Our method
+if not os.path.exists(config.path_save + "/evaluation/projections/ICETIDE/"):
+    os.makedirs(config.path_save + "/evaluation/projections/ICETIDE/")
+if not os.path.exists(config.path_save + "/evaluation/deformations/ICETIDE/"):
+    os.makedirs(config.path_save + "/evaluation/deformations/ICETIDE/")
+if not os.path.exists(config.path_save + "/evaluation/volume_slices/ICETIDE/"):
+    os.makedirs(config.path_save + "/evaluation/volume_slices/ICETIDE/")
+
+# FBP
+if not os.path.exists(config.path_save + "/evaluation/projections/Best/"):
+    os.makedirs(config.path_save + "/evaluation/projections/Best/")
+if not os.path.exists(config.path_save + "/evaluation/volume_slices/Best/"):
+    os.makedirs(config.path_save + "/evaluation/volume_slices/Best/")
+
+# FBP ICETIDE deformation estimations
+if not os.path.exists(config.path_save + "/evaluation/projections/FBP_ICETIDE/"):
+    os.makedirs(config.path_save + "/evaluation/projections/FBP_ICETIDE/")
+if not os.path.exists(config.path_save + "/evaluation/volume_slices/FBP_ICETIDE/"):
+    os.makedirs(config.path_save + "/evaluation/volume_slices/FBP_ICETIDE/")
+
+######################################################################################################
+## Load data
+######################################################################################################
+data = np.load(config.path_save_data + "volume_and_projections.npz")
+# projections_noisy = torch.tensor(data['projections_noisy']).type(config.torch_type).to(device)
+if config.name_best_volume is not None:
+    if config.name_best_volume != "":
+        V_best_t = torch.tensor(
+            np.moveaxis(np.double(mrcfile.open(config.path_load + config.name_best_volume).data), 0, 2)).type(
+            config.torch_type).to(device)
+        V_best_t = torch.rot90(V_best_t, k=2, dims=[0, 1])
+    else:
+        V_best_t = torch.zeros((config.n1, config.n2, config.n3))
+else:
+    V_best_t = torch.zeros((config.n1, config.n2, config.n3))
+# numpy
+V_best = V_best_t.detach().cpu().numpy()
+
+data = np.load(config.path_save_data + "volume_and_projections.npz")
+projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
+config.Nangles = projections_noisy.shape[0]
+projections_noisy_resize = torch.Tensor(
+    resize(projections_noisy.detach().cpu().numpy(), (config.Nangles, config.n1, config.n2))).type(
+    config.torch_type).to(device)
+
+######################################################################################################
+## Load and estimate our volume
+######################################################################################################
+## Load implicit network
+if (config.volume_model == "Fourier-features"):
+    from models.fourier_net import FourierNet, FourierNet_Features
+
+    impl_volume = FourierNet_Features(
+        in_features=config.input_size_volume,
+        sub_features=config.sub_features,
+        out_features=config.output_size_volume,
+        hidden_features=config.hidden_size_volume,
+        hidden_blocks=config.num_layers_volume,
+        L=config.L_volume).to(device)
+
+if (config.volume_model == "MLP"):
+    from models.fourier_net import MLP
+
+    impl_volume = MLP(in_features=1,
+                      hidden_features=config.hidden_size_volume, hidden_blocks=config.num_layers_volume,
+                      out_features=config.output_size_volume).to(device)
+
+if (config.volume_model == "multi-resolution"):
+    import tinycudann as tcnn
+
+    config_network = {"encoding": {
+        'otype': config.encoding.otype,
+        'type': config.encoding.type,
+        'n_levels': config.encoding.n_levels,
+        'n_features_per_level': config.encoding.n_features_per_level,
+        'log2_hashmap_size': config.encoding.log2_hashmap_size,
+        'base_resolution': config.encoding.base_resolution,
+        'per_level_scale': config.encoding.per_level_scale,
+        'interpolation': config.encoding.interpolation,
+    },
+        "network": {
+            "otype": config.network.otype,
+            "activation": config.network.activation,
+            "output_activation": config.network.output_activation,
+            "n_neurons": config.hidden_size_volume,
+            "n_hidden_layers": config.num_layers_volume
+        }
+    }
+    impl_volume = tcnn.NetworkWithInputEncoding(n_input_dims=3, n_output_dims=1,
+                                                encoding_config=config_network["encoding"],
+                                                network_config=config_network["network"]).to(device)
+num_param = sum(p.numel() for p in impl_volume.parameters() if p.requires_grad)
+print('---> Number of trainable parameters in volume net: {}'.format(num_param))
+checkpoint = torch.load(os.path.join(config.path_save, 'training', 'model_trained.pt'), map_location=device)
+impl_volume.load_state_dict(checkpoint['implicit_volume'])
+shift_est = checkpoint['shift_est']
+rot_est = checkpoint['rot_est']
+implicit_deformation_list = checkpoint['local_deformation_network']
+from utils.utils_sampling import get_sampling_geometry
+size_xy_vol, z_max_value = get_sampling_geometry(config.size_z_vol, config.view_angle_min, config.view_angle_max,
+                                                 config.sampling_domain_lx, config.sampling_domain_ly)
+fixed_rot = []
+fixedAngle = torch.FloatTensor([config.fixed_angle * np.pi / 180]).to(device)[0]
+for k in range(config.Nangles):
+    fixed_rot.append(utils_deformation.rotNet(1, x0=fixedAngle).to(device))
+size_max_vol = 1.2 * np.max(
+    [size_xy_vol, config.size_z_vol])  # increase by some small factor to account for deformations
+index = torch.arange(0, config.Nangles, dtype=torch.long)  # index for the dataloader
+# Define dataset
+angles = np.linspace(config.view_angle_min, config.view_angle_max, config.Nangles)
+angles_t = torch.tensor(angles).type(config.torch_type).to(device)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ######################################################################################################

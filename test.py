@@ -364,6 +364,42 @@ def CG_inverse(P, u, angles, mu, max_iter, tol):
     return x, cf
 
 
+import pytv
+def tv_prox(im_noisy,nb_it,regularization):
+    im_noisy = im_noisy.swapaxes(2,1).swapaxes(1,0)
+    im_noisy = im_noisy.reshape(im_noisy.shape[0],1,im_noisy.shape[1],im_noisy.shape[2])
+    im_est = np.copy(im_noisy)
+    dual_update_fidelity = np.zeros_like(im_est)
+    dual_update_TV = np.zeros((im_est.shape[0],6,im_est.shape[1],im_est.shape[2],im_est.shape[3]))
+    loss_fct_GD = np.zeros([nb_it, ])
+
+    sigma_D = 0.5
+    sigma_A = 1.0
+    tau = 1 / (8 + 1)
+    for it in range(nb_it):  # A simple sub-gradient descent algorithm for image denoising
+    #     tv, G = pytv.tv_GPU.tv_hybrid(im_est)
+    #     im_est += - step_size * ((im_est - im_noisy) + regularization * G)
+    #     loss_fct_GD[it] = 0.5 * np.sum(np.square(im_est - im_noisy)) + regularization * tv
+
+        # Dual update
+        dual_update_fidelity = (dual_update_fidelity + sigma_A * (im_est - im_noisy)) / (
+                    1.0 + sigma_A)
+        D_x = pytv.tv_operators_GPU.D_hybrid(im_est)
+        prox_argument = dual_update_TV + sigma_D * D_x
+        dual_update_TV = prox_argument / np.maximum(1.0, np.sqrt(np.sum(prox_argument ** 2, axis=1, keepdims=True)) / regularization)
+
+        # Primal update
+        im_est = im_est - tau * dual_update_fidelity - tau * pytv.tv_operators_GPU.D_T_hybrid(
+            dual_update_TV)
+
+        # Loss function update
+        loss_fct_GD[it] = 0.5 * np.sum(
+            np.square(im_est - im_noisy)) + regularization * pytv.tv_operators_GPU.compute_L21_norm(
+            D_x)
+
+
+    return im_est.squeeze(1).swapaxes(0,1).swapaxes(1,2) , loss_fct_GD
+
 
 
 
@@ -395,8 +431,14 @@ def sart_update(vol, P, nit, nit_tv, lamb, tau):
         # Total Variation regularization
         # v = denoise_tv_chambolle(v, weight=lamb, max_num_iter=nit_tv)
         # v = denoise_tv_bregman(v, weight=lamb, max_num_iter=nit_tv)
-        v = denoise_wavelet(v, sigma=lamb)
+        # v = denoise_wavelet(v, sigma=lamb)
+        v, _ = tv_prox(v / (v ** 2).sum(), nb_it=nit_tv, regularization=lamb)
     return v, cf
+
+
+
+
+
 
 n1, n2, n3 = config.n1, config.n2, config.n3
 proj_geom = astra.create_proj_geom('parallel3d', 1, 1, n1, n2, angles)
@@ -416,7 +458,7 @@ def At(P):
 s = 3*1e-2
 P = A(V) + s*np.random.randn(config.Nangles, n1, n2)
 
-v_sart, cf = sart_update(np.zeros_like(V)+1e-1, P, lamb=2*1e-3, tau=1e2, nit=10, nit_tv=10)
+v_sart, cf = sart_update(np.zeros_like(V)+1e-1, P, lamb=1e-2, tau=1e0, nit=10, nit_tv=3)
 plt.figure(1)
 plt.clf()
 plt.plot(cf)
@@ -438,7 +480,10 @@ plt.clf()
 plt.imshow(vv[50:-50,50:-50,90])
 plt.title('Wavelet')
 
-vv, cf = FISTA_prox_tv(v_sart, lamb=1e1, tau=1e-2, nit=10)
+# vv, cf = denoise_TV_L2_bounds(v_sart/(v_sart**2).sum(), alpha=1e-1, a=-1, b=1, nit=10, x1=None, x2=None, x3=None)
+# vv, cf = FISTA_prox_tv(v_sart/(v_sart**2).sum(), lamb=1e-1, tau=1e-1, nit=10)
+# vv, cf = total_variation_denoising_3d(v_sart, lambda_param = 1e0, num_iterations=10, step_size=1.0)
+vv, cf = tv_prox(v_sart/(v_sart**2).sum(),nb_it=10,regularization=1e2)
 plt.figure(5)
 plt.clf()
 plt.imshow(vv[50:-50,50:-50,90])
@@ -446,6 +491,12 @@ plt.title('prox tv')
 plt.figure(1)
 plt.clf()
 plt.plot(cf)
+
+
+
+
+
+
 
 # Try my own TV? first on one image then iterate
 # why tv prox diverges ?
@@ -554,23 +605,73 @@ def FISTA_prox_tv(z, lamb, tau, nit, eps=1e-5):
         v_ = v.copy()
         norm = np.sqrt(d1(u)**2 + d2(u)**2 + d3(u)**2 + eps**2).sum()
         grad = (u - z) + lamb*(d1T(d1(u))+d2T(d2(u))+d3T(d3(u)))/norm
-        for j in range(10):
-            vtmp = v - tau*grad
-            cost = 0.5*((vtmp - z)**2).sum() + lamb * np.sum(np.sqrt(np.abs(d1(vtmp))**2 + np.abs(d2(vtmp))**2 + np.abs(d3(vtmp))**2 ))
-            if i==0:
-                break
-            if cost>cf[-1]:
-                tau = tau*0.5
-            # if cost<cf[-1]:
-            #     tau = tau/0.5
-        print(tau)
+        # for j in range(10):
+        #     vtmp = v - tau*grad
+        #     cost = 0.5*((vtmp - z)**2).sum() + lamb * np.sum(np.sqrt(np.abs(d1(vtmp))**2 + np.abs(d2(vtmp))**2 + np.abs(d3(vtmp))**2 + eps**2 ))
+        #     if i==0:
+        #         break
+        #     if cost>cf[-1]:
+        #         tau = tau*0.5
+        #     else:
+        #         break
+        #     # if cost<cf[-1]:
+        #     #     tau = tau/0.5
+        # print(tau)
         v = v - tau*grad
-        # u = v + 0.99*(v-v_)
-        u = v
-        cf.append((0.5*(v - z)**2).sum() + lamb *  np.sum(np.sqrt(np.abs(d1(vtmp))**2 + np.abs(d2(vtmp))**2 + np.abs(d3(vtmp))**2 )) )
+        u = v + 0.99*(v-v_)
+        # u = v
+        cf.append((0.5*(v - z)**2).sum() + lamb *  np.sum(np.sqrt(np.abs(d1(v))**2 + np.abs(d2(v))**2 + np.abs(d3(v))**2 + eps**2 )) )
     return v, cf
 
 
+
+def total_variation_denoising_3d(image, lambda_param, num_iterations=100, step_size=1.0):
+    """
+    Perform Total Variation denoising using the ISTA algorithm for 3D images.
+
+    Parameters:
+    - image: The input noisy 3D image.
+    - lambda_param: Regularization parameter for TV.
+    - num_iterations: Number of iterations.
+    - step_size: Step size for the gradient descent.
+
+    Returns:
+    - denoised_image: The denoised 3D image.
+    """
+    def soft_thresholding(x, threshold):
+        return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
+
+    def tv_gradient(u):
+        """Compute the gradient of the TV regularization term in 3D."""
+        grad_x = np.roll(u, -1, axis=0) - u
+        grad_y = np.roll(u, -1, axis=1) - u
+        grad_z = np.roll(u, -1, axis=2) - u
+        return grad_x, grad_y, grad_z
+
+    def tv_norm(grad_x, grad_y, grad_z):
+        """Compute the TV norm in 3D."""
+        return np.sqrt(grad_x**2 + grad_y**2 + grad_z**2)
+
+    def denoise_step(u, grad_x, grad_y, grad_z, lambda_param, step_size):
+        """Perform one step of the ISTA algorithm in 3D."""
+        grad_x, grad_y, grad_z = tv_gradient(u)
+        tv_norm_u = tv_norm(grad_x, grad_y, grad_z)
+        threshold = lambda_param / step_size
+        u_denoised = u - step_size * (2 * (u - image) + tv_norm_u)
+        u_denoised = soft_thresholding(u_denoised, threshold)
+        return u_denoised
+
+    # Initialize
+    denoised_image = np.copy(image)
+
+    cf = []
+    # Perform iterative TV denoising
+    for _ in range(num_iterations):
+        grad_x, grad_y, grad_z = tv_gradient(denoised_image)
+        denoised_image = denoise_step(denoised_image, grad_x, grad_y, grad_z, lambda_param, step_size)
+        cf.append(((denoised_image - image)**2).sum() + lambda_param*tv_norm(grad_x, grad_y, grad_z))
+
+    return denoised_image, cf
 
 
 

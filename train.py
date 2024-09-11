@@ -5,6 +5,7 @@ Module to train the reconstruction network on the simulated data.
 import os
 import time
 import torch
+import imageio
 import mrcfile
 import numpy as np
 import matplotlib.pyplot as plt
@@ -654,6 +655,8 @@ def train_without_ground_truth(config):
         os.makedirs(config.path_save+"training/deformations/")
     if not os.path.exists(config.path_save+"training/deformations_x10/"):
         os.makedirs(config.path_save+"training/deformations_x10/")
+    if not os.path.exists(config.path_save+"training/projections/"):
+        os.makedirs(config.path_save+"training/projections/")
 
     ## Load data that was previously saved
     data = np.load(config.path_save_data+"volume_and_projections.npz")
@@ -866,6 +869,7 @@ def train_without_ground_truth(config):
     t0 = time.time()
     print("Training the network(s)...")
     for ep in range(config.epochs):
+        loss_tmp = []
         # define what to estimate
         if(ep>=config.delay_deformations): 
             train_global_def = config.train_global_def
@@ -970,8 +974,9 @@ def train_without_ground_truth(config):
                 optimizer_deformations_glob.step()
             if train_local_def:
                 optimizer_deformations_loc.step()
-            loss_tot.append(loss.item())
+            loss_tmp.append(loss.item())
 
+        loss_tot.append(np.mean(loss_tmp))
         scheduler_volume.step()
         if len(list_params_deformations_glob)!=0:
             scheduler_deformation_glob.step()
@@ -1038,6 +1043,43 @@ def train_without_ground_truth(config):
                 plt.clf()
                 plt.plot(gains.detach().cpu().numpy())
                 plt.savefig(os.path.join(config.path_save+"/training/deformations/gains.png"))
+
+
+                # Compute estimated projections
+                projEstimate_tot = np.zeros((config.Nangles, config.n1_eval, config.n2_eval))
+                x_lin1 = np.linspace(-1, 1, config.n1_eval)
+                x_lin2 = np.linspace(-1, 1, config.n2_eval)
+                XX, YY = np.meshgrid(x_lin1, x_lin2, indexing='ij')
+                grid2d_ = np.concatenate([XX.reshape(-1, 1), YY.reshape(-1, 1)], 1)
+                grid2d_ = torch.tensor(grid2d_).type(config.torch_type).to(device)
+                for ll, angle in enumerate(angles_t[::4]):
+                    print(ll)
+                    for jj in range(config.n2_eval):
+                        # Define the detector locations
+                        detectorLocations = grid2d_.reshape(config.n1_eval,config.n2_eval,2)[:,jj].reshape(1,-1,2)
+
+                        # Apply deformations in the 2D space
+                        detectorLocationsDeformed = apply_deformations_to_locations(detectorLocations, rot_est[ll:ll+1],
+                                                                                    shift_est[ll:ll+1], implicit_deformation_list[ll:ll+1],
+                                                                                    fixed_rot[ll:ll+1], scale=config.deformationScale)
+                        # generate the rays in 3D
+                        rays_rotated = generate_rays_batch(detectorLocationsDeformed, angle[None], z_max_value, config.ray_length,
+                                                           std_noise=config.std_noise_z)
+                        # Scale the rays so that they are trully in [-1,1]
+                        rays_rotated_scaled = rays_rotated / size_max_vol
+                        # Sample the implicit volume by making the input in [0,1]
+                        outputValues = impl_volume((rays_rotated_scaled / 2 + 0.5).reshape(-1, 3)).reshape(1,
+                                                                                                           config.n1_eval,
+                                                                                                           config.ray_length)
+                        support = (rays_rotated[:, :, :, 2].abs() < config.size_z_vol) * 1
+                        projEstimate = torch.sum(support * outputValues, 2) / config.ray_length
+                        projEstimate_tot[ll,:,jj] = projEstimate.reshape(-1).detach().cpu().numpy()
+                    tmp = projEstimate_tot[ll]
+                    tmp = (tmp - tmp.min())/(tmp.max()-tmp.min())
+                    tmp = np.floor(255*tmp).astype(np.uint8)
+                    imageio.imwrite(config.path_save_data+"training/projections/est_"+str(ll)+".png",tmp)
+
+
                                     
                 if config.save_volume:
                     ## Save slice of the volume

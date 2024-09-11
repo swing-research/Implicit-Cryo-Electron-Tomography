@@ -187,6 +187,43 @@ def sart_update(vol, P, angles, nit, nit_tv, lamb, tau):
     return v, cf
 
 
+import pytv
+def tv_prox(im_noisy,nb_it,step_size,regularization):
+    im_noisy = im_noisy.swapaxes(2,1).swapaxes(1,0)
+    im_noisy = im_noisy.reshape(im_noisy.shape[0],1,im_noisy.shape[1],im_noisy.shape[2])
+    im_est = np.copy(im_noisy)
+    dual_update_fidelity = np.zeros_like(im_est)
+    dual_update_TV = np.zeros((im_est.shape[0],6,im_est.shape[1],im_est.shape[2],im_est.shape[3]))
+    loss_fct_GD = np.zeros([nb_it, ])
+
+    sigma_D = 0.5
+    sigma_A = 1.0
+    tau = 1 / (8 + 1)
+    for it in range(nb_it):  # A simple sub-gradient descent algorithm for image denoising
+    #     tv, G = pytv.tv_GPU.tv_hybrid(im_est)
+    #     im_est += - step_size * ((im_est - im_noisy) + regularization * G)
+    #     loss_fct_GD[it] = 0.5 * np.sum(np.square(im_est - im_noisy)) + regularization * tv
+
+        # Dual update
+        dual_update_fidelity = (dual_update_fidelity + sigma_A * (im_est - im_noisy)) / (
+                    1.0 + sigma_A)
+        D_x = pytv.tv_operators_GPU.D_hybrid(im_est)
+        prox_argument = dual_update_TV + sigma_D * D_x
+        dual_update_TV = prox_argument / np.maximum(1.0, np.sqrt(np.sum(prox_argument ** 2, axis=1, keepdims=True)) / regularization)
+
+        # Primal update
+        im_est = im_est - tau * dual_update_fidelity - tau * pytv.tv_operators_GPU.D_T_hybrid(
+            dual_update_TV)
+
+        # Loss function update
+        loss_fct_GD[it] = 0.5 * np.sum(
+            np.square(im_est - im_noisy)) + regularization * pytv.tv_operators_GPU.compute_L21_norm(
+            D_x)
+
+
+    return im_est.squeeze(1).swapaxes(0,1).swapaxes(1,2) , loss_fct_GD
+
+
 def compare_results(config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     if torch.cuda.device_count()>1:

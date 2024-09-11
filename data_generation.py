@@ -222,6 +222,8 @@ def data_generation_real_data(config):
     #######################################################################################
     projections_noisy = np.float32(mrcfile.open(os.path.join(config.path_load,config.volume_name+".mrc"),permissive=True).data)
     projections_noisy = projections_noisy/np.abs(projections_noisy).max()
+    if config.projections_rotate:
+        projections_noisy = np.rot90(np.flip(projections_noisy,axis=1), k=3, axes=((1, 2)))
     if config.n1 is not None:
         config.Nangles = projections_noisy.shape[0]
         projections_noisy = resize(projections_noisy,(config.Nangles,config.n1,config.n2))

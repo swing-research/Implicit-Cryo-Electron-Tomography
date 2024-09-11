@@ -48,6 +48,7 @@ def get_config():
     config.path_save = "./results/tkiuv_"+str(config.volume_name)+"/"
     config.name_best_volume = "emd_15056_additional_1.map"
     config.projections_raw = True # True to not resize the projections
+    config.projections_rotate = False
 
     config.avg_XYZ = 40 # average on the z direction for better visualization, number of frame to average over
 
