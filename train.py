@@ -14,7 +14,6 @@ from torch.utils.data import DataLoader, TensorDataset
 from utils import utils_deformation, utils_display
 from utils.utils_sampling import get_sampling_geometry, apply_deformations_to_locations, generate_rays_batch, sample_projections
 
-
 def train(config):
     print("Runing training procedure.")
     # Choosing the seed and the device
@@ -46,6 +45,7 @@ def train(config):
         shift_true[k,0] = affine_transformation.shiftX.item()
         shift_true[k,1] = affine_transformation.shiftY.item()
         angle_true[k] = affine_transformation.angle.item()
+
 
     ######################################################################################################
     ######################################################################################################
@@ -232,7 +232,6 @@ def train(config):
     z_max_value = np.maximum(z_max_value1,z_max_value2)
     size_max_vol = 2*np.max([config.sampling_domain_lx, config.sampling_domain_ly,config.size_z_vol])
 
-
     ######################################################################################################
     ## Iterative optimization
     loss_tot = []
@@ -287,6 +286,8 @@ def train(config):
             use_global_def = False
             train_local_def = False
             train_global_def = False
+
+
         for angle, proj, idx_loader  in trainLoader:
             optimizer_volume.zero_grad()
             if learn_deformations:
@@ -377,6 +378,8 @@ def train(config):
             if train_local_def:
                 optimizer_deformations_loc.step()
             loss_tot.append(loss.item())
+            # for jj in range(len(shift_est)):
+            #     shift_est[jj].shifts_arr = torch.clip(shift_est[jj].shifts_arr, - 0.1, 0.1)
 
         scheduler_volume.step()
         scheduler_deformation_glob.step()
@@ -505,7 +508,13 @@ def train(config):
                     filt[:,:,filt.shape[2]//2-config.avg_XYZ//2:filt.shape[2]//2+config.avg_XYZ//2] = 1/config.avg_XYZ
                     V_icetide = np.fft.fftshift(np.fft.ifft((np.fft.fft(filt) * np.fft.fft(padded_array))).real,axes=-1)[:,:,:n3_eval]
                 V_icetide_t = torch.tensor(V_icetide).type(config.torch_type).to(device)
+                proj_no_deformed = np.double(
+                    mrcfile.open(config.path_save_data + "projections_noisy_no_deformed.mrc").data)
+                from compare_results import TV_tomopy
+                V_tv = TV_tomopy(proj_no_deformed, angles, config.lamb_tv, config.nit_tv,
+                                 V.shape[2])
                 fsc_icetide = utils_FSC.FSC(V,V_icetide)
+                fsc_tv = utils_FSC.FSC(V, V_tv)
                 CC_icetide = compare_results.CC(V,V_icetide)
                 indeces = np.where(fsc_icetide<0.5)[0]
                 choosenIndex = np.where(indeces>2)[0][0]
@@ -520,6 +529,14 @@ def train(config):
                 header ='ep,icetide,FBP,FBP_no_deformed'
                 np.savetxt(os.path.join(config.path_save,'training','CC_iter.csv'),np.array([ep_tot,CC_icetide_tot,CC_FBP_tot,CC_FBP_no_deformed_tot]).T,header=header,delimiter=",",comments='')
 
+                x_fsc = np.arange(fsc_icetide.shape[0])
+                plt.figure(1)
+                plt.clf()
+                plt.plot(x_fsc, fsc_icetide, 'b', label="icetide")
+                plt.plot(x_fsc, fsc_tv, 'g', label="TV no def.")
+                plt.legend()
+                plt.savefig(os.path.join(config.path_save, 'training', 'FSC_TV.png'))
+                plt.savefig(os.path.join(config.path_save, 'training', 'FSC_TV.pdf'))
 
                 def display_XYZ(tmp,name="true"):
                     avg = 0
@@ -635,7 +652,7 @@ def train(config):
 
 
 
-
+from skimage.transform import pyramid_gaussian
 
 def train_without_ground_truth(config):
     print("Runing training procedure.")
@@ -663,10 +680,37 @@ def train_without_ground_truth(config):
     if config.projections_raw:
         projections_noisy = torch.Tensor(np.float32(mrcfile.open(os.path.join(config.path_load,config.volume_name+".mrc"),permissive=True).data)).type(config.torch_type).to(device)
     else:
-        projections_noisy = torch.Tensor(data['projections']).type(config.torch_type).to(device)
+        projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
     config.Nangles = projections_noisy.shape[0]
     projections_noisy = projections_noisy/torch.abs(projections_noisy).max() # make sure that values to predict are between -1 and 1
 
+    if hasattr(config, 'multiresolution'):
+        if config.multiresolution:
+            print("Computing multiscale...")
+            projection_noisy_np = projections_noisy.detach().cpu().numpy()
+            img_pyramids = []
+            for proj in projection_noisy_np:
+                img_pyramid = tuple(pyramid_gaussian(proj, downscale=2, order =2))
+                img_pyramids.append(img_pyramid)
+
+            len_set = []
+
+            for img in img_pyramids[0]:
+                len_set.append(img.shape[0])
+
+            proj_pyramid_set = []
+            for lenIndex, projLen in enumerate(len_set):
+                if config.multires_params.upsample:
+                    proj_downsample = np.zeros((projection_noisy_np.shape[0], config.n1,config.n2))
+                else:
+                    proj_downsample = np.zeros((projection_noisy_np.shape[0], projLen, projLen))
+                for i,img_tuple in enumerate(img_pyramids):
+                    if config.multires_params.upsample:
+                        proj_downsample[i] = resize(img_tuple[lenIndex],(config.n1,config.n2))
+                    else:
+                        proj_downsample[i] = img_tuple[lenIndex]
+                proj_pyramid_set.append(proj_downsample)
+            print("Multiscale computed.")
     ######################################################################################################
     ######################################################################################################
     ##
@@ -691,7 +735,8 @@ def train_without_ground_truth(config):
         impl_volume = MLP(in_features= 3, 
                             hidden_features=config.hidden_size_volume, hidden_blocks= config.num_layers_volume, out_features=config.output_size_volume).to(device)
 
-    if(config.volume_model=="multi-resolution"):  
+
+    if(config.volume_model=="multi-resolution"):
         import tinycudann as tcnn
         config_network = {"encoding": {
                 'otype': config.encoding.otype,
@@ -850,6 +895,20 @@ def train_without_ground_truth(config):
     size_xy_vol, z_max_value = get_sampling_geometry(config.size_z_vol, config.view_angle_min, config.view_angle_max, config.sampling_domain_lx, config.sampling_domain_ly)
     size_max_vol = 1.2*np.max([size_xy_vol,config.size_z_vol]) # increase by some small factor to account for deformations
 
+    if hasattr(config, 'multiresolution'):
+        if config.multiresolution:
+            index = torch.arange(0, config.Nangles, dtype=torch.long) # index for the dataloader
+            batch_set =  config.multires_params.batch_set
+            # proj_len = len(len_set)-1-config.multires_params.startResolution
+            proj_len = config.multires_params.startResolution
+            proj_set_Data = torch.FloatTensor(proj_pyramid_set[proj_len]).to(device)
+            dataset = TensorDataset(angles_t,proj_set_Data.detach(),index)
+            print('New resolution: ', proj_set_Data.shape)
+            trainLoader = DataLoader(dataset, batch_size = batch_set[0], shuffle=True, drop_last=True)
+            # ray_length_set = config.ray_length
+            batch_set_index = 0
+            ray_change_epoch = config.multires_params.ray_change_epoch
+            multi_resolution_counter = 0
     ######################################################################################################
     ## Iterative optimization
     loss_tot = []
@@ -883,6 +942,19 @@ def train_without_ground_truth(config):
             train_local_def = False
             train_global_def = False
 
+        if hasattr(config, 'multiresolution'):
+            if config.multiresolution:
+                if (ep in ray_change_epoch):
+                    multi_resolution_counter += 1
+                    batch_set_index = min(len(batch_set) - 1, batch_set_index + 1)
+                    proj_len = max(0, proj_len - 1)
+
+                    index = torch.arange(0, config.Nangles, dtype=torch.long)  # index for the dataloader
+                    proj_set_Data = torch.FloatTensor(proj_pyramid_set[proj_len]).to(device)
+                    print('New resolution: ', proj_set_Data.shape)
+                    dataset = TensorDataset(angles_t, proj_set_Data.detach(), index)
+                    trainLoader = DataLoader(dataset, batch_size=batch_set[batch_set_index], shuffle=True,
+                                             drop_last=True)
         for   angle, proj, idx_loader  in trainLoader:
             optimizer_volume.zero_grad()
             if learn_deformations:
@@ -929,7 +1001,8 @@ def train_without_ground_truth(config):
 
             # Apply deformations in the 2D space
             detectorLocationsDeformed = apply_deformations_to_locations(detectorLocations,rot_deformSet,
-                                                                    shift_deformSet,local_deformSet,fixedRotSet,scale=config.deformationScale)
+                                                                    shift_deformSet,local_deformSet,fixedRotSet,
+                                                                    scale=config.deformationScale, cl=config.clip)
 
             # generate the rays in 3D
             rays_rotated = generate_rays_batch(detectorLocationsDeformed, angle, z_max_value, config.ray_length, std_noise=config.std_noise_z)
@@ -975,6 +1048,9 @@ def train_without_ground_truth(config):
             if train_local_def:
                 optimizer_deformations_loc.step()
             loss_tmp.append(loss.item())
+
+            # for jj in range(len(shift_est)):
+            #     shift_est[jj].shifts_arr = torch.clip(shift_est[jj].shifts_arr, - 0.1, 0.1)
 
         loss_tot.append(np.mean(loss_tmp))
         scheduler_volume.step()
@@ -1028,13 +1104,16 @@ def train_without_ground_truth(config):
                 shiftEstimate, rotEstimate = globalDeformationValues(shift_est,rot_est)
                 plt.figure(1)
                 plt.clf()
-                plt.hist(shiftEstimate.reshape(-1)*config.n1,alpha=1)
-                plt.legend(['est.'])
+                # plt.hist(shiftEstimate.reshape(-1)*config.n1,alpha=1)
+                plt.scatter(angles,shiftEstimate[:,0,0]*config.n1, label='x')
+                plt.scatter(angles,shiftEstimate[:,0,1]*config.n1, label='y')
+                plt.legend()
                 plt.savefig(os.path.join(config.path_save+"/training/deformations/shifts.png"))
 
                 plt.figure(1)
                 plt.clf()
-                plt.hist(rotEstimate*180/np.pi,15)
+                # plt.hist(rotEstimate*180/np.pi,15)
+                plt.scatter(angles, rotEstimate*180/np.pi)
                 plt.legend(['est.'])
                 plt.title('Angles in degrees')
                 plt.savefig(os.path.join(config.path_save+"/training/deformations/rotations.png"))
@@ -1061,7 +1140,7 @@ def train_without_ground_truth(config):
                         # Apply deformations in the 2D space
                         detectorLocationsDeformed = apply_deformations_to_locations(detectorLocations, rot_est[ll:ll+1],
                                                                                     shift_est[ll:ll+1], implicit_deformation_list[ll:ll+1],
-                                                                                    fixed_rot[ll:ll+1], scale=config.deformationScale)
+                                                                                    fixed_rot[ll:ll+1], scale=config.deformationScale, cl=config.clip)
                         # generate the rays in 3D
                         rays_rotated = generate_rays_batch(detectorLocationsDeformed, angle[None], z_max_value, config.ray_length,
                                                            std_noise=config.std_noise_z)
@@ -1139,6 +1218,7 @@ def train_without_ground_truth(config):
                 torch.save({
                     'shift_est': shift_est,
                     'rot_est': rot_est,
+                    'gains': gains,
                     'local_deformation_network': implicit_deformation_list,
                     'implicit_volume': impl_volume.state_dict(),
                     'optimizer_volume' : optimizer_volume.state_dict(),
@@ -1153,9 +1233,9 @@ def train_without_ground_truth(config):
                 loss_tot_avg = np.array(loss_tot)
                 step = (loss_tot_avg.max()-loss_tot_avg.min())*0.02
                 plt.figure(figsize=(10,10))
-                plt.plot(loss_tot_avg[10:])
+                plt.semilogy(loss_tot_avg[10:])
                 plt.xticks(np.arange(0, len(loss_tot_avg[1:]), 1+len(loss_tot_avg[1:])//10))
-                plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
+                # plt.yticks(np.linspace(loss_tot_avg.min()-step,loss_tot_avg.max()+step, 14))
                 # plt.grid()
                 plt.savefig(os.path.join(config.path_save,'training','loss.pdf'))
         plt.close('all')
@@ -1164,6 +1244,7 @@ def train_without_ground_truth(config):
     torch.save({
         'shift_est': shift_est,
         'rot_est': rot_est,
+        'gains': gains,
         'local_deformation_network': implicit_deformation_list,
         'implicit_volume': impl_volume.state_dict(),
         'optimizer_volume' : optimizer_volume.state_dict(),

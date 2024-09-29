@@ -21,10 +21,9 @@ def get_config():
     ## Parameters for the data generation ##
     ########################################
     # Size of volume, if not none will be resize to that
-    config.n1 = 2048
-    config.n2 = 2048
-    config.n3 = 1024
-    config.n3 = 1024
+    config.n1 = 1024
+    config.n2 = 1024
+    config.n3 = 512
     # Size of the patch to crop in the raw volume
     config.n1_patch = 1024
     config.n2_patch = 1024
@@ -41,7 +40,7 @@ def get_config():
     config.number_sub_projections = 1
     
     # # Parameters for the data generation
-    config.volume_name = 'tomo2_L1G1-dose_filt'
+    config.volume_name = 'tomo2_L1G1-dose_filt_bin4'
     config.angle_name = 'tomo2_L1G1-dose_filt.tlt'
     config.path_load = "./datasets/tkiuv/"
     config.path_save_data = "./results/tkiuv_"+str(config.volume_name)+"/"
@@ -50,7 +49,7 @@ def get_config():
     config.projections_raw = True # True to not resize the projections
     config.projections_rotate = False
 
-    config.avg_XYZ = 40 # average on the z direction for better visualization, number of frame to average over
+    config.avg_XYZ = 10 # average on the z direction for better visualization, number of frame to average over
 
     #############################
     ## Parameters for training ##
@@ -97,6 +96,7 @@ def get_config():
     config.lamb_local_ampl = 5*1e-5 # regul on amplitude of local def.
     config.lamb_local_mean = 1e-6 # regul on mean of local def.
     config.wd = 1e-6 # weights decay
+    config.clip = 0
 
     # Params for implicit deformation
     config.deformationScale = 1

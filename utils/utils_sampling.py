@@ -153,7 +153,7 @@ OUTPUT:
     - raysSet, (nBatch,nRays,2): locations of the sampling points after apply the deformations.
 """
 def apply_deformations_to_locations(detectorLocations,rot_deformSet=None,shift_deformSet=None,
-                        local_deformSet=None,fixedRotSet=None,scale=1):
+                        local_deformSet=None,fixedRotSet=None,scale=1, cl=0):
     nBatch, nRays, _ = detectorLocations.shape
     device = detectorLocations.device
     raysSet = torch.zeros((nBatch,nRays,2)).to(device)
@@ -169,12 +169,18 @@ def apply_deformations_to_locations(detectorLocations,rot_deformSet=None,shift_d
             pixelPositions_ = torch.matmul(rot_deform,pixelPositions_)
         # Apply shift deformation
         if shift_deformSet!=None:
-            shift_deform = torch.unsqueeze(shift_deformSet[i](),dim=2)
-            pixelPositions_ = pixelPositions_+shift_deform
+            if cl !=0:
+                shift_deform = torch.unsqueeze(torch.clip(shift_deformSet[i](), -cl,cl),dim=2)
+            else:
+                shift_deform = torch.unsqueeze(shift_deformSet[i](), dim=2)
+            pixelPositions_ = pixelPositions_+ shift_deform
         # Apply local deformation
         if local_deformSet!=None:
             local_deform = local_deformSet[i]
-            pixelPositions_ = pixelPositions_ + scale*torch.unsqueeze(local_deform(torch.squeeze(pixelPositions_,2)),dim=2)
+            if cl !=0:
+                pixelPositions_ = pixelPositions_ + torch.clip(scale*torch.unsqueeze(local_deform(torch.squeeze(pixelPositions_,2)),dim=2), -cl,cl)
+            else:
+                pixelPositions_ = pixelPositions_ + scale * torch.unsqueeze(local_deform(torch.squeeze(pixelPositions_, 2)), dim=2)
         raysSet[i] = pixelPositions_.squeeze(2)
     
     return raysSet

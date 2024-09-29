@@ -13,7 +13,7 @@ def get_config():
     #######################
     config = ml_collections.ConfigDict()
     config.seed = 42
-    config.device_num = 3
+    config.device_num = 1
     config.torch_type = torch.float
     config.track_memory = False
 
@@ -21,17 +21,17 @@ def get_config():
     ## Parameters for the data generation ##
     ########################################
     # Size of volume, if not none will be resize to that
-    config.n1 = 1024
-    config.n2 = 1024
-    config.n3 = 512
+    config.n1 = 512#//2
+    config.n2 = 512#/2
+    config.n3 = 256
     # Size of the patch to crop in the raw volume
-    config.n1_patch = 1024
-    config.n2_patch = 1024
-    config.n3_patch = 512
+    config.n1_patch = 512
+    config.n2_patch = 512
+    config.n3_patch = 256
     # Size of the patch to eval in the raw volume
-    config.n1_eval = 1024
-    config.n2_eval = 1024
-    config.n3_eval = 512
+    config.n1_eval = 512
+    config.n2_eval = 512
+    config.n3_eval = 256
     # Fixed angle that is approximately known
     config.fixed_angle = 0
     # Sampling operator
@@ -40,14 +40,15 @@ def get_config():
     config.number_sub_projections = 1
     
     # # Parameters for the data generation
-    config.volume_name = 'b2tilt40'
+    config.volume_name = 'b2tilt40_bin8'
     config.angle_name = 'b2tilt40.tlt'
     config.path_load = "/local/Tomograms_cryoET/real_data_aligned/10643-hiv/tilt40"
     config.name_best_proj = 'b2tilt40_ali.mrc'
     config.path_save_data = "./results/10643/"
     config.path_save = "./results/10643/"
+
     config.name_best_volume = None #""
-    config.projections_raw = True # True to not resize the projections
+    config.projections_raw = False # True to not resize the projections
     config.projections_rotate = True
 
     config.avg_XYZ = 1 # average on the z direction for better visualization, number of frame to average over
@@ -57,25 +58,25 @@ def get_config():
     #############################
     # Estimate Volume from the deformed projections
     config.train_volume = True
-    config.train_local_def = False
+    config.train_local_def = True
     config.train_global_def = True
     config.volume_model = "multi-resolution" # multi-resolution, Fourier-features, grid, MLP
     config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
     config.epochs = 5000
-    config.Ntest = 100 # number of epoch before display
+    config.Ntest = 300 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
-    config.scheduler_step_size = 300
+    config.scheduler_step_size = 600
     config.scheduler_gamma = 0.25 #0.75
 
     # Sampling strategy
     config.batch_size = 5 # number of viewing direction per iteration
-    config.nRays = 800
-    config.ray_length = 500 #int(np.floor(n1*z_max))
+    config.nRays = 600
+    config.ray_length = 512  #int(np.floor(n1*z_max))
     config.sampling_domain_lx = config.sampling_domain_ly = 1 # dimension of the sampling domain
     config.size_z_vol = 0.5 # size of the volume in the z direction, knowing that [-sampling_domain_lx,sampling_domain_lx] is the sampling domain
-    config.std_noise_z = 0.1 # std of the noise perturbation to apply on the z direction of the rays. std_noise=1 means there is a perturbation of at most one pixel.
+    config.std_noise_z = 0.0 # std of the noise perturbation to apply on the z direction of the rays. std_noise=1 means there is a perturbation of at most one pixel.
     
     # When to start or stop optimizing over a variable
     config.schedule_volume = []
@@ -93,10 +94,11 @@ def get_config():
     # Training regularization
     config.lamb_volume = 0 # regul parameters on volume regularization
     config.lamb_rot = 0 # regul parameters on inplane rotations
-    config.lamb_shifts = 1e-6 # regul parameters on shifts
+    config.lamb_shifts = 0*1e-7 # regul parameters on shifts
     config.lamb_local_ampl = 5*1e-5 # regul on amplitude of local def.
-    config.lamb_local_mean = 1e-6 # regul on mean of local def.
+    config.lamb_local_mean = 5*1e-5 # regul on mean of local def.
     config.wd = 1e-6 # weights decay
+    config.clip = 0.1
 
     # Params for implicit deformation
     config.deformationScale = 1

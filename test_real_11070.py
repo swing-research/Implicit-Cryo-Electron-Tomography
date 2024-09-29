@@ -21,7 +21,8 @@ import pandas as pd
 from utils.utils_deformation import cropper
 
 
-import configs.shrec_model0 as config_file
+# import configs.real_10643 as config_file
+import configs.real_11070 as config_file
 config = config_file.get_config()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,7 +32,7 @@ np.random.seed(config.seed)
 torch.manual_seed(config.seed)
 config.device = device
 
-# Parent Dircetorys
+# Parent Dircetorys 
 if not os.path.exists(config.path_save):
     os.makedirs(config.path_save)
 if not os.path.exists(config.path_save+"/evaluation/"):
@@ -67,7 +68,7 @@ if not os.path.exists(config.path_save+"/evaluation/volume_slices/AreTomo/"):
 
 # Etomo method
 if not os.path.exists(config.path_save+"/evaluation/projections/Etomo/"):
-    os.makedirs(config.path_save+"/evaluation/projections/Etomo/")
+    os.makedirs(config.path_save+"/evaluation/projections/Etomo/")   
 if not os.path.exists(config.path_save+"/evaluation/volumes/Etomo/"):
     os.makedirs(config.path_save+"/evaluation/volumes/Etomo/")
 if not os.path.exists(config.path_save+"/evaluation/deformations/Etomo/"):
@@ -114,6 +115,449 @@ if not os.path.exists(config.path_save+"/evaluation/volumes/SART_TV/"):
 if not os.path.exists(config.path_save+"/evaluation/volume_slices/SART_TV/"):
     os.makedirs(config.path_save+"/evaluation/volume_slices/SART_TV/")
 
+print('data generation')
+import data_generation
+data_generation.data_generation_real_data(config)
+
+print('Training...')
+import train as train
+train.train_without_ground_truth(config)
+
+
+
+aa = cd
+
+
+
+
+
+import os
+import torch
+import shutil
+import mrcfile
+import imageio
+import numpy as np
+import pandas as pd
+from matplotlib import gridspec
+import matplotlib.pyplot as plt
+from skimage.transform import resize
+from scipy.interpolate import griddata
+from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
+
+from utils.utils_deformation import cropper
+from utils.utils_sampling import get_sampling_geometry
+from utils import utils_deformation, utils_display, utils_FSC
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if torch.cuda.device_count() > 1:
+    torch.cuda.set_device(config.device_num)
+np.random.seed(config.seed)
+torch.manual_seed(config.seed)
+config.device = device
+
+# Parent Dircetorys
+if not os.path.exists(config.path_save):
+    os.makedirs(config.path_save)
+if not os.path.exists(config.path_save + "/evaluation/"):
+    os.makedirs(config.path_save + "/evaluation/")
+if not os.path.exists(config.path_save + "/evaluation/projections/"):
+    os.makedirs(config.path_save + "/evaluation/projections/")
+if not os.path.exists(config.path_save + "/evaluation/volumes/"):
+    os.makedirs(config.path_save + "/evaluation/volumes/")
+if not os.path.exists(config.path_save + "/evaluation/deformations/"):
+    os.makedirs(config.path_save + "/evaluation/deformations/")
+if not os.path.exists(config.path_save + "/evaluation/volume_slices/"):
+    os.makedirs(config.path_save + "/evaluation/volume_slices/")
+
+# Our method
+if not os.path.exists(config.path_save + "/evaluation/projections/ICETIDE/"):
+    os.makedirs(config.path_save + "/evaluation/projections/ICETIDE/")
+if not os.path.exists(config.path_save + "/evaluation/deformations/ICETIDE/"):
+    os.makedirs(config.path_save + "/evaluation/deformations/ICETIDE/")
+if not os.path.exists(config.path_save + "/evaluation/volume_slices/ICETIDE/"):
+    os.makedirs(config.path_save + "/evaluation/volume_slices/ICETIDE/")
+
+# FBP
+if not os.path.exists(config.path_save + "/evaluation/projections/Best/"):
+    os.makedirs(config.path_save + "/evaluation/projections/Best/")
+if not os.path.exists(config.path_save + "/evaluation/volume_slices/Best/"):
+    os.makedirs(config.path_save + "/evaluation/volume_slices/Best/")
+
+# FBP ICETIDE deformation estimations
+if not os.path.exists(config.path_save + "/evaluation/projections/FBP_ICETIDE/"):
+    os.makedirs(config.path_save + "/evaluation/projections/FBP_ICETIDE/")
+if not os.path.exists(config.path_save + "/evaluation/volume_slices/FBP_ICETIDE/"):
+    os.makedirs(config.path_save + "/evaluation/volume_slices/FBP_ICETIDE/")
+
+######################################################################################################
+## Load data
+######################################################################################################
+data = np.load(config.path_save_data + "volume_and_projections.npz")
+# projections_noisy = torch.tensor(data['projections_noisy']).type(config.torch_type).to(device)
+if config.name_best_volume is not None:
+    if config.name_best_volume != "":
+        V_best_t = torch.tensor(
+            np.moveaxis(np.double(mrcfile.open(config.path_load + config.name_best_volume).data), 0, 2)).type(
+            config.torch_type).to(device)
+        V_best_t = torch.rot90(V_best_t, k=2, dims=[0, 1])
+    else:
+        V_best_t = torch.zeros((config.n1, config.n2, config.n3))
+else:
+    V_best_t = torch.zeros((config.n1, config.n2, config.n3))
+# numpy
+V_best = V_best_t.detach().cpu().numpy()
+
+data = np.load(config.path_save_data + "volume_and_projections.npz")
+projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
+config.Nangles = projections_noisy.shape[0]
+projections_noisy_resize = torch.Tensor(
+    resize(projections_noisy.detach().cpu().numpy(), (config.Nangles, config.n1, config.n2))).type(
+    config.torch_type).to(device)
+
+######################################################################################################
+## Load and estimate our volume
+######################################################################################################
+## Load implicit network
+if (config.volume_model == "Fourier-features"):
+    from models.fourier_net import FourierNet, FourierNet_Features
+
+    impl_volume = FourierNet_Features(
+        in_features=config.input_size_volume,
+        sub_features=config.sub_features,
+        out_features=config.output_size_volume,
+        hidden_features=config.hidden_size_volume,
+        hidden_blocks=config.num_layers_volume,
+        L=config.L_volume).to(device)
+
+if (config.volume_model == "MLP"):
+    from models.fourier_net import MLP
+
+    impl_volume = MLP(in_features=1,
+                      hidden_features=config.hidden_size_volume, hidden_blocks=config.num_layers_volume,
+                      out_features=config.output_size_volume).to(device)
+
+if (config.volume_model == "multi-resolution"):
+    import tinycudann as tcnn
+
+    config_network = {"encoding": {
+        'otype': config.encoding.otype,
+        'type': config.encoding.type,
+        'n_levels': config.encoding.n_levels,
+        'n_features_per_level': config.encoding.n_features_per_level,
+        'log2_hashmap_size': config.encoding.log2_hashmap_size,
+        'base_resolution': config.encoding.base_resolution,
+        'per_level_scale': config.encoding.per_level_scale,
+        'interpolation': config.encoding.interpolation,
+    },
+        "network": {
+            "otype": config.network.otype,
+            "activation": config.network.activation,
+            "output_activation": config.network.output_activation,
+            "n_neurons": config.hidden_size_volume,
+            "n_hidden_layers": config.num_layers_volume
+        }
+    }
+    impl_volume = tcnn.NetworkWithInputEncoding(n_input_dims=3, n_output_dims=1,
+                                                encoding_config=config_network["encoding"],
+                                                network_config=config_network["network"]).to(device)
+num_param = sum(p.numel() for p in impl_volume.parameters() if p.requires_grad)
+print('---> Number of trainable parameters in volume net: {}'.format(num_param))
+checkpoint = torch.load(os.path.join(config.path_save, 'training', 'model_trained.pt'), map_location=device)
+impl_volume.load_state_dict(checkpoint['implicit_volume'])
+shift_icetide = checkpoint['shift_est']
+rot_icetide = checkpoint['rot_est']
+implicit_deformation_icetide = checkpoint['local_deformation_network']
+size_xy_vol, z_max_value = get_sampling_geometry(config.size_z_vol, config.view_angle_min, config.view_angle_max,
+                                                 config.sampling_domain_lx, config.sampling_domain_ly)
+size_max_vol = 1.2 * np.max(
+    [size_xy_vol, config.size_z_vol])  # increase by some small factor to account for deformations
+# Compute estimated volume
+with torch.no_grad():
+    x_lin1 = np.linspace(-1, 1, config.n1_eval)
+    x_lin2 = np.linspace(-1, 1, config.n2_eval)
+    XX, YY = np.meshgrid(x_lin1, x_lin2, indexing='ij')
+    grid2d = np.concatenate([XX.reshape(-1, 1), YY.reshape(-1, 1)], 1)
+    grid2d_t = torch.tensor(grid2d).type(config.torch_type)
+    z_range = np.linspace(-1, 1, config.n3_eval) * config.size_z_vol
+    V_icetide = np.zeros((config.n1_eval, config.n2_eval, config.n3_eval))
+    for zz, zval in enumerate(z_range):
+        grid3d = np.concatenate([grid2d_t, zval * torch.ones((grid2d_t.shape[0], 1))], 1)
+        grid3d_slice = torch.tensor(grid3d).type(config.torch_type).to(device)
+        estSlice = impl_volume(grid3d_slice / size_max_vol / 2 + 0.5).detach().cpu().numpy().reshape(config.n1_eval,
+                                                                                                     config.n2_eval)
+        V_icetide[:, :, zz] = estSlice
+    if config.avg_XYZ > 1:
+        padded_array = np.pad(V_icetide, ((0, 0), (0, 0), (0, config.avg_XYZ - 1)), mode='constant')
+        filt = np.zeros_like(padded_array)
+        filt[:, :,
+        filt.shape[2] // 2 - config.avg_XYZ // 2:filt.shape[2] // 2 + config.avg_XYZ // 2] = 1 / config.avg_XYZ
+        V_icetide = np.fft.fftshift(np.fft.ifft((np.fft.fft(filt) * np.fft.fft(padded_array))).real, axes=-1)[:, :,
+                    :config.n3_eval]
+    V_icetide_t = torch.tensor(V_icetide).type(config.torch_type).to(device)
+
+# Get the local deformation error plots
+for index in range(config.Nangles):
+    savepath = os.path.join(config.path_save, 'evaluation', 'deformations', 'ICETIDE',
+                            'local_deformation_factor10_{}'.format(index))
+    utils_display.display_local_est_and_true(implicit_deformation_icetide[index], None, Npts=(20, 20), scale=0.1,
+                                             img_path=savepath)
+
+######################################################################################################
+# Using only the deformation estimates
+######################################################################################################
+projections_noisy_undeformed = torch.zeros_like(projections_noisy_resize)
+xx1 = torch.linspace(-1, 1, config.n1, dtype=config.torch_type, device=device)
+xx2 = torch.linspace(-1, 1, config.n2, dtype=config.torch_type, device=device)
+XX_t, YY_t = torch.meshgrid(xx1, xx2, indexing='ij')
+XX_t = torch.unsqueeze(XX_t, dim=2)
+YY_t = torch.unsqueeze(YY_t, dim=2)
+for i in range(config.Nangles):
+    coordinates = torch.cat([XX_t, YY_t], 2).reshape(-1, 2)
+    thetas = torch.tensor(-rot_icetide[i].thetas.item()).to(device)
+
+    rot_deform = torch.stack(
+        [torch.stack([torch.cos(thetas), torch.sin(thetas)], 0),
+         torch.stack([-torch.sin(thetas), torch.cos(thetas)], 0)]
+        , 0)
+    coordinates = coordinates - shift_icetide[i].shifts_arr
+    coordinates = coordinates - config.deformationScale * implicit_deformation_icetide[i](coordinates)
+    coordinates = torch.transpose(torch.matmul(rot_deform, torch.transpose(coordinates, 0, 1)), 0, 1)  ## do rotation
+    x = projections_noisy_resize[i].clone().view(1, 1, config.n1, config.n2)
+    x = x.expand(config.n1 * config.n2, -1, -1, -1)
+    out = cropper(x, coordinates, output_size=1).reshape(config.n1, config.n2)
+    projections_noisy_undeformed[i] = out
+V_FBP_icetide = reconstruct_FBP_volume(config, projections_noisy_undeformed).detach().cpu().numpy()
+
+projections_FBP_icetide = projections_noisy_undeformed.detach().cpu().numpy()
+out = mrcfile.new(os.path.join(config.path_save_data,'evaluation',"projections","FBP_icetide_projections.mrc"),projections_FBP_icetide.astype(np.float32),overwrite=True)
+out.close()
+
+
+def display_XYZ(tmp, name="true"):
+    avg = 0
+    sl0 = tmp.shape[0] // 2
+    sl1 = tmp.shape[1] // 2
+    sl2 = tmp.shape[2] // 2
+    f, aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2] / tmp.shape[0], 1],
+                                            'width_ratios': [1, tmp.shape[2] / tmp.shape[0]]})
+    aa[0, 0].imshow(tmp[sl0 - avg // 2:sl0 + avg // 2 + 1, :, :].mean(0).T, cmap='gray', vmin=tmp.min(), vmax=tmp.max())
+    aa[0, 0].axis('off')
+    aa[1, 0].imshow(tmp[:, :, sl2 - avg // 2:sl2 + avg // 2 + 1].mean(2), cmap='gray', vmin=tmp.min(), vmax=tmp.max())
+    aa[1, 0].axis('off')
+    aa[1, 1].imshow(tmp[:, sl1 - avg // 2:sl1 + avg // 2 + 1, :].mean(1), cmap='gray', vmin=tmp.min(), vmax=tmp.max())
+    aa[1, 1].axis('off')
+    aa[0, 1].axis('off')
+    plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+    plt.savefig(os.path.join("tmp.png"))
+    plt.savefig(os.path.join(config.path_save_data, 'evaluation', "volumes", name + "_XYZ_slice.png"))
+
+    f, aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2] / tmp.shape[0], 1],
+                                            'width_ratios': [1, tmp.shape[2] / tmp.shape[0]]})
+    aa[0, 0].imshow(tmp.mean(0).T, cmap='gray', vmin=tmp.min(), vmax=tmp.max())
+    aa[0, 0].axis('off')
+    aa[1, 0].imshow(tmp.mean(2), cmap='gray', vmin=tmp.min(), vmax=tmp.max())
+    aa[1, 0].axis('off')
+    aa[1, 1].imshow(tmp.mean(1), cmap='gray', vmin=tmp.min(), vmax=tmp.max())
+    aa[1, 1].axis('off')
+    aa[0, 1].axis('off')
+    plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+    plt.savefig(os.path.join(config.path_save_data, 'evaluation', "volumes", name + "_XYZ_proj.png"))
+
+# FBP_ICETIDE volume
+tmp = V_FBP_icetide[40:-40,40:-40,60:-60]
+tmp = (tmp - tmp.min()) / (tmp.max() - tmp.min())
+tmp = np.clip(tmp**0.8, a_min=np.quantile(tmp, 0.005), a_max=np.quantile(tmp, 0.995))
+display_XYZ(tmp, name="FBP_ICETIDE")
+
+
+# ICETIDE volume
+tmp = V_icetide
+tmp = (tmp - tmp.min()) / (tmp.max() - tmp.min())
+tmp = np.clip(tmp, a_min=np.quantile(tmp, 0.005), a_max=np.quantile(tmp, 0.995))
+display_XYZ(tmp, name="ICETIDE")
+
+out = mrcfile.new(os.path.join(config.path_save_data, 'evaluation',
+                               "volumes", "ICETIDE_volume.mrc"), np.moveaxis(V_icetide.astype(np.float32), 2, 0),
+                  overwrite=True)
+out.close()
+out = mrcfile.new(os.path.join(config.path_save_data, 'evaluation', "volumes",
+                               "FBP_icetide_volume.mrc"), np.moveaxis(V_FBP_icetide.astype(np.float32), 2, 0),
+                  overwrite=True)
+out.close()
+plt.close('all')
+print("volumes saved")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# load best alligned projections
+if config.name_best_proj != "":
+    P_best_t = torch.tensor(
+        np.double(mrcfile.open(os.path.join(config.path_load, config.name_best_proj)).data)).type(
+        config.torch_type).to(device)
+    P_best_t = torch.rot90(P_best_t, k=3, dims=[1, 2])
+projections_noisy = torch.Tensor(
+    np.float32(mrcfile.open(os.path.join(config.path_load, config.volume_name + ".mrc"), permissive=True).data)).type(
+    config.torch_type).to(device)
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if torch.cuda.device_count() > 1:
+    torch.cuda.set_device(config.device_num)
+np.random.seed(config.seed)
+torch.manual_seed(config.seed)
+config.device = device
+
+# Parent Dircetorys
+if not os.path.exists(config.path_save):
+    os.makedirs(config.path_save)
+if not os.path.exists(config.path_save + "/evaluation/"):
+    os.makedirs(config.path_save + "/evaluation/")
+if not os.path.exists(config.path_save + "/evaluation/projections/"):
+    os.makedirs(config.path_save + "/evaluation/projections/")
+if not os.path.exists(config.path_save + "/evaluation/volumes/"):
+    os.makedirs(config.path_save + "/evaluation/volumes/")
+if not os.path.exists(config.path_save + "/evaluation/deformations/"):
+    os.makedirs(config.path_save + "/evaluation/deformations/")
+if not os.path.exists(config.path_save + "/evaluation/volume_slices/"):
+    os.makedirs(config.path_save + "/evaluation/volume_slices/")
+
+# Our method
+if not os.path.exists(config.path_save + "/evaluation/projections/ICETIDE/"):
+    os.makedirs(config.path_save + "/evaluation/projections/ICETIDE/")
+if not os.path.exists(config.path_save + "/evaluation/deformations/ICETIDE/"):
+    os.makedirs(config.path_save + "/evaluation/deformations/ICETIDE/")
+if not os.path.exists(config.path_save + "/evaluation/volume_slices/ICETIDE/"):
+    os.makedirs(config.path_save + "/evaluation/volume_slices/ICETIDE/")
+
+# FBP
+if not os.path.exists(config.path_save + "/evaluation/projections/Best/"):
+    os.makedirs(config.path_save + "/evaluation/projections/Best/")
+if not os.path.exists(config.path_save + "/evaluation/volume_slices/Best/"):
+    os.makedirs(config.path_save + "/evaluation/volume_slices/Best/")
+
+# FBP ICETIDE deformation estimations
+if not os.path.exists(config.path_save + "/evaluation/projections/FBP_ICETIDE/"):
+    os.makedirs(config.path_save + "/evaluation/projections/FBP_ICETIDE/")
+if not os.path.exists(config.path_save + "/evaluation/volume_slices/FBP_ICETIDE/"):
+    os.makedirs(config.path_save + "/evaluation/volume_slices/FBP_ICETIDE/")
+
+######################################################################################################
+## Load data
+######################################################################################################
+data = np.load(config.path_save_data + "volume_and_projections.npz")
+# projections_noisy = torch.tensor(data['projections_noisy']).type(config.torch_type).to(device)
+if config.name_best_volume is not None:
+    if config.name_best_volume != "":
+        V_best_t = torch.tensor(
+            np.moveaxis(np.double(mrcfile.open(config.path_load + config.name_best_volume).data), 0, 2)).type(
+            config.torch_type).to(device)
+        V_best_t = torch.rot90(V_best_t, k=2, dims=[0, 1])
+    else:
+        V_best_t = torch.zeros((config.n1, config.n2, config.n3))
+else:
+    V_best_t = torch.zeros((config.n1, config.n2, config.n3))
+# numpy
+V_best = V_best_t.detach().cpu().numpy()
+
+data = np.load(config.path_save_data + "volume_and_projections.npz")
+projections_noisy = torch.Tensor(data['projections_noisy']).type(config.torch_type).to(device)
+config.Nangles = projections_noisy.shape[0]
+projections_noisy_resize = torch.Tensor(
+    resize(projections_noisy.detach().cpu().numpy(), (config.Nangles, config.n1, config.n2))).type(
+    config.torch_type).to(device)
+
+######################################################################################################
+## Load and estimate our volume
+######################################################################################################
+## Load implicit network
+if (config.volume_model == "Fourier-features"):
+    from models.fourier_net import FourierNet, FourierNet_Features
+
+    impl_volume = FourierNet_Features(
+        in_features=config.input_size_volume,
+        sub_features=config.sub_features,
+        out_features=config.output_size_volume,
+        hidden_features=config.hidden_size_volume,
+        hidden_blocks=config.num_layers_volume,
+        L=config.L_volume).to(device)
+
+if (config.volume_model == "MLP"):
+    from models.fourier_net import MLP
+
+    impl_volume = MLP(in_features=1,
+                      hidden_features=config.hidden_size_volume, hidden_blocks=config.num_layers_volume,
+                      out_features=config.output_size_volume).to(device)
+
+if (config.volume_model == "multi-resolution"):
+    import tinycudann as tcnn
+
+    config_network = {"encoding": {
+        'otype': config.encoding.otype,
+        'type': config.encoding.type,
+        'n_levels': config.encoding.n_levels,
+        'n_features_per_level': config.encoding.n_features_per_level,
+        'log2_hashmap_size': config.encoding.log2_hashmap_size,
+        'base_resolution': config.encoding.base_resolution,
+        'per_level_scale': config.encoding.per_level_scale,
+        'interpolation': config.encoding.interpolation,
+    },
+        "network": {
+            "otype": config.network.otype,
+            "activation": config.network.activation,
+            "output_activation": config.network.output_activation,
+            "n_neurons": config.hidden_size_volume,
+            "n_hidden_layers": config.num_layers_volume
+        }
+    }
+    impl_volume = tcnn.NetworkWithInputEncoding(n_input_dims=3, n_output_dims=1,
+                                                encoding_config=config_network["encoding"],
+                                                network_config=config_network["network"]).to(device)
+num_param = sum(p.numel() for p in impl_volume.parameters() if p.requires_grad)
+print('---> Number of trainable parameters in volume net: {}'.format(num_param))
+checkpoint = torch.load(os.path.join(config.path_save, 'training', 'model_trained.pt'), map_location=device)
+impl_volume.load_state_dict(checkpoint['implicit_volume'])
+shift_est = checkpoint['shift_est']
+rot_est = checkpoint['rot_est']
+implicit_deformation_list = checkpoint['local_deformation_network']
+from utils.utils_sampling import get_sampling_geometry
+size_xy_vol, z_max_value = get_sampling_geometry(config.size_z_vol, config.view_angle_min, config.view_angle_max,
+                                                 config.sampling_domain_lx, config.sampling_domain_ly)
+fixed_rot = []
+fixedAngle = torch.FloatTensor([config.fixed_angle * np.pi / 180]).to(device)[0]
+for k in range(config.Nangles):
+    fixed_rot.append(utils_deformation.rotNet(1, x0=fixedAngle).to(device))
+size_max_vol = 1.2 * np.max(
+    [size_xy_vol, config.size_z_vol])  # increase by some small factor to account for deformations
+index = torch.arange(0, config.Nangles, dtype=torch.long)  # index for the dataloader
+# Define dataset
+angles = np.linspace(config.view_angle_min, config.view_angle_max, config.Nangles)
+angles_t = torch.tensor(angles).type(config.torch_type).to(device)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ######################################################################################################
@@ -135,261 +579,6 @@ projections_clean = torch.tensor(data['projections_clean']).type(config.torch_ty
 
 proj = projections_clean
 angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)/180*np.pi
-
-
-
-import tomopy
-def TV_tomopy(projections, angles, reg_par, n3):
-    recon = np.swapaxes(tomopy.recon(projections_clean.detach().cpu().numpy(), angles,
-                                     algorithm='tv', sinogram_order=False, reg_par=reg_par, num_iter=100), 1,2)
-    recon = recon[:, :, recon.shape[2] // 2 - n3 // 2:recon.shape[2] // 2 + n3 // 2]
-    return recon[:,:,::-1]
-
-recon_tv = TV_tomopy(projections_clean.detach().cpu().numpy(), angles, reg_par=1e-2, n3=config.n3)
-
-plt.figure(1)
-plt.subplot(131)
-plt.imshow(recon_tv[:,256])
-plt.subplot(132)
-plt.imshow(recon_tv[256])
-plt.subplot(133)
-plt.imshow(recon_tv[:,:,config.n3//2])
-
-# recon = tomopy.recon(projections_clean.detach().cpu().numpy(), angles, algorithm=tomopy.astra,
-#       options={'method':'SART', 'num_iter':10*180,
-#       'proj_type':'linear',
-#       'extra_options':{'MaxConstraint':0}})
-# recon = recon[:,:,recon.shape[2]//2-n3//2:recon.shape[2]//2+n3//2]
-
-def SART_tomopy(projections, angles, n3):
-    # recon = np.swapaxes(tomopy.recon(projections, angles/180*np.pi, algorithm='tv', sinogram_order=False, reg_par=reg_par), 1,2)
-    recon = np.swapaxes(tomopy.recon(projections, angles, algorithm=tomopy.astra,
-                 options={'method': 'SART', 'num_iter': 10 * 180,
-                          'proj_type': 'linear',
-                          'extra_options': {'MaxConstraint': 0}}), 1,2)
-    return recon[:,:,recon.shape[2]//2-n3//2:recon.shape[2]//2+n3//2]
-recon = SART_tomopy(projections, angles, config.n3)
-
-
-plt.figure(2)
-plt.subplot(131)
-plt.imshow(recon[:,256])
-plt.subplot(132)
-plt.imshow(recon[256])
-plt.subplot(133)
-plt.imshow(recon[:,:,config.n3//2])
-
-
-
-
-recon = tomopy.recon(projections_clean.detach().cpu().numpy(), angles, algorithm='sirt', sinogram_order=False,)
-plt.figure(2)
-plt.subplot(131)
-plt.imshow(recon[:,256])
-plt.subplot(132)
-plt.imshow(recon[256])
-plt.subplot(133)
-plt.imshow(recon[:,:,256])
-
-
-recon = tomopy.recon(projections_clean.detach().cpu().numpy(), angles, algorithm='tv', sinogram_order=False,reg_par=1e-4, num_iter=100)
-plt.figure(3)
-plt.subplot(131)
-plt.imshow(recon[:,256])
-plt.subplot(132)
-plt.imshow(recon[256])
-plt.subplot(133)
-plt.imshow(recon[:,:,256])
-
-
-
-# import RegTomoRecon as rtr
-#
-#
-#
-# n1, n2, n3 = config.n1, config.n2, config.n3
-# proj_geom = astra.create_proj_geom('parallel3d', 1, 1, n1, n2, angles)
-# vol_geom = astra.create_vol_geom(n3, n1, n2)
-# def A(vv):
-#     vv = vv / np.sqrt((vv ** 2).sum())
-#     out = FP(vv, proj_geom, vol_geom, len(angles), n1, n2, n3, nit=10, device_num=0)
-#     # out = astra.create_sino3d_gpu(vv.swapaxes(1, 2), proj_geom, vol_geom, returnData=True, gpuIndex=config.device.index)[
-#     # 1].swapaxes(0, 1)
-#     return out
-# # At = lambda P: BP(P, proj_geom, vol_geom, n1, n2, n3, device_num=config.device.index)
-# def At(P):
-#     out = BP(P, proj_geom, vol_geom, n1, n2, n3, device_num=config.device.index)
-#     # out = out/np.abs(out).max()*np.abs(P).max()
-#     out = out / np.sqrt((out ** 2).sum())
-#     return out
-# def FP(vol, proj_geom, vol_geom, Nangles, n1, n2, n3, nit=10, device_num=0):
-#     proj_id = astra.data3d.create('-sino', proj_geom, np.zeros((n1, Nangles, n2)))
-#     rec_id = astra.data3d.create('-vol', vol_geom, vol.swapaxes(1,2))
-#     # rec_id = astra.data3d.create('-vol', vol_geom, np.zeros((config.n1, config.n3, config.n2)))
-#     cfg = astra.astra_dict('FP3D_CUDA')
-#     cfg['ProjectionDataId'] = proj_id
-#     cfg['VolumeDataId'] = rec_id
-#     alg_id = astra.algorithm.create(cfg)
-#     astra.algorithm.run(alg_id, nit)
-#     proj_fp = astra.data3d.get(proj_id).swapaxes(0, 1)
-#     return proj_fp
-# s = 1*1e-2
-# P = -A(V) + s*np.random.randn(config.Nangles, config.n1, config.n2)
-#
-# pad = 20
-#
-# P_ = np.zeros((config.Nangles, config.n1 + 2*pad, config.n2 + 2*pad))
-# P_[:,pad:-pad,pad:-pad] = P
-# P = P_
-#
-# vol_shape = (config.n1 + 2*pad, config.n3 + 2*pad, config.n2 + 2*pad)
-# # vol_shape = (config.n1, 256, config.n2)
-#
-# # angles_ = np.linspace(0,-config.view_angle_min+config.view_angle_max,config.Nangles)/180*np.pi
-# data = rtr.tomo_data(P.swapaxes(0, 1), angles,
-#                              tilt_axis=0, stack_dim=1)
-# data -= data.min()
-# data /= data.max()
-# # data = rtr.tomo_data(P, angles,tilt_axis=2, stack_dim=0)
-# Xray = data.getOperator(vol_shape=vol_shape, backend='astra')
-#
-#
-# fbp = rtr.FBP(filter='Ram-Lak', min_val=0, max_val=1)
-# fbp_recon = fbp.run(data=data,op=Xray)
-# plt.figure(10)
-# plt.imshow(fbp_recon.sum(1))
-#
-# sart = rtr.SART()
-# sart_recon = sart.run(data=data,op=Xray,iterations=50,
-#                       min_val=0,max_val=1)
-# plt.figure(2)
-# plt.imshow(sart_recon.sum(1)[pad:-pad,pad:-pad])
-#
-#
-# # pp = Xray.FP(V.swapaxes(2,1))
-#
-#
-# alg = rtr.TV(vol_shape, order=1, pos=False)
-# # alg = rtr.TGV(vol_shape)
-# alg.setParams(data=data, op=Xray)
-# out = alg.run(maxiter=50, callback=('primal', 'gap', 'step'), callback_freq=1, balance=1,
-#               weight=0.9, steps='None')
-# TV_recon = out[0]
-# plt.figure(3)
-# plt.subplot(121)
-# plt.imshow(TV_recon[pad:-pad,config.n3//2,pad:-pad])
-# plt.subplot(122)
-# plt.imshow(TV_recon.sum(1)[pad:-pad,pad:-pad])
-#
-#
-#
-#
-#
-#
-#
-# f,ax = plt.subplots(1,3, figsize=(7,5),num='Slice comparison')
-# aspect='equal'
-# for i in range(3):
-#     # ax[0,i].set_title(('FBP','Wavelet','TV')[i]+' recon')
-#     ax[i].set_ylabel('xyz'[i] + '-sum')
-#     ax[i].imshow(TV_recon[pad:-pad,:,pad:-pad].sum(i))
-# plt.tight_layout()
-#
-#
-#
-# alg = rtr.Wavelet((config.n1, 256, config.n2), wavelet='db2')
-# wave_recon = alg.run(data=data, op=Xray, maxiter=10, weight=3e-3,
-#                 callback=('primal', 'gap', 'step'), callback_freq=1)[0]
-#
-# plt.figure(4)
-# plt.imshow(wave_recon.sum(1)[20:-20,20:-20])
-
-
-
-
-
-
-
-
-
-v_sart, cf = sart_update(np.zeros_like(V)+1e-1, P, angles, lamb=1e-2, tau=1e0, nit=20, nit_tv=3)
-plt.figure(1)
-plt.clf()
-plt.plot(cf)
-plt.figure(2)
-plt.clf()
-plt.imshow(v_sart[50:-50,50:-50,90])
-
-
-
-
-
-
-
-
-
-
-
-
-import RegTomoRecon as rtr
-import numpy as np
-from matplotlib import pyplot as plt
-plt.ion()
-from skimage.data import binary_blobs
-# Simulate 2D 'blob' phantom
-blobs = binary_blobs(length=128, n_dim=2, volume_fraction=0.1, seed=1)
-# Make specimen thin in third dimension
-groundtruth = np.concatenate([np.zeros((128,10,128)), np.tile(blobs.reshape(128,1,128), (1,10,1)),
-                         np.zeros((128,12,128))], axis=1).astype('f4')
-
-# Simulate data with X-ray transform:
-# Define tomography geometry
-angles, detector = np.linspace(0, np.pi, 30), (128,128)
-# create null data consistent with desired geometry
-null_data = rtr.tomo_data(np.zeros((detector[0], len(angles), detector[1])), angles, degrees=False)
-Xray3 = null_data.getOperator(vol_shape=groundtruth.shape, backend='astra')
-volume, proj_geom = Xray3.vshape, Xray3.sshape
-raw_data = (Xray3 * groundtruth.ravel()).reshape(proj_geom)
-
-# Normalise data
-raw_data -= raw_data.min()
-raw_data /= raw_data.max()
-# Create custom data object
-data = rtr.tomo_data(raw_data, angles, degrees=False)
-
-
-# vol_shape = (n. slices, thickness, width of detector)
-vol_shape = (data.shape[0],32,data.shape[2])
-projector = data.getOperator(vol_shape=vol_shape, backend='astra', GPU=True)
-
-fbp = rtr.FBP(filter='Ram-Lak', min_val=0, max_val=None)
-fbp_recon = fbp.run(data=data,op=projector)
-
-alg, weight = rtr.TV(vol_shape, order=1), 0.1
-maxiter = 100
-balance = 1
-steps = 'adaptive'
-
-recon = alg.run(data=data,op=projector, maxiter=maxiter, weight=weight,
-                balance=balance, steps=steps,
-                callback=('primal','gap','violation','step'))[0]
-
-if steps=='adaptive':
-    print('Optimal balance was: %.3f'% ((alg.s/alg.t)**.5))
-
-plt.figure('Plots of data/reprojection', figsize=(9.8,3)); params = { 'aspect':'equal'}
-plt.subplot(131)
-plt.imshow(data[:,abs(angles).argmin()][50:-50,50:-50], **params)
-plt.title('0-angle data')
-plt.subplot(132)
-plt.imshow(recon.sum(1)[50:-50,50:-50], **params)
-plt.title('y-sum of recon')
-plt.subplot(133)
-plt.imshow((projector*recon.reshape(-1)).reshape(data.shape)[:,abs(angles).argmin()][50:-50,50:-50], **params)
-plt.title('0-angle projection of recon')
-plt.show()
-
-
 
 # # Implent TV
 # # Implement ADMM
@@ -488,305 +677,61 @@ def d3(u):
     return d
 def d1T(u):
     d = np.zeros_like(u)
-    d[1:-1] = u[:-2] - u[1:-1]
+    d[1:-1] = -u[1:-1]-u[:-2]
     d[0] = -u[0]
-    d[-1] = u[-2]
+    d[-1] = d[-2]
     return d
 def d2T(u):
     d = np.zeros_like(u)
-    d[:,1:-1] = u[:,:-2] - u[:,1:-1]
+    d[:,1:-1] = -u[:,1:-1]-u[:,:-2]
     d[:,0] = -u[:,0]
-    d[:,-1] = u[:,-2]
+    d[:,-1] = d[:,-2]
     return d
 def d3T(u):
     d = np.zeros_like(u)
-    d[:,:,1:-1] = u[:,:,:-2] - u[:,:,1:-1]
+    d[:,:,1:-1] = -u[:,:,1:-1]-u[:,:,:-2]
     d[:,:,0] = -u[:,:,0]
-    d[:,:,-1] = u[:,:,-2]
+    d[:,:,-1] = d[:,:,-2]
     return d
 
 def prox_l1(u, rho):
     return np.sign(u) * np.maximum(np.abs(u)- rho, 0)
 
+def CG_inverse(P, u, angles, mu, max_iter, tol):
+    # solve (mu*AtA+I)x = mu*At(P) + u for x
 
+    At = lambda pp : sirt_prox(pp, vol, 0, angles, 5)
+    x0 = At(P)
+    n1, n2, n3 = x0.shape
 
-def denoise_TV_L2_bounds(z, alpha, a=0, b=1, nit=5, x1=None, x2=None, x3=None):
-# This function solves:
-# min_{a <= x <= b} alpha ||Nabla x ||_1 + 0.5 || x - z ||_2^2
-# with an accelerated gradient descent on the dual
-    if x1 is None:
-        x1 = np.zeros_like(z)
-    if x2 is None:
-        x2 = np.zeros_like(z)
-    if x3 is None:
-        x3 = np.zeros_like(z)
-    y1 = x1
-    y2 = x2
-    y3 = x3
-
-    tau = 1/100
-    cf = []
-    for i in range(nit):
-        tmp = z - d1T(y1) - d2T(y2) - d3T(y3)
-        grad1 = d1(tmp)
-        grad2 = d2(tmp)
-        grad3 = d3(tmp)
-
-        xp1 = x1
-        xp2 = x2
-        xp3 = x3
-
-        x1 = y1 + tau*grad1
-        x2 = y2 + tau*grad2
-        x3 = y3 + tau*grad3
-        nx = np.sqrt(x1**2+x2**2+x3**2)+1e-5
-        x1 = (x1/nx)*np.minimum(nx,alpha)
-        x2 = (x2/nx)*np.minimum(nx,alpha)
-        x3 = (x3/nx)*np.minimum(nx,alpha)
-
-        y1 = x1 + 0.99 * (x1 - xp1)
-        y2 = x2 + 0.99 * (x2 - xp2)
-        y3 = x3 + 0.99 * (x3 - xp3)
-
-        u = z - d1T(x1) - d2T(x2) - d3T(x3)
-        loss = alpha*(np.sqrt(d1(u)**2+d2(u)**2+d3(u)**2)).sum() + 0.5*((u-z)**2).sum()
-        cf.append(loss)
-
-    # return np.maximum(np.minimum(u,b),a), cf
-    return u, cf
-
-from skimage.restoration import denoise_tv_chambolle, denoise_tv_bregman, denoise_wavelet
-def sart_update(vol, P, nit, nit_tv, lamb, tau):
-    n1, n2, n3 = vol.shape
-    v = vol
     proj_geom = astra.create_proj_geom('parallel3d', 1, 1, n1, n2, angles)
     vol_geom = astra.create_vol_geom(n3, n1, n2)
-    def A(vv):
-        vv = vv/np.sqrt((vv**2).sum())
-        out = FP(vv, proj_geom, vol_geom, P.shape[0], n1, n2, n3, nit=10, device_num=0)
-        # out = astra.create_sino3d_gpu(vv.swapaxes(1, 2), proj_geom, vol_geom, returnData=True, gpuIndex=config.device.index)[
-        # 1].swapaxes(0, 1)
-        return out
-    # At = lambda P: BP(P, proj_geom, vol_geom, n1, n2, n3, device_num=config.device.index)
-    def At(P):
-        out = BP(P, proj_geom, vol_geom, n1, n2, n3, device_num=config.device.index)
-        # out = out/np.abs(out).max()*np.abs(P).max()
-        out = out / np.sqrt((out ** 2).sum())
-        return out
-
-    cf = []
-    # mask = np.zeros_like(v)
-    # mask[20:-20,20:-20,20:-20] = 1
-    for i in range(nit):
-        v = v - tau*(At(A(v) - P))#*mask
-        cf.append(((A(v) - P) ** 2).sum())
-        # Total Variation regularization
-        # v = denoise_tv_chambolle(v, weight=lamb, max_num_iter=nit_tv)
-        # v = denoise_tv_bregman(v, weight=lamb, max_num_iter=nit_tv)
-        # v = denoise_wavelet(v, sigma=lamb)
-        # v, _ = tv_prox(v / (v ** 2).sum(), nb_it=nit_tv, regularization=lamb)
-        v, _ = denoise_TV_L2_bounds(v/ (v ** 2).sum(), alpha=lamb, nit=nit_tv)
-    return v, cf
-
-v_sart, cf = sart_update(np.zeros_like(V)+1e-1, P, lamb=1e2, tau=1e2, nit=20, nit_tv=10)
-plt.figure(1)
-plt.clf()
-plt.plot(cf)
-plt.figure(2)
-plt.clf()
-plt.imshow(v_sart[:,:,90])
-
-
-
-
-def sirt_prox(P, vol, m, angles, nit):
-    n1, n2, n3 = vol.shape
-    proj_geom = astra.create_proj_geom('parallel3d', 1, 1, n1, n2, angles)
-    vol_geom = astra.create_vol_geom(n3, n1, n2)
-    operator = lambda vv: astra.create_sino3d_gpu(vv.swapaxes(1, 2), proj_geom, vol_geom, returnData=True)[
+    A = lambda vv: astra.create_sino3d_gpu(vv.swapaxes(1, 2), proj_geom, vol_geom, returnData=True)[
         1].swapaxes(0, 1)
+    H = lambda vv: mu*At(A(vv)) + vv
 
-    if m == 0:
-        inp = P
-    else:
-        inp = P + operator(vol)/m
+    b = mu*At(P) + u
 
-    # Create a SART algorithm and run it
-    proj_id = astra.data3d.create('-sino', proj_geom, inp.swapaxes(0, 1))
-    rec_id = astra.data3d.create('-vol', vol_geom, np.zeros((n1, n3, n2)))
-    cfg = astra.astra_dict('SIRT3D_CUDA')
-    cfg['ProjectionDataId'] = proj_id
-    cfg['ReconstructionDataId'] = rec_id
-    alg_id = astra.algorithm.create(cfg)
-    astra.algorithm.run(alg_id, nit)
-    vol_sirt = astra.data3d.get(rec_id).swapaxes(1, 2)
-    return vol_sirt
-
-
-def ADMM(vol, P, angles, rho, mu, lamb, nit, nit_sirt, nit_nlm, p_dist=10, p_sze=5):
-    n1, n2, n3 = vol.shape
-    v = vol
-    z = np.zeros((3,n1,n2,n3))
-    y = np.zeros((3,n1,n2,n3))
-
+    # check with initialization the number of iterations needed
+    x = x0
+    r = b - H(x)
+    p = r
+    rsold = np.sum(r * r)
     cf = []
-    proj_geom = astra.create_proj_geom('parallel3d', 1, 1, n1, n2, angles)
-    vol_geom = astra.create_vol_geom(n3, n1, n2)
-    operator = lambda vv: astra.create_sino3d_gpu(vv.swapaxes(1, 2), proj_geom, vol_geom, returnData=True, gpuIndex=config.device.index)[
-        1].swapaxes(0, 1)
-
-    for i in range(nit):
-        tmp1 = lamb*d1(v) - z[0] + y[0]
-        tmp2 = lamb*d2(v) - z[1] + y[1]
-        tmp3 = lamb*d3(v) - z[2] + y[2]
-        inp = v - lamb*mu/rho*(d1T(tmp1) + d2T(tmp2) + d3T(tmp3))
-        v = sirt_prox(P, inp, mu, angles, nit_sirt)
-        # v, cf_cg = CG_inverse(P, inp, angles, mu, 4, 1e-5)
-
-        z[0] = prox_l1(lamb*d1(v)+y[0],rho)
-        z[1] = prox_l1(lamb*d2(v)+y[1],rho)
-        z[2] = prox_l1(lamb*d3(v)+y[2],rho)
-
-        y[0] += d1(v) - z[0]
-        y[1] += d2(v) - z[1]
-        y[2] += d3(v) - z[2]
-
-        cf.append(((operator(v) - P)**2).mean() + lamb * np.mean( np.abs(d1(v)) + np.abs(d2(v)) + np.abs(d3(v))) )
-
-    # for i in range(nit_nlm):
-    #     tmp1 = lamb*d1(v) - z[0] + y[0]
-    #     tmp2 = lamb*d2(v) - z[1] + y[1]
-    #     tmp3 = lamb*d3(v) - z[2] + y[2]
-    #     inp = v - lamb*mu/rho*(d1T(tmp1) + d2T(tmp2) + d3T(tmp3))
-    #     # v = sirt_prox(P, inp, mu, nit_sirt)
-    #     v, _ = CG_inverse(P, inp, angles, mu, 4, 1e-5)
-    #     sigma_est = np.mean(estimate_sigma(v, channel_axis=-1))
-    #     sigma_est = np.mean(estimate_sigma(v))
-    #     patch_kw = dict(
-    #         patch_size=p_sze, patch_distance=p_dist  # 5x5 patches  # 13x13 search area
-    #     )
-    #     v = denoise_nl_means(v, h=0.8 * sigma_est, fast_mode=True, **patch_kw)
-    #
-    #     z[0] = prox_l1(lamb*d1(v)+y[0],rho)
-    #     z[1] = prox_l1(lamb*d2(v)+y[1],rho)
-    #     z[2] = prox_l1(lamb*d3(v)+y[2],rho)
-    #
-    #     y[0] += d1(v) - z[0]
-    #     y[1] += d2(v) - z[1]
-    #     y[2] += d3(v) - z[2]
-    #
-    #     cf.append(((operator(v) - P)**2).sum() + lamb * np.sum( np.abs(d1(v)) + np.abs(d2(v)) + np.abs(d3(v))) )
-    return v, cf
-
-
-# Make data
-n1, n2, n3 = config.n1, config.n2, config.n3
-proj_geom = astra.create_proj_geom('parallel3d', 1, 1, n1, n2, angles)
-vol_geom = astra.create_vol_geom(n3, n1, n2)
-def A(vv):
-    vv = vv / np.sqrt((vv ** 2).sum())
-    out = FP(vv, proj_geom, vol_geom, len(angles), n1, n2, n3, nit=10, device_num=0)
-    # out = astra.create_sino3d_gpu(vv.swapaxes(1, 2), proj_geom, vol_geom, returnData=True, gpuIndex=config.device.index)[
-    # 1].swapaxes(0, 1)
-    return out
-# At = lambda P: BP(P, proj_geom, vol_geom, n1, n2, n3, device_num=config.device.index)
-def At(P):
-    out = BP(P, proj_geom, vol_geom, n1, n2, n3, device_num=config.device.index)
-    # out = out/np.abs(out).max()*np.abs(P).max()
-    out = out / np.sqrt((out ** 2).sum())
-    return out
-s = 3*1e-2
-P = A(V) + s*np.random.randn(config.Nangles, n1, n2)
-vv = V/V.min()
-P -= P.min()
-P /= P.max()
-
-
-
-# Validate SIRT
-nit = 20
-m = 5*1e-4 # inverse proportional to fit the data
-# P = proj.detach().cpu().numpy()
-vol = At(P)
-v_sirt = sirt_prox(P, vol, m, angles, nit)
-
-plt.figure(2)
-plt.clf()
-plt.subplot(231)
-plt.imshow(v_sirt[:,:,v_sirt.shape[2]//2])
-plt.subplot(234)
-plt.imshow(v_sirt.sum(2))
-plt.subplot(232)
-plt.imshow(V[:,:,V.shape[2]//2])
-plt.subplot(235)
-plt.imshow(V.sum(2))
-plt.subplot(233)
-plt.imshow((V[:,:,v_sirt.shape[2]//2]-v_sirt[:,:,v_hat.shape[2]//2]))
-plt.subplot(236)
-plt.imshow((V.sum(2)-v_sirt.sum(2)))
-
-# Validate TV
-# v_hat, cf = FISTA_prox_tv(vv, lamb=1e0, tau=1e-3, nit=3, eps=1e-5)
-v_hat, cf = denoise_TV_L2_bounds(v_sirt, alpha=1e0, a=-1e9, b=0, nit=15)
-plt.figure(1)
-plt.clf()
-plt.plot(cf)
-plt.figure(2)
-plt.clf()
-plt.subplot(231)
-plt.imshow(v_hat[:,:,v_hat.shape[2]//2])
-plt.subplot(234)
-plt.imshow(v_hat.sum(2))
-plt.subplot(232)
-plt.imshow(v_sirt[:,:,v_hat.shape[2]//2])
-plt.subplot(235)
-plt.imshow(v_sirt.sum(2))
-plt.subplot(233)
-plt.imshow((v_sirt[:,:,v_hat.shape[2]//2]-v_hat[:,:,v_hat.shape[2]//2]))
-plt.subplot(236)
-plt.imshow((v_sirt.sum(2)-v_hat.sum(2)))
-
-
-# Validate ADMM
-mu = 1 # addm param
-rho = 1e4 # admm param
-lamb = 1e0 # 1 over regul
-nit = 5
-nit_sirt = 5
-nit_nlm = 0
-p_dist = 20 # NLM param
-p_sze = 4 # NLM param
-vol = np.zeros_like(V)
-v_admm, cf = ADMM(vol, P, angles, rho, mu, lamb, nit, nit_sirt, nit_nlm, p_dist, p_sze)
-plt.figure(1)
-plt.clf()
-plt.plot(cf)
-plt.figure(2)
-plt.clf()
-plt.subplot(231)
-plt.imshow(v_admm[:,:,v_admm.shape[2]//2])
-plt.subplot(234)
-plt.imshow(v_admm.sum(2))
-plt.subplot(232)
-plt.imshow(V[:,:,v_admm.shape[2]//2])
-plt.subplot(235)
-plt.imshow(V.sum(2))
-plt.subplot(233)
-plt.imshow((V[:,:,v_admm.shape[2]//2]-v_admm[:,:,v_admm.shape[2]//2]))
-plt.subplot(236)
-plt.imshow((V.sum(2)-v_admm.sum(2)))
-
-
-
-
-
-
-
-
-
-
-
-
+    cf.append(((H(x)-b)**2).sum())
+    for i in range(max_iter):
+        Hp = H(p)
+        alpha = rsold / np.sum(p*Hp)
+        x = x + alpha * p
+        r = r - alpha * Hp
+        rsnew = np.sum(r*r)
+        print(rsnew)
+        if np.sqrt(rsnew) < tol:
+            return x,i
+        p = r + (rsnew / rsold) * p
+        rsold = rsnew
+        cf.append(((H(x) - b) ** 2).sum())
+    return x, cf
 
 #
 # x, cf = CG_inverse(P, np.zeros_like(V), angles, mu, 10, 1e-5)
@@ -831,18 +776,6 @@ def sirt_prox(P, vol, m, angles, nit):
 # v_sirt = sirt_prox(P, vol, m, nit)
 # plt.imshow(v_sirt[:,:,90])
 
-def FP(vol, proj_geom, vol_geom, Nangles, n1, n2, n3, nit=10, device_num=0):
-    proj_id = astra.data3d.create('-sino', proj_geom, np.zeros((n1, Nangles, n2)))
-    rec_id = astra.data3d.create('-vol', vol_geom, vol.swapaxes(1,2))
-    # rec_id = astra.data3d.create('-vol', vol_geom, np.zeros((config.n1, config.n3, config.n2)))
-    cfg = astra.astra_dict('FP3D_CUDA')
-    cfg['ProjectionDataId'] = proj_id
-    cfg['VolumeDataId'] = rec_id
-    alg_id = astra.algorithm.create(cfg)
-    astra.algorithm.run(alg_id, nit)
-    proj_fp = astra.data3d.get(proj_id).swapaxes(0, 1)
-    return proj_fp
-
 def BP(P, proj_geom, vol_geom, n1, n2, n3, nit=10, device_num=0):
     proj_id = astra.data3d.create('-sino', proj_geom, P.swapaxes(0, 1))
     rec_id = astra.data3d.create('-vol', vol_geom, np.zeros((n1, n3, n2)))
@@ -863,12 +796,8 @@ def CG_inverse(P, u, angles, mu, max_iter, tol):
 
     proj_geom = astra.create_proj_geom('parallel3d', 1, 1, n1, n2, angles)
     vol_geom = astra.create_vol_geom(n3, n1, n2)
-    def A(vv):
-        vv = vv/np.sqrt((vv**2).sum())
-        out = FP(vol, proj_geom, vol_geom, P.shape[0], n1, n2, n3, nit=10, device_num=0)
-        # out = astra.create_sino3d_gpu(vv.swapaxes(1, 2), proj_geom, vol_geom, returnData=True, gpuIndex=config.device.index)[
-        # 1].swapaxes(0, 1)
-        return out
+    A = lambda vv: astra.create_sino3d_gpu(vv.swapaxes(1, 2), proj_geom, vol_geom, returnData=True, gpuIndex=config.device.index)[
+        1].swapaxes(0, 1)
     # At = lambda P: BP(P, proj_geom, vol_geom, n1, n2, n3, device_num=config.device.index)
     def At(P):
         out = BP(P, proj_geom, vol_geom, n1, n2, n3, device_num=config.device.index)
@@ -899,46 +828,36 @@ def CG_inverse(P, u, angles, mu, max_iter, tol):
     return x, cf
 
 
-import pytv
-def tv_prox(im_noisy,nb_it,regularization):
-    im_noisy = im_noisy.swapaxes(2,1).swapaxes(1,0)
-    im_noisy = im_noisy.reshape(im_noisy.shape[0],1,im_noisy.shape[1],im_noisy.shape[2])
-    im_est = np.copy(im_noisy)
-    dual_update_fidelity = np.zeros_like(im_est)
-    dual_update_TV = np.zeros((im_est.shape[0],6,im_est.shape[1],im_est.shape[2],im_est.shape[3]))
-    loss_fct_GD = np.zeros([nb_it, ])
-
-    sigma_D = 0.5
-    sigma_A = 1.0
-    tau = 1 / (8 + 1)
-    for it in range(nb_it):  # A simple sub-gradient descent algorithm for image denoising
-    #     tv, G = pytv.tv_GPU.tv_hybrid(im_est)
-    #     im_est += - step_size * ((im_est - im_noisy) + regularization * G)
-    #     loss_fct_GD[it] = 0.5 * np.sum(np.square(im_est - im_noisy)) + regularization * tv
-
-        # Dual update
-        dual_update_fidelity = (dual_update_fidelity + sigma_A * (im_est - im_noisy)) / (
-                    1.0 + sigma_A)
-        D_x = pytv.tv_operators_GPU.D_hybrid(im_est)
-        prox_argument = dual_update_TV + sigma_D * D_x
-        dual_update_TV = prox_argument / np.maximum(1.0, np.sqrt(np.sum(prox_argument ** 2, axis=1, keepdims=True)) / regularization)
-
-        # Primal update
-        im_est = im_est - tau * dual_update_fidelity - tau * pytv.tv_operators_GPU.D_T_hybrid(
-            dual_update_TV)
-
-        # Loss function update
-        loss_fct_GD[it] = 0.5 * np.sum(
-            np.square(im_est - im_noisy)) + regularization * pytv.tv_operators_GPU.compute_L21_norm(
-            D_x)
-
-
-    return im_est.squeeze(1).swapaxes(0,1).swapaxes(1,2) , loss_fct_GD
 
 
 
+from skimage.restoration import denoise_tv_chambolle
+def sart_update(vol, P, nit, nit_tv, lamb, tau):
+    n1, n2, n3 = vol.shape
+    v = vol
+    proj_geom = astra.create_proj_geom('parallel3d', 1, 1, n1, n2, angles)
+    vol_geom = astra.create_vol_geom(n3, n1, n2)
+    def A(vv):
+        vv = vv/np.sqrt((vv**2).sum())
+        out = astra.create_sino3d_gpu(vv.swapaxes(1, 2), proj_geom, vol_geom, returnData=True, gpuIndex=config.device.index)[
+        1].swapaxes(0, 1)
+        return out
+    # At = lambda P: BP(P, proj_geom, vol_geom, n1, n2, n3, device_num=config.device.index)
+    def At(P):
+        out = BP(P, proj_geom, vol_geom, n1, n2, n3, device_num=config.device.index)
+        # out = out/np.abs(out).max()*np.abs(P).max()
+        out = out / np.sqrt((out ** 2).sum())
+        return out
 
-
+    cf = []
+    mask = np.zeros_like(v)
+    mask[20:-20,20:-20,20:-20] = 1
+    for i in range(nit):
+        v = v - tau*(At(A(v) - P))*mask
+        cf.append(((A(v) - P) ** 2).sum())
+        # Total Variation regularization
+        v = denoise_tv_chambolle(v, weight=lamb, max_num_iter=nit_tv)
+    return v, cf
 
 
 
@@ -946,10 +865,9 @@ n1, n2, n3 = config.n1, config.n2, config.n3
 proj_geom = astra.create_proj_geom('parallel3d', 1, 1, n1, n2, angles)
 vol_geom = astra.create_vol_geom(n3, n1, n2)
 def A(vv):
-    vv = vv / np.sqrt((vv ** 2).sum())
-    out = FP(vv, proj_geom, vol_geom, len(angles), n1, n2, n3, nit=10, device_num=0)
-    # out = astra.create_sino3d_gpu(vv.swapaxes(1, 2), proj_geom, vol_geom, returnData=True, gpuIndex=config.device.index)[
-    # 1].swapaxes(0, 1)
+    vv = vv/np.sqrt((vv**2).sum())
+    out = astra.create_sino3d_gpu(vv.swapaxes(1, 2), proj_geom, vol_geom, returnData=True, gpuIndex=config.device.index)[
+    1].swapaxes(0, 1)
     return out
 # At = lambda P: BP(P, proj_geom, vol_geom, n1, n2, n3, device_num=config.device.index)
 def At(P):
@@ -960,48 +878,23 @@ def At(P):
 s = 3*1e-2
 P = A(V) + s*np.random.randn(config.Nangles, n1, n2)
 
-v_sart, cf = sart_update(np.zeros_like(V)+1e-1, P, lamb=1e-2, tau=1e0, nit=10, nit_tv=3)
+v_sart, cf = sart_update(np.zeros_like(V)+1e-1, P, lamb=1e-3, tau=1e-1, nit=100, nit_tv=10)
 plt.figure(1)
 plt.clf()
 plt.plot(cf)
 plt.figure(2)
 plt.clf()
-plt.imshow(v_sart[50:-50,50:-50,90])
+plt.imshow(v_sart[10:-10,10:-10,90])
 
 vol = np.zeros_like(V)
 v_sirt = sirt_prox(P, vol, 1, angles, nit=10)
 plt.figure(3)
 plt.clf()
-plt.imshow(v_sirt[50:-50,50:-50,90])
-
-
-# Denoising
-vv = denoise_wavelet(v_sart, sigma=1e-1, mode='soft')
-plt.figure(4)
-plt.clf()
-plt.imshow(vv[50:-50,50:-50,90])
-plt.title('Wavelet')
-
-# vv, cf = denoise_TV_L2_bounds(v_sart/(v_sart**2).sum(), alpha=1e-1, a=-1, b=1, nit=10, x1=None, x2=None, x3=None)
-# vv, cf = FISTA_prox_tv(v_sart/(v_sart**2).sum(), lamb=1e-1, tau=1e-1, nit=10)
-# vv, cf = total_variation_denoising_3d(v_sart, lambda_param = 1e0, num_iterations=10, step_size=1.0)
-vv, cf = tv_prox(v_sart/(v_sart**2).sum(),nb_it=10,regularization=1e2)
-plt.figure(5)
-plt.clf()
-plt.imshow(vv[50:-50,50:-50,90])
-plt.title('prox tv')
-plt.figure(1)
-plt.clf()
-plt.plot(cf)
+plt.imshow(v_sirt[10:-10,10:-10,90])
 
 
 
 
-
-
-
-# Try my own TV? first on one image then iterate
-# why tv prox diverges ?
 
 # x, cf = CG_inverse(P, np.zeros_like(V), angles, 1, 10, 1e-5)
 #
@@ -1097,124 +990,6 @@ def ADMM(vol, P, rho, mu, lamb, nit, nit_sirt, nit_nlm, p_dist=10, p_sze=5):
 
 
 
-def FISTA_prox_tv(z, lamb, tau, nit, eps=1e-5):
-    # solve min_u ||u-z||_2^2 + lamb*||\nabla u||_2
-    n1, n2, n3 = z.shape
-    v = z.copy()
-    u = v.copy()
-    cf = []
-    nn = n1*n2*n3
-    for i in range(nit):
-        v_ = v.copy()
-        norm = np.sqrt(d1(u)**2 + d2(u)**2 + d3(u)**2 + eps**2).sum()/nn
-        grad = (u - z) + lamb*(d1T(d1(u))+d2T(d2(u))+d3T(d3(u)))/norm
-        for j in range(10):
-            utmp = u - tau*grad
-            cost = (0.5*(utmp- z)**2).sum() + lamb *  np.sum(np.sqrt(np.abs(d1(utmp))**2 + np.abs(d2(utmp))**2 + np.abs(d3(utmp))**2 + eps**2 ))/nn
-            if i==0:
-                break
-            if cost>cf[-1]:
-                tau = tau*0.5
-            else:
-                break
-            # if cost<cf[-1]:
-            #     tau = tau/0.5
-        print(tau)
-        v = u - tau*grad
-        u = v + 0.99*(v-v_)
-        # u = v
-        cf.append((0.5*(v - z)**2).sum() + lamb *  np.sum(np.sqrt(np.abs(d1(v))**2 + np.abs(d2(v))**2 + np.abs(d3(v))**2 + eps**2 ))/nn )
-    return v, cf
-
-u1 = np.random.randn(10,10,10)
-u2 = np.random.randn(10,10,10)
-u1 /= np.linalg.norm(u1)
-u2 /= np.linalg.norm(u2)
-ps1x = (d1(u1)*u2).sum()
-ps2x = (u1*d1T(u2)).sum()
-ps1y = (d2(u1)*u2).sum()
-ps2y = (u1*d2T(u2)).sum()
-ps1z = (d3(u1)*u2).sum()
-ps2z = (u1*d3T(u2)).sum()
-print(ps1x-ps2x, ps1y-ps2y, ps1z-ps2z)
-
-# ep = 1e-3
-# aa = np.sum(np.sqrt(np.abs(d1(v))**2 + np.abs(d2(v))**2 + np.abs(d3(v))**2 + eps**2 ))/nn
-# bb = np.sum(np.sqrt(np.abs(d1(v+ep))**2 + np.abs(d2(v+ep))**2 + np.abs(d3(v+ep))**2 + eps**2 ))/nn
-# g = (bb-aa)/ep
-
-
-vv = V/V.min()
-# v_hat, cf = FISTA_prox_tv(vv, lamb=1e0, tau=1e-3, nit=3, eps=1e-5)
-v_hat, cf = denoise_TV_L2_bounds(z, alpha=1e0, a=0, b=1e9, nit=25)
-
-plt.figure(1)
-plt.clf()
-plt.plot(cf)
-plt.figure(2)
-plt.clf()
-plt.subplot(231)
-plt.imshow(v_hat[:,:,v_hat.shape[2]//2])
-plt.subplot(234)
-plt.imshow(v_hat.sum(2))
-plt.subplot(232)
-plt.imshow(vv[:,:,v_hat.shape[2]//2])
-plt.subplot(235)
-plt.imshow(vv.sum(2))
-plt.subplot(233)
-plt.imshow((vv[:,:,v_hat.shape[2]//2]-v_hat[:,:,v_hat.shape[2]//2]))
-plt.subplot(236)
-plt.imshow((vv.sum(2)-v_hat.sum(2)))
-
-
-
-def total_variation_denoising_3d(image, lambda_param, num_iterations=100, step_size=1.0):
-    """
-    Perform Total Variation denoising using the ISTA algorithm for 3D images.
-
-    Parameters:
-    - image: The input noisy 3D image.
-    - lambda_param: Regularization parameter for TV.
-    - num_iterations: Number of iterations.
-    - step_size: Step size for the gradient descent.
-
-    Returns:
-    - denoised_image: The denoised 3D image.
-    """
-    def soft_thresholding(x, threshold):
-        return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
-
-    def tv_gradient(u):
-        """Compute the gradient of the TV regularization term in 3D."""
-        grad_x = np.roll(u, -1, axis=0) - u
-        grad_y = np.roll(u, -1, axis=1) - u
-        grad_z = np.roll(u, -1, axis=2) - u
-        return grad_x, grad_y, grad_z
-
-    def tv_norm(grad_x, grad_y, grad_z):
-        """Compute the TV norm in 3D."""
-        return np.sqrt(grad_x**2 + grad_y**2 + grad_z**2)
-
-    def denoise_step(u, grad_x, grad_y, grad_z, lambda_param, step_size):
-        """Perform one step of the ISTA algorithm in 3D."""
-        grad_x, grad_y, grad_z = tv_gradient(u)
-        tv_norm_u = tv_norm(grad_x, grad_y, grad_z)
-        threshold = lambda_param / step_size
-        u_denoised = u - step_size * (2 * (u - image) + tv_norm_u)
-        u_denoised = soft_thresholding(u_denoised, threshold)
-        return u_denoised
-
-    # Initialize
-    denoised_image = np.copy(image)
-
-    cf = []
-    # Perform iterative TV denoising
-    for _ in range(num_iterations):
-        grad_x, grad_y, grad_z = tv_gradient(denoised_image)
-        denoised_image = denoise_step(denoised_image, grad_x, grad_y, grad_z, lambda_param, step_size)
-        cf.append(((denoised_image - image)**2).sum() + lambda_param*tv_norm(grad_x, grad_y, grad_z))
-
-    return denoised_image, cf
 
 
 
@@ -1241,9 +1016,9 @@ def FISTA(vol, P, lamb, tau, nit, eps=1e-5):
     for i in range(nit):
         v_ = v.copy()
         norm = np.sqrt(d1(u)**2 + d2(u)**2 + d3(u)**2 + eps**2).sum()
-        grad = At(A(u) - P) + 0.5*lamb*(d1T(u)+d2T(u)+d3T(u))/norm
+        grad = (At(A(u) - P) + 0.5*lamb*(d1T(u)+d2T(u)+d3T(u))/norm)
         for j in range(10):
-            vtmp = u - tau*grad
+            vtmp = v - tau*grad
             cost = ((A(vtmp) - P)**2).sum() + lamb * np.sum( np.abs(d1(vtmp)) + np.abs(d2(vtmp)) + np.abs(d3(vtmp)))
             if i==0:
                 break
@@ -1254,7 +1029,6 @@ def FISTA(vol, P, lamb, tau, nit, eps=1e-5):
         print(tau)
         v = vtmp
         u = v + 0.99*(v-v_)
-
         cf.append(((A(v) - P)**2).sum() + lamb * np.sum( np.abs(d1(v)) + np.abs(d2(v)) + np.abs(d3(v))) )
     return v, cf
 
@@ -1275,15 +1049,15 @@ def FISTA(vol, P, lamb, tau, nit, eps=1e-5):
 #     return out
 # P = A(V)
 #
-v_fista, cf = FISTA(vol+0.11, P, lamb=5*1e1, tau=1e-1, nit=5, eps=1e-5)
-
-plt.figure(1)
-plt.clf()
-plt.plot(cf)
-
-plt.figure(2)
-plt.clf()
-plt.imshow(v_fista[:,:,90])
+# v_fista, cf = FISTA(vol, P, lamb=5*1e1, tau=1e-1, nit=10, eps=1e-5)
+#
+# plt.figure(1)
+# plt.clf()
+# plt.plot(cf)
+#
+# plt.figure(2)
+# plt.clf()
+# plt.imshow(v_fista[:,:,90])
 
 
 
@@ -1295,6 +1069,51 @@ plt.imshow(v_fista[:,:,90])
 # denoise_fast = denoise_nl_means(v_admm, h=0.8 * sigma_est, fast_mode=True, **patch_kw)
 
 
+
+# def denoise_TV_L2_bounds(z, alpha, a, b, nit, x1=None, x2=None, x3=None):
+# # This function solves:
+# # min_{a <= x <= b} alpha ||Nabla x ||_1 + 0.5 || x - z ||_2^2
+# # with an accelerated gradient descent on the dual
+#     if x1 is None:
+#         x1 = np.zeros_like(z)
+#     if x2 is None:
+#         x2 = np.zeros_like(z)
+#     if x3 is None:
+#         x3 = np.zeros_like(z)
+#     y1 = x1
+#     y2 = x2
+#     y3 = x3
+#
+#     tau = 1/64
+#     cf = []
+#     for i in range(nit):
+#         tmp = z - d1T(y1) - d2T(y2) - d3T(y3)
+#         grad1 = d1(tmp)
+#         grad2 = d2(tmp)
+#         grad3 = d3(tmp)
+#
+#         xp1 = x1
+#         xp2 = x2
+#         xp3 = x3
+#
+#         x1 = y1 + tau*grad1
+#         x2 = y2 + tau*grad2
+#         x3 = y3 + tau*grad3
+#         nx = np.sqrt(x1**2+x2**2+x3**2)
+#         x1 = (x1/nx)*np.minimum(nx,alpha)
+#         x2 = (x2/nx)*np.minimum(nx,alpha)
+#         x3 = (x3/nx)*np.minimum(nx,alpha)
+#
+#         y1 = x1 + 0.99 * (x1 - xp1)
+#         y2 = x2 + 0.99 * (x2 - xp2)
+#         y3 = x3 + 0.99 * (x3 - xp3)
+#
+#         u = z - d1T(x1) - d2T(x2) - d3T(x3)
+#         loss = alpha*(np.sqrt(d1(u)**2+d2(u)**2+d3(u)**2)).sum() + 0.5*((u-z)**2).sum()
+#         cf.append(loss)
+#
+#     # return np.maximum(np.minimum(u,b),a), cf
+#     return u, cf
 
 
 

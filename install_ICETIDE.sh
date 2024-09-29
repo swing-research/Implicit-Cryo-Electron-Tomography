@@ -18,4 +18,5 @@ pip install numexpr
 conda install -y -c conda-forge ml-collections
 conda install -y -c conda-forge ipdb
 conda install simpleitk::simpleitk
-conda install -y anaconda::pandas 
+conda install -y anaconda::pandas
+conda install -y conda-forge::tomopy

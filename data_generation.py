@@ -5,6 +5,7 @@ to mimic the CryoET image formation model.
 '''
 import os
 import bm3d
+import matplotlib.pyplot as plt
 import torch
 import mrcfile
 import imageio
@@ -222,11 +223,24 @@ def data_generation_real_data(config):
     #######################################################################################
     projections_noisy = np.float32(mrcfile.open(os.path.join(config.path_load,config.volume_name+".mrc"),permissive=True).data)
     projections_noisy = projections_noisy/np.abs(projections_noisy).max()
+
+    # projections_noisy = projections_noisy[2:-3]
+
+    # projections_noisy = projections_noisy[:,projections_noisy.shape[1]//2-512:projections_noisy.shape[1]//2+256,projections_noisy.shape[2]//2-512:projections_noisy.shape[2]//2+256]
+    # plt.figure(1)
+    # plt.subplot(1,3,1)
+    # plt.imshow(pp[3])
+    # plt.subplot(1,3,2)
+    # plt.imshow(pp[20])
+    # plt.subplot(1,3,3)
+    # plt.imshow(pp[38])
+
     if config.projections_rotate:
         projections_noisy = np.rot90(np.flip(projections_noisy,axis=1), k=3, axes=((1, 2)))
     if config.n1 is not None:
         config.Nangles = projections_noisy.shape[0]
-        projections_noisy = resize(projections_noisy,(config.Nangles,config.n1,config.n2))
+        if (projections_noisy.shape[1] != config.n1) and (projections_noisy.shape[2] != config.n2):
+            projections_noisy = resize(projections_noisy,(config.Nangles,config.n1,config.n2))
     else:
         config.Nangles, config.n1, config.n2 = projections_noisy.shape
         config.n3 = config.n1*2
@@ -244,10 +258,10 @@ def data_generation_real_data(config):
 
     out = mrcfile.new(config.path_save_data+"projections.mrc",projections_noisy,overwrite=True)
     out.close()
-    if os.path.join(config.path_load,config.angle_name):
-        angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
+    if os.path.isfile(os.path.join(config.path_load,config.angle_name)):
+        angles = np.loadtxt(os.path.join(config.path_load, config.angle_name))
     else:
-        angles = np.loadtxt(os.path.join(config.path_load,config.angle_name))
+        angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
     # angles_t = torch.tensor(angles).type(config.torch_type).to(device)
     # operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
     # V_FBP = operator_ET.pinv(torch.tensor(projections_noisy).to(device).detach().requires_grad_(False))
