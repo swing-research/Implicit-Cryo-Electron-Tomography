@@ -4,7 +4,7 @@ The goal is to compare different approaches on this dataset that is suppose
 to mimic the CryoET image formation model.
 '''
 import os
-import bm3d
+# import bm3d
 import matplotlib.pyplot as plt
 import torch
 import mrcfile
