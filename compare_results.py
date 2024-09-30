@@ -896,7 +896,7 @@ def compare_results(config):
     # plt.plot(x_fsc,fsc_icetide,'b',label="icetide")
     # plt.plot(x_fsc,fsc_tv_icetide,'--b',label="SART+TV with our deform. est. ")
 
-    fsc_arr = np.zeros((x_fsc.shape[0],8))
+    fsc_arr = np.zeros((x_fsc.shape[0],13))
     fsc_arr[:,0] = x_fsc
     fsc_arr[:,1] = fsc_icetide[:,0]
     fsc_arr[:,2] = fsc_FBP[:,0]
@@ -904,14 +904,19 @@ def compare_results(config):
     if(eval_AreTomo):
         for i, npatch in enumerate(config.nPatch):
             if i==0:
-                fsc_arr[:,4] = fsc_AreTomo_centered_list[i][:,0] 
+                fsc_arr[:,4] = fsc_AreTomo_centered_list[i][:,0]
+                fsc_arr[:,8] = fsc_AreTomo_tv_list[i][:,0]
             if i==1:
-                fsc_arr[:,7] = fsc_AreTomo_centered_list[i][:,0] 
+                fsc_arr[:,7] = fsc_AreTomo_centered_list[i][:,0]
+                fsc_arr[:,9] = fsc_AreTomo_tv_list[i][:,0]
     if(eval_Etomo):
         fsc_arr[:,5] = fsc_Etomo[:,0]
     fsc_arr[:,6] = fsc_FBP_icetide[:,0]
+    fsc_arr[:,10] = fsc_tv[:,0]
+    fsc_arr[:,11] = fsc_tv_no_deformed[:,0]
+    fsc_arr[:,12] = fsc_tv_icetide[:,0]
     # fsc_arr[:,6] = fsc_icetide_isonet[:,0]
-    header ='x,icetide,FBP,FBP_no_deformed,AreTomo_patch0,ETOMO,FBP_est_deformed,AreTomo_patch1'
+    header ='x,icetide,FBP,FBP_no_deformed,AreTomo_patch0,ETOMO,FBP_est_deformed,AreTomo_patch1,AreTomo_tv_patch0,AreTomo_tv_patch1,tv,tv_no_deformed,icetide_tv'
     np.savetxt(os.path.join(config.path_save,'evaluation','FSC.csv'),fsc_arr,header=header,delimiter=",",comments='')
 
 
@@ -948,7 +953,7 @@ def compare_results(config):
     CC_arr[:,9] = CC_tv_no_deformed
     CC_arr[:,10] = CC_tv_icetide
     # CC_arr[:,6] = CC_icetide_isonet
-    header ='x,icetide,FBP,FBP_no_deformed,AreTomo_patch0,ETOMO,FBP_est_deformed,AreTomo_patch1,tv,tv_no_deformed,tv_icetide','aretomo_TV_patch1','aretomo_TV_patch2'
+    header ='x,icetide,FBP,FBP_no_deformed,AreTomo_patch0,ETOMO,FBP_est_deformed,AreTomo_patch1,tv,tv_no_deformed,tv_icetide,aretomo_TV_patch1,aretomo_TV_patch2'
     np.savetxt(os.path.join(config.path_save,'evaluation','CC.csv'),CC_arr,header=header,delimiter=",",comments='')
 
 

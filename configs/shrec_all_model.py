@@ -146,4 +146,7 @@ def get_config():
     config.path_aretomo = "/scicore/home/dokman0000/debarn0000/Softwares/AreTomo_1.3.4_Cuda101_Feb22_2023" #None 
     config.nPatch = [0,4]
 
+    config.lamb_tv = 1e-2
+    config.nit_tv = 100
+
     return config

@@ -64,7 +64,7 @@ def data_generation(config):
         print("Here is the link to download the dataset: https://dataverse.nl/dataset.xhtml?persistentId=doi:10.34894/XRTJMA")
         
     # Loading and shaping the volume
-    V = -np.double(mrcfile.open(path_volume).data)
+    V = -np.double(mrcfile.open(path_volume, permissive=True).data)
     nv = V.shape # size of the loaded volume 
     V = V[nv[0]//2-config.n3_patch//2:nv[0]//2+config.n3_patch//2,nv[1]//2-config.n1_patch//2:nv[1]//2+config.n1_patch//2,nv[2]//2-config.n2_patch//2:nv[2]//2+config.n2_patch//2]
     V = resize(V,(config.n3,config.n1,config.n2))

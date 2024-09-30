@@ -130,11 +130,17 @@ train.train_without_ground_truth(config)
 
 
 
-V_tmp, _ = sart_update(V_FBP_icetide, projections_noisy_undeformed.detach().cpu().numpy(), angles, lamb=10,
-                                       tau=1, nit=10, nit_tv=10)
+# V_tmp, _ = sart_update(V_FBP_icetide, projections_noisy_undeformed.detach().cpu().numpy(), angles, lamb=10,
+#                                        tau=1, nit=10, nit_tv=10)
 
 
 
+import tomopy
+def TV_tomopy(projections, angles, reg_tv, nit_tv, n3):
+    recon = np.swapaxes(tomopy.recon(projections, angles/180*np.pi,
+                                     algorithm='tv', sinogram_order=False, reg_par=reg_tv, num_iter=nit_tv), 1,2)
+    recon = recon[:, :, recon.shape[2] // 2 - n3 // 2:recon.shape[2] // 2 + n3 // 2]
+    return recon[:, :, ::-1]
 
 import os
 import torch
@@ -218,6 +224,7 @@ config.Nangles = projections_noisy.shape[0]
 projections_noisy_resize = torch.Tensor(
     resize(projections_noisy.detach().cpu().numpy(), (config.Nangles, config.n1, config.n2))).type(
     config.torch_type).to(device)
+
 
 ######################################################################################################
 ## Load and estimate our volume
@@ -455,6 +462,30 @@ out.close()
 plt.close('all')
 print("volumes saved")
 
+if config.name_best_proj != "":
+    P_best = np.double(mrcfile.open(os.path.join(config.path_load, config.name_best_proj)).data)
+    if config.projections_rotate:
+        P_best = np.rot90(np.flip(P_best,axis=1), k=3, axes=((1, 2)))
+    P_best_t = torch.tensor(P_best).type(config.torch_type).to(device)
+    angles = np.linspace(config.view_angle_min, config.view_angle_max, config.Nangles)
+    import ml_collections
+    config_best = ml_collections.ConfigDict()
+    config_best.n1 = P_best.shape[1]
+    config_best.n2 = P_best.shape[2]
+    config_best.n3 = P_best.shape[1]//2
+    config_best.view_angle_min = -57
+    config_best.view_angle_max = 57
+    config_best.Nangles = P_best.shape[0]
+    V_no_deformed_FBP = reconstruct_FBP_volume(config_best, P_best_t).detach().cpu().numpy()
+    display_XYZ(V_no_deformed_FBP, name="FBP_no_deformed")
+    out = mrcfile.new(os.path.join(config.path_save_data, 'evaluation', "volumes", "FBP_no_deformed.mrc"),
+                      np.moveaxis(V_no_deformed_FBP,2,0).astype(np.float32), overwrite=True)
+    out.close()
+    V_no_deformed_tv = TV_tomopy(P_best, angles, config.lamb_tv, config.nit_tv, config_best.n3)
+    display_XYZ(V_no_deformed_tv, name="Tv_no_deformed")
+    out = mrcfile.new(os.path.join(config.path_save_data, 'evaluation', "volumes", "TV_no_deformed.mrc"),
+                      np.moveaxis(V_no_deformed_tv,2,0).astype(np.float32), overwrite=True)
+    out.close()
 
 
 

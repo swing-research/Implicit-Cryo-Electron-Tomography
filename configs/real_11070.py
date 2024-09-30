@@ -57,7 +57,7 @@ def get_config():
     config.volume_name = 'SARS_Cov2_B117variant_Position3_bin4'
     config.angle_name = ''
     config.path_load = "/local/Tomograms_cryoET/real_data_aligned/11070"
-    config.name_best_proj = 'SARS_Cov2_B117variant_Position3.mrc'
+    config.name_best_proj = 'SARS_Cov2_B117variant_Position3_ali_bin4.mrc'
     config.path_save_data = "./results/11070/"
     config.path_save = "./results/11070/"
 
@@ -73,14 +73,14 @@ def get_config():
     #############################
     # Estimate Volume from the deformed projections
     config.train_volume = True
-    config.train_local_def = False
+    config.train_local_def = True
     config.train_global_def = True
     config.volume_model = "multi-resolution" # multi-resolution, Fourier-features, grid, MLP
     config.local_model = 'interp' #  'implicit' or 'interp'
 
     # Training schedule
-    config.epochs = 5000
-    config.Ntest = 100 # number of epoch before display
+    config.epochs = 10000
+    config.Ntest = 1000 # number of epoch before display
     config.save_volume = True # saving the volume or not during training
     config.scheduler_step_size = 600
     config.scheduler_gamma = 0.25 #0.75
