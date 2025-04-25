@@ -12,7 +12,6 @@ import imageio
 import numpy as np
 from skimage.transform import resize
 
-from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
 from utils import utils_data_generation, utils_deformation, utils_display
 
 
@@ -81,6 +80,7 @@ def data_generation(config):
     print("Making tilt-series...")
     angles = np.linspace(config.view_angle_min,config.view_angle_max,config.Nangles)
     angles_t = torch.tensor(angles).type(config.torch_type).to(device)
+    from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
     operator_ET = ParallelBeamGeometry3DOpAngles_rectangular((config.n1,config.n2,config.n3), angles/180*np.pi, fact=1)
 
     # Define global and local deformations

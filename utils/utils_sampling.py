@@ -4,7 +4,7 @@ from skimage.transform import resize
 
 # import sys
 # sys.path.insert(0, '..')
-from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
+# from ops.radon_3d_lib import ParallelBeamGeometry3DOpAngles_rectangular
 
 
 """
@@ -162,7 +162,7 @@ def apply_deformations_to_locations(detectorLocations,rot_deformSet=None,shift_d
         pixelPositions_ = torch.unsqueeze(detectorLocations[i],dim=2)
         # Get deformations on the 2D detector grid
         if(fixedRotSet!=None):
-            fixed_rot_deform = fixedRotSet[i](dim=2)
+            fixed_rot_deform = fixedRotSet(dim=2)
             pixelPositions_ = torch.matmul(fixed_rot_deform,pixelPositions_)
         if rot_deformSet != None:
             rot_deform = rot_deformSet[i](dim=2)

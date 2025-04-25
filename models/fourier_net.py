@@ -123,9 +123,6 @@ class MultiResImplicitRepresentation(nn.Module):
     return out_value, features
     
 
-
-
-
 class FFMLayer(nn.Module):
   def __init__(self, rep_dim, L=10):
     super().__init__()

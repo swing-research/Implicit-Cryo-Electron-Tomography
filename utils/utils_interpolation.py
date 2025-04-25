@@ -25,7 +25,7 @@ def cropper3d(image, coordinate , output_size):
     theta[:,1,3] = y_p_y
     theta[:,2,2] = z_m_z
     theta[:,2,3] = z_p_z
-    f = F.affine_grid(theta, size=(b, c, output_size, output_size, output_size), align_corners=True)
+    f = F.affine_grid(theta, size=(b, c, output_size, output_size, output_size), align_corners=False)
     # image_cropped = grid_sample_customized_bilinear(image, f, align_corners = True)
     # We might need to change with the above if we want to pass gradient more than once to the parameters of the deformation
     image_cropped = F.grid_sample(image, f, mode='bilinear', align_corners = True)

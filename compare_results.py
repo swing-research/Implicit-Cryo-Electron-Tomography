@@ -56,8 +56,8 @@ def extract_angle(rot_matrix):
     return angle
 
 
-import SimpleITK as sitk
 def perform_3d_registration(fixed_image, moving_image):
+    import SimpleITK as sitk
     # Create an instance of the ImageRegistrationMethod class
     registration_method = sitk.ImageRegistrationMethod()
 
@@ -413,6 +413,7 @@ def compare_results(config):
             display_XYZ(V_tv_aretomo, name="TV_aretomo")
 
             # Find best affine transformation between volumes
+            import SimpleITK as sitk
             V_sk = sitk.GetImageFromArray(V/np.linalg.norm(V))
             V_aretomo_sk = sitk.GetImageFromArray(V_FBP_aretomo)
             final_transform = perform_3d_registration(V_sk, V_aretomo_sk)
@@ -1441,6 +1442,7 @@ def compare_results_real(config):
     print("ICE-TIDE saved")
 
     # Find best affine transformation between volumes
+    import SimpleITK as sitk
     V_best_resize = resize(V_best,(V_icetide.shape[0],V_icetide.shape[1],V_icetide.shape[2]))
     V_sk = sitk.GetImageFromArray(V_icetide.astype(np.float32)/np.linalg.norm(V_icetide))
     V_best_sk = sitk.GetImageFromArray(V_best_resize/np.linalg.norm(V_best_resize))

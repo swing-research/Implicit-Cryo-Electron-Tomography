@@ -106,7 +106,8 @@ def display_local_est_and_true(field,field_true=None,Npts=(10,10),img_path='',im
             plt.savefig(img_path+'_est_and_true'+img_type)
 
 def display_local_movie(field,field_true=None,Npts=(10,10),img_path='',img_type='.pdf',scale=3,alpha=0.8,width=0.002,
-                        device='cuda',loc='upper right',legend1='Estimation', legend2='True',weights_est=1,s=1):
+                        loc='upper right',legend1='Estimation', legend2='True',weights_est=1,s=1):
+    device = field[0].depl_ctr_pts.device
     xx1 = torch.linspace(-1,1,Npts[0],device=device)
     xx2 = torch.linspace(-1,1,Npts[1],device=device)
     XX_t, YY_t = torch.meshgrid(xx1,xx2,indexing='ij')

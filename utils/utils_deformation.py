@@ -27,7 +27,7 @@ def cropper(image, coordinate , output_size, padding_mode="zeros"):
     theta[:,1,2] = y_p_y
     image = image.reshape(b, c , h , w)
     theta = theta.reshape(b , 2 , 3)
-    f = F.affine_grid(theta, size=(b, c, output_size, output_size), align_corners=True)
+    f = F.affine_grid(theta, size=(b, c, output_size, output_size), align_corners=False)
     image_cropped = F.grid_sample(image, f, mode='bicubic', align_corners = True, padding_mode=padding_mode)
     return image_cropped
 
@@ -265,7 +265,7 @@ class rotNet(nn.Module):
                 thetas = torch.zeros((Nproj), dtype=torch.float)
             else:
                 thetas = torch.tensor(0.).type(torch.float)
-            self.thetas = nn.Parameter(thetas)
+        self.thetas = nn.Parameter(thetas)
 
         if Nproj!=1:
             self.e3 = torch.tensor([[0, 0, 1]]).repeat(Nproj,1).type_as(thetas)
