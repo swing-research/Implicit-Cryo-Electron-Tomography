@@ -1,0 +1,152 @@
+##############################################
+## Basic parameters
+##############################################
+path_volume: "datasets/my_data.mrc"
+path_angle: "datasets/my_data_tilts.tlt"
+path_save: "./results/my_data/"
+
+##############################################
+## Intermediate parameters
+##############################################
+fixed_angle: 0
+projections_rotate: false
+
+
+##############################################
+## Advanced parameters
+##############################################
+# Device parameters
+seed: 42
+device_num: 0
+torch_type: "float"
+track_memory: false
+
+# Physical parameters
+view_angle_min: -60
+view_angle_max: 60
+
+# Training parameters
+epochs: 400
+scheduler_step_size: 50  # number of iteration before reducing learning rate
+scheduler_gamma: 0.5     # multiplicative factor to apply to the learning rate
+continue_training: false # to load previous model and continue training
+loss_data: "l1"  # loss function used, l1, l2
+
+# Sampling strategy
+batch_size: 5            # number of viewing direction per iteration
+nRays: 100               # number of ray to sample per tilt
+ray_length: 1500         # number of discrete point along each ray
+sampling_domain_lx: 1
+sampling_domain_ly: 1
+size_z_vol: 0.5          # volume size in z knowing [-lx,lx] in x and y
+std_noise_z: 1           # std of noise perturbation on z rays
+
+# Training learning rates
+lr_volume: 1.e-2
+lr_shift: 1.e-2
+lr_rot: 0
+lr_rot_fixed: 1.e-2       # tilt-axis rotation
+lr_local_def: 1.e-4
+
+# Training regularization
+lamb_volume: 0
+lamb_rot: 1.e-6
+lamb_shifts: 1.e-7
+lamb_local_ampl: 1.e-5
+lamb_local_mean: 1.e-7
+wd: 1.e-6
+clip: 0
+deformationScale: 1
+
+# Schedules
+schedule_volume: []
+schedule_global: []
+schedule_local: []
+delay_deformations: 0
+
+# Optimization target
+train_volume: true
+train_local_def: true
+train_global_def: true
+volume_model: "multi-resolution"       # options: multi-resolution
+local_model: "multi-resolution"      # options: 'multi-resolution', 'interp'
+
+# Multi-resolution strategy
+multiresolution: true
+multires_params:
+  startResolution: 5       # initial resolution
+  ray_change_epoch: []     # when to switch resolution
+  batch_set: [5]           # batch size per resolution
+
+# Display parameters
+Ntest: 50
+Nalign: 5000
+Nimplicit_volume: 1000
+save_volume: false
+debug: false
+save_local_deformations: true
+save_global_deformations: true
+save_aligned: true
+save_aligned_implicitnet: false
+
+# Evaluation parameters
+n1: 512
+n2: 512
+n3: 256
+avg_XYZ: 1  # average on z direction
+
+# Reconstruction parameters
+downsample_tilt_series: true
+FBP_reconstruction: true
+SIRT_reconstruction: true
+TV_reconstruction: true
+nit_tv: 10
+nit_sirt: 10
+reg_tv: 1
+
+# Neural network parameters
+input_size_volume: 3
+output_size_volume: 1
+
+# Multi-resolution grid encoding (volume)
+implicit_volume:
+  num_layers_volume: 4
+  hidden_size_volume: 64
+  encoding:
+    otype: "Grid"
+    type: "Hash"
+    n_levels: 9
+    n_features_per_level: 4
+    log2_hashmap_size: 22
+    base_resolution: 2
+    per_level_scale: 2
+    interpolation: "Linear"
+  # Tiny CUDA network config
+  network:
+    otype: "FullyFusedMLP"
+    activation: "ReLU"
+    output_activation: "None"
+
+# Interpolation-based deformation model (used if local_model == 'interp')
+local_deformation:
+  # Interpolation parameters
+  N_ctrl_pts_net: 10
+
+  # multi-resolution parameters (local deformations)
+  num_layers: 2
+  hidden_size: 32
+  encoding:
+    otype: "Grid"
+    type: "Hash"
+    n_levels: 5
+    n_features_per_level: 4
+    log2_hashmap_size: 18
+    base_resolution: 2
+    per_level_scale: 2
+    interpolation: "Linear"
+  network:
+    otype: "FullyFusedMLP"
+    activation: "ReLU"
+    output_activation: "None"
+
+maskBoundary: 0

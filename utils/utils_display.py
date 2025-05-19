@@ -1,5 +1,6 @@
-import numpy as np
+import os
 import torch
+import numpy as np
 import matplotlib.pyplot as plt
 
 
@@ -106,8 +107,8 @@ def display_local_est_and_true(field,field_true=None,Npts=(10,10),img_path='',im
             plt.savefig(img_path+'_est_and_true'+img_type)
 
 def display_local_movie(field,field_true=None,Npts=(10,10),img_path='',img_type='.pdf',scale=3,alpha=0.8,width=0.002,
-                        loc='upper right',legend1='Estimation', legend2='True',weights_est=1,s=1):
-    device = field[0].depl_ctr_pts.device
+                        loc='upper right',legend1='Estimation', legend2='True',weights_est=1,s=1, device='cpu'):
+    # device = field[0].depl_ctr_pts.device
     xx1 = torch.linspace(-1,1,Npts[0],device=device)
     xx2 = torch.linspace(-1,1,Npts[1],device=device)
     XX_t, YY_t = torch.meshgrid(xx1,xx2,indexing='ij')
@@ -173,3 +174,36 @@ def display_local_movie(field,field_true=None,Npts=(10,10),img_path='',img_type=
                 if img_path!='' and field_true is not None:
                     plt.savefig(img_path+'true'+str(k)+img_type)
 
+
+def display_XYZ(tmp, name="true", path_save=""):
+    avg = 0
+    sl0 = tmp.shape[0] // 2
+    sl1 = tmp.shape[1] // 2
+    sl2 = tmp.shape[2] // 2
+    f, aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2] / tmp.shape[0], 1],
+                                            'width_ratios': [1, tmp.shape[2] / tmp.shape[0]]})
+    aa[0, 0].imshow(tmp[sl0 - avg // 2:sl0 + avg // 2 + 1, :, :].mean(0).T, cmap='gray',
+                    vmin=tmp.min(), vmax=tmp.max())
+    aa[0, 0].axis('off')
+    aa[1, 0].imshow(tmp[:, :, sl2 - avg // 2:sl2 + avg // 2 + 1].mean(2), cmap='gray',
+                    vmin=tmp.min(), vmax=tmp.max())
+    aa[1, 0].axis('off')
+    aa[1, 1].imshow(tmp[:, sl1 - avg // 2:sl1 + avg // 2 + 1, :].mean(1), cmap='gray',
+                    vmin=tmp.min(), vmax=tmp.max())
+    aa[1, 1].axis('off')
+    aa[0, 1].axis('off')
+    plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+    plt.savefig(os.path.join("tmp.png"))
+    plt.savefig(os.path.join(path_save, name + "_XYZ_slice.png"))
+
+    f, aa = plt.subplots(2, 2, gridspec_kw={'height_ratios': [tmp.shape[2] / tmp.shape[0], 1],
+                                            'width_ratios': [1, tmp.shape[2] / tmp.shape[0]]})
+    aa[0, 0].imshow(tmp.mean(0).T, cmap='gray', vmin=tmp.min(), vmax=tmp.max())
+    aa[0, 0].axis('off')
+    aa[1, 0].imshow(tmp.mean(2), cmap='gray', vmin=tmp.min(), vmax=tmp.max())
+    aa[1, 0].axis('off')
+    aa[1, 1].imshow(tmp.mean(1), cmap='gray', vmin=tmp.min(), vmax=tmp.max())
+    aa[1, 1].axis('off')
+    aa[0, 1].axis('off')
+    plt.tight_layout(pad=1, w_pad=-1, h_pad=1)
+    plt.savefig(os.path.join(path_save, name + "_XYZ_proj.png"))
