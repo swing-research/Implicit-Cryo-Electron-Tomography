@@ -3,14 +3,13 @@ conda activate ice_tide
 
 sleep 10
 python -m pip install --upgrade pip
-conda install -y conda-forge::libmamba
-mamba install -y conda-forge::tomopy
+conda install -y conda-forge::tomopy
 pip3 install torch torchvision torchaudio
 pip install ninja git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
-mamba install -y anaconda::ipython
-mamba install -y -c jmcmurray os
-mamba install -y -c conda-forge mrcfile
-mamba install -y matplotlib
-mamba install -y -c conda-forge ml-collections
-mamba install -y -c conda-forge ipdb
-mamba install -y conda-forge::glob2
+conda install -y anaconda::ipython
+conda install -y -c jmcmurray os
+conda install -y -c conda-forge mrcfile
+conda install -y matplotlib
+conda install -y -c conda-forge ml-collections
+conda install -y -c conda-forge ipdb
+conda install -y conda-forge::glob2
