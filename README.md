@@ -29,7 +29,7 @@ The challenging part can be to install [tiny cuda](https://github.com/NVlabs/tin
 ### Activate the environement
 Then, you can simply activate you conda environment using the follwoing command every time you start a new session
 ```
-conda activate ice-tide
+conda activate ice_tide
 ```
 
 ## Run ICE-TIDE on your data

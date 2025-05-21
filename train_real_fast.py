@@ -68,7 +68,7 @@ def train_without_ground_truth(config):
     ######################################################################################################
     ## Define global deformations
     ######################################################################################################
-    fixedAngle = torch.FloatTensor([config.fixed_angle* np.pi/180]).to(device)[0]
+    fixedAngle = torch.FloatTensor([config.fixed_tilt_angle* np.pi/180]).to(device)[0]
     fixedAngle.requires_grad = True
 
     shift_est = []
@@ -552,7 +552,7 @@ def train_without_ground_truth(config):
 
         plt.close('all')
 
-        if ep == 50 and config.debug:
+        if ep == 500 and config.debug:
             print("##############################")
             print("Profiling of the code up to epoch 50.")
             print("##############################")

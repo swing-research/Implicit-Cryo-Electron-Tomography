@@ -8,7 +8,7 @@ path_save: "./results/my_data/"
 ##############################################
 ## Intermediate parameters
 ##############################################
-fixed_angle: 0
+fixed_tilt_angle: 185 # tilt angle, best to give this value
 projections_rotate: false
 
 
@@ -34,7 +34,7 @@ loss_data: "l1"  # loss function used, l1, l2
 
 # Sampling strategy
 batch_size: 5            # number of viewing direction per iteration
-nRays: 100               # number of ray to sample per tilt
+nRays: 300               # number of ray to sample per tilt
 ray_length: 1500         # number of discrete point along each ray
 sampling_domain_lx: 1
 sampling_domain_ly: 1
@@ -75,15 +75,15 @@ local_model: "multi-resolution"      # options: 'multi-resolution', 'interp'
 multiresolution: true
 multires_params:
   startResolution: 5       # initial resolution
-  ray_change_epoch: []     # when to switch resolution
-  batch_set: [5]           # batch size per resolution
+  ray_change_epoch: [200]     # when to switch resolution
+  batch_set: [10, 5]           # batch size per resolution
 
 # Display parameters
 Ntest: 50
 Nalign: 5000
 Nimplicit_volume: 1000
 save_volume: false
-debug: false
+debug: true
 save_local_deformations: true
 save_global_deformations: true
 save_aligned: true
